@@ -1,0 +1,8 @@
+{
+  "closedWindowDisconnects" : true,
+  "connectionSurvivesTransientActivationFailure" : false,
+  "connectionSurvivesTransientFailureAndTitleChange" : false,
+  "disconnectedSelectionFallsBackToConnectedTab" : false,
+  "intermediateFrameNotPropagatedToOtherTabs" : false,
+  "oldFocusCannotUndoNewTabSelection" : false
+}

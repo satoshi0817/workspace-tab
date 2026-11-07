@@ -1,0 +1,221 @@
+import SwiftUI
+import AppKit
+import WorkspaceCore
+
+extension BrowserStore {
+    func favoriteWorkspace(_ link:FavoriteLink)->BrowserWorkspace? {
+        if let raw=link.categoryWorkspaceID?.trimmingCharacters(in:.whitespacesAndNewlines),!raw.isEmpty {
+            guard let id=NotionWorkspace.normalizedID(raw) else{return nil}
+            let env=BrowserAddress.url(link.url).flatMap(NotionWorkspace.environment)
+            let matches=session.workspaces.filter { w in
+                NotionWorkspace.normalizedID(w.notionSpaceID) == id &&
+                (env == nil || BrowserAddress.url(w.homeURL).flatMap(NotionWorkspace.environment) == env)
+            }
+            return matches.count == 1 ? matches[0]:nil
+        }
+        let category=link.category.trimmingCharacters(in:.whitespacesAndNewlines)
+        if !category.isEmpty {
+            let matches=session.workspaces.filter {$0.name.trimmingCharacters(in:.whitespacesAndNewlines) == category}
+            if !matches.isEmpty {return matches.count == 1 ? matches[0]:nil}
+        }
+        return workspace(link.workspaceID)
+    }
+    var favorites: [FavoriteLink] { session.favorites ?? [] }
+    func prepareFavorite(workspaceID: UUID, pageID: UUID) {
+        guard let page = page(PageReference(workspaceID: workspaceID, pageID: pageID)) else { return }
+        window?.makeKeyAndOrderFront(nil)
+        favoriteDraft = FavoriteLink(title: page.title, url: page.url, workspaceID: workspaceID)
+    }
+    @discardableResult func saveFavorite(_ value: FavoriteLink) -> Bool {
+        guard let url = BrowserAddress.url(value.url), favoriteWorkspace(value) != nil,
+              !value.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        var copy = value
+        copy.workspaceID=favoriteWorkspace(value)!.id
+        copy.url = BrowserAddress.savedURL(url)
+        copy.title = copy.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        copy.category = copy.category.trimmingCharacters(in: .whitespacesAndNewlines)
+        if copy.notionSourceID != nil {
+            do {try notion.enqueue(copy)} catch {self.error=error.localizedDescription;return false}
+        }
+        var links = favorites
+        if let index = links.firstIndex(where: { $0.id == copy.id }) { links[index] = copy } else { links.append(copy) }
+        session.favorites = links; changed(); notify(copy.notionSourceID == nil ? "お気に入りを保存しました":"Notionへの保存を予約しました");if copy.notionSourceID != nil {Task{await notion.sync()}}; return true
+    }
+    func deleteFavorite(_ id: UUID) {
+        if let value=favorites.first(where:{$0.id == id}),value.notionSourceID != nil {
+            do {try notion.enqueue(value,delete:true)} catch {self.error=error.localizedDescription;return}
+            Task{await notion.sync()}
+        }
+        session.favorites = favorites.filter { $0.id != id }; changed(); notify("お気に入りを削除しました")
+    }
+    @discardableResult func openFavorite(_ link: FavoriteLink, newTab: Bool = false) -> Bool {
+        guard let workspace = favoriteWorkspace(link), let url = BrowserAddress.url(link.url) else {
+            error = "開く先を一意に特定できません。CategoriesのWorkspace ID、アプリタブのWorkspace ID・名前・HOME URLを確認してください。"
+            return false
+        }
+        let target = BrowserAddress.savedURL(url)
+        let existing = workspace.pages.first { BrowserAddress.url($0.url).map(BrowserAddress.savedURL) == target }
+        selectWorkspace(workspace.id)
+        if !newTab, let existing { selectPage(existing.id, in: workspace.id) }
+        else { _ = addPage(to: workspace.id, url: target) }
+        favoritesPresented = false
+        return true
+    }
+}
+
+struct FavoritesLauncher: View {
+    @ObservedObject var store: BrowserStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var category = ""
+    @State private var draft: FavoriteLink?
+    @State private var deleting: FavoriteLink?
+    @State private var selection: UUID?
+    @FocusState private var searchFocused: Bool
+    @FocusState private var listFocused: Bool
+    private var categories: [String] { Array(Set(store.favorites.map(\.category).filter { !$0.isEmpty })).sorted() }
+    private var links: [FavoriteLink] {
+        let words = query.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        return store.favorites.filter { link in
+            let text = [link.title, link.url, link.category, store.favoriteWorkspace(link)?.name ?? ""].joined(separator: " ")
+            return (category.isEmpty || category == link.category) && words.allSatisfy { text.localizedCaseInsensitiveContains($0) }
+        }.sorted { a,b in
+            if a.pinned != b.pinned {return a.pinned}
+            if (a.order ?? .infinity) != (b.order ?? .infinity) {return (a.order ?? .infinity)<(b.order ?? .infinity)}
+            return a.title.localizedStandardCompare(b.title) == .orderedAscending
+        }
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("お気に入り").font(.title2.weight(.semibold)); Spacer()
+                Button("追加…") { draft = FavoriteLink(title: "", url: "", workspaceID: store.session.selectedWorkspaceID ?? UUID()) }.disabled(store.session.workspaces.isEmpty)
+                Button("閉じる") { dismiss() }.keyboardShortcut(.cancelAction)
+            }
+            TextField("タイトル・URL・カテゴリ・アプリタブを検索", text: $query)
+                .textFieldStyle(.roundedBorder).focused($searchFocused)
+                .onSubmit { if let link = links.first(where: { $0.id == selection }) ?? links.first { _ = store.openFavorite(link) } }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    categoryButton("すべて", value: "")
+                    ForEach(categories, id: \.self) { categoryButton($0, value: $0) }
+                }
+            }
+            if links.isEmpty {
+                VStack(spacing: 8) {
+                    Text(store.favorites.isEmpty ? "お気に入りを追加してください" : "一致するお気に入りはありません")
+                    Text("URL欄の星ボタンから、開いているページも登録できます。").font(.caption).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(selection: $selection) {
+                    ForEach(links) { link in
+                        HStack(spacing: 10) {
+                            Button { _ = store.openFavorite(link) } label: {
+                                HStack(spacing: 10) {
+                                    FavoriteIcon(store: store, link: link)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(link.title).font(.body.weight(.medium)).lineLimit(1)
+                                        Text(link.url).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                    }
+                                    Spacer(minLength: 8)
+                                    VStack(alignment: .trailing, spacing: 3) {
+                                        Text(store.favoriteWorkspace(link)?.name ?? "開く先を設定してください").lineLimit(1)
+                                        if !link.category.isEmpty { Text(link.category).foregroundStyle(.secondary).lineLimit(1) }
+                                    }.font(.caption).frame(maxWidth: 180, alignment: .trailing)
+                                    if link.pinned { Image(systemName: "pin.fill").font(.caption).foregroundStyle(.secondary) }
+                                }.contentShape(Rectangle())
+                            }.buttonStyle(.plain).disabled(store.favoriteWorkspace(link) == nil)
+                            Button { draft = link } label: { Image(systemName: "pencil") }.buttonStyle(.borderless).help("お気に入りを編集").accessibilityLabel("編集：" + link.title)
+                        }.padding(.vertical, 5).tag(link.id)
+                        .contextMenu {
+                            Button("開く") { _ = store.openFavorite(link) }.disabled(store.favoriteWorkspace(link) == nil)
+                            Button("新しいブラウザタブで開く") { _ = store.openFavorite(link, newTab: true) }.disabled(store.favoriteWorkspace(link) == nil)
+                            Button("編集…") { draft = link }
+                            Button("URLをコピー") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(link.url, forType: .string); store.notify("URLをコピーしました") }
+                            Button(link.pinned ? "ピン留めを解除" : "ピン留め") { var copy = link; copy.pinned.toggle(); _ = store.saveFavorite(copy) }
+                            Divider(); Button("削除…", role: .destructive) { deleting = link }
+                        }
+                    }
+                }.listStyle(.inset).focused($listFocused)
+                    .onKeyPress(.return) {
+                        if let link=links.first(where:{$0.id == selection}) {_ = store.openFavorite(link)}
+                        return .handled
+                    }
+            }
+            Text("CategoriesのWorkspace IDを優先し、未設定ならCategory名で開く先を判定します。")
+                .font(.caption).foregroundStyle(.secondary)
+        }.padding(20).frame(width: 740, height: 510)
+            .onAppear { selection=links.first?.id;listFocused=true }
+            .onChange(of: query) { _,_ in selection=links.first?.id }
+            .onChange(of: category) { _,_ in selection=links.first?.id;listFocused=true }
+            .sheet(item: $draft) { FavoriteEditor(store: store, draft: $0) }
+            .alert("お気に入りを削除しますか？", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+                Button("キャンセル", role: .cancel) { deleting = nil }
+                Button("削除", role: .destructive) { if let link = deleting { store.deleteFavorite(link.id) }; deleting = nil }
+            } message: { Text((deleting?.title ?? "") + (deleting?.notionPageID != nil ? "\nNotionの該当ページもゴミ箱へ移動します。":"")) }
+    }
+    private func categoryButton(_ title: String, value: String) -> some View {
+        Button(title) { category = value; selection = links.first?.id }
+            .buttonStyle(.plain).padding(.horizontal, 10).padding(.vertical, 5)
+            .background(category == value ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08), in: Capsule())
+            .accessibilityAddTraits(category == value ? .isSelected : [])
+    }
+}
+
+struct FavoriteIcon: View {
+    let store: BrowserStore
+    let link: FavoriteLink
+    var body: some View {
+        Group {
+            if let file = link.iconFile, file == URL(fileURLWithPath: file).lastPathComponent,
+               let image = NSImage(contentsOf: store.directory.appendingPathComponent("Icons").appendingPathComponent(file)) {
+                Image(nsImage: image).resizable().scaledToFit()
+            } else if !link.emoji.isEmpty { Text(link.emoji).font(.system(size: 23)) }
+            else { Image(systemName: "link").font(.system(size: 21)).foregroundStyle(.secondary) }
+        }.frame(width: 32, height: 32)
+    }
+}
+
+struct FavoriteEditor: View {
+    @ObservedObject var store: BrowserStore
+    @State var draft: FavoriteLink
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("お気に入りを編集").font(.title2.weight(.semibold))
+            Form {
+                Picker("保存先",selection:Binding(get:{draft.notionSourceID ?? ""},set:{value in
+                    draft.notionSourceID=value.isEmpty ? nil:value;draft.notionPageID=nil;draft.notionEditedTime=nil;draft.importKey=nil
+                })) {
+                    Text("内蔵（このMac）").tag("")
+                    ForEach(store.notion.state.sources){source in Text("Notion: "+source.title).tag(source.id)}
+                }.disabled(draft.notionPageID != nil)
+                if draft.notionSourceID != nil {Text("Notion保存をオンにすると同期されます。画像アイコンはこのMacに保存し、絵文字はNotionにも保存します。").font(.caption).foregroundStyle(.secondary)}
+                TextField("タイトル", text: $draft.title)
+                TextField("URL", text: $draft.url)
+                Picker("開くアプリタブ", selection: $draft.workspaceID) {
+                    if store.workspace(draft.workspaceID) == nil { Text("選択してください").tag(draft.workspaceID) }
+                    ForEach(store.session.workspaces) { Text($0.name).tag($0.id) }
+                }
+                if let workspace = store.favoriteWorkspace(draft) {
+                    Text("ログイン環境：" + (store.profile(workspace.profileID)?.name ?? "")).font(.caption).foregroundStyle(.secondary)
+                }
+                TextField("アイコン（絵文字・文字）", text: $draft.emoji)
+                HStack {
+                    FavoriteIcon(store: store, link: draft); Spacer()
+                    Button("画像を選ぶ…") { if let file = store.chooseIcon() { draft.iconFile = file } }
+                    if draft.iconFile != nil { Button("画像を解除") { draft.iconFile = nil } }
+                }
+                TextField("カテゴリ", text: $draft.category)
+                Text("Category名とアプリタブ名が一致すると、そちらを優先して開きます。同名のタブが複数ある場合は開けません。").font(.caption).foregroundStyle(.secondary)
+                Toggle("ピン留め", isOn: $draft.pinned)
+            }.formStyle(.grouped)
+            HStack {
+                Spacer()
+                Button("キャンセル") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("保存") { if store.saveFavorite(draft) { dismiss() } }.keyboardShortcut(.defaultAction)
+                    .disabled(draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || BrowserAddress.url(draft.url) == nil || draft.url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || store.favoriteWorkspace(draft) == nil)
+            }
+        }.padding(20).frame(width: 540, height: 570)
+    }
+}

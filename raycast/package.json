@@ -1,0 +1,92 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "workspace-tabs",
+  "title": "Workspace Tabs",
+  "description": "Workspace Tabs のお気に入り・タブ・操作を呼び出す",
+  "icon": "extension-icon.png",
+  "author": "ssuzuki",
+  "license": "MIT",
+  "categories": [
+    "Productivity"
+  ],
+  "platforms": [
+    "macOS"
+  ],
+  "commands": [
+    {
+      "name": "favorites",
+      "title": "Search Favorites",
+      "description": "お気に入りを検索して対応するアプリタブで開く",
+      "mode": "view"
+    },
+    {
+      "name": "tabs",
+      "title": "Search All Tabs",
+      "description": "全アプリタブを横断してブラウザタブを検索",
+      "mode": "view"
+    },
+    {
+      "name": "workspaces",
+      "title": "Switch App Tab",
+      "description": "アプリタブを切り替える",
+      "mode": "view"
+    },
+    {
+      "name": "commands",
+      "title": "Run Command",
+      "description": "Notion操作やWorkspace Tabsのコマンドを実行",
+      "mode": "view"
+    },
+    {
+      "name": "notion-chat",
+      "title": "New Notion AI Chat",
+      "description": "New Notion AI Chat in Workspace Tabs",
+      "mode": "no-view"
+    },
+    {
+      "name": "notion-page",
+      "title": "New Notion Page",
+      "description": "New Notion Page in Workspace Tabs",
+      "mode": "no-view"
+    },
+    {
+      "name": "notion-meeting",
+      "title": "New Notion Meeting Note",
+      "description": "New Notion Meeting Note in Workspace Tabs",
+      "mode": "no-view"
+    },
+    {
+      "name": "notion-search",
+      "title": "Search in Notion",
+      "description": "Search in Notion in Workspace Tabs",
+      "mode": "no-view"
+    },
+    {
+      "name": "show",
+      "title": "Show Workspace Tabs",
+      "description": "Show Workspace Tabs in Workspace Tabs",
+      "mode": "no-view"
+    },
+    {
+      "name": "open-favorites",
+      "title": "Open Favorites Launcher",
+      "description": "Open Favorites Launcher in Workspace Tabs",
+      "mode": "no-view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "2.5.1",
+    "react": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.17",
+    "@types/react": "19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "scripts": {
+    "build": "ray build -e dist -o dist",
+    "dev": "ray develop",
+    "typecheck": "tsc --noEmit"
+  },
+  "private": true
+}

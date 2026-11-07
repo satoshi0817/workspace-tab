@@ -1,0 +1,19 @@
+.build/
+build/
+.DS_Store
+.serena/
+node_modules/
+dist/
+.raycast/
+.env
+.env.*
+!.env.example
+*.log
+# Local sessions and launcher capabilities must never be committed.
+browser-session.json
+browser-split.json
+raycast-index.json
+launcher-token
+BrowserBackups/
+# Raw research captures; curated notes remain in docs/.
+docs/research/

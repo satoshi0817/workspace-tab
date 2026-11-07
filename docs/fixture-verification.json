@@ -1,0 +1,30 @@
+{
+  "count" : 24,
+  "foregroundActivationObserved" : false,
+  "passed" : [
+    "Two fixture windows connect",
+    "Window geometry aligns (target (100.0, 120.0, 700.0, 502.0), alpha Optional((100.0, 120.0, 700.0, 502.0)), beta Optional((100.0, 120.0, 700.0, 502.0)))",
+    "Numbered selection uses the second tab",
+    "Previous-tab selection changes the active tab",
+    "Recent-tab shortcut returns to the previous selection",
+    "Recent-tab shortcut toggles back",
+    "Tabs can be reordered",
+    "Locked groups reject reordering",
+    "A 34-point tab strip is shown",
+    "One outline encloses the window and tab strip",
+    "Outline passes clicks through without taking focus",
+    "Group expands while retaining normal geometry",
+    "Group expansion restores size and position (expected (100.0, 120.0, 700.0, 502.0), actual Optional((100.0, 120.0, 700.0, 502.0)))",
+    "Hover sidebar is collapsed to 12 points",
+    "Hover sidebar expands without resizing Notion",
+    "Sidebar mode keeps the outline on the original window perimeter",
+    "Display command moves all grouped windows together",
+    "Pause hides both outline and strip",
+    "Pause restores both original window frames",
+    "Pinned tabs cannot be detached accidentally",
+    "Fixed names and emoji survive an engine restart",
+    "Shutdown releases all chrome panels",
+    "Shutdown restores original window frames",
+    "Duplicate saved titles require manual reconnect"
+  ]
+}

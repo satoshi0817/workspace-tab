@@ -1,0 +1,12 @@
+{
+  "ambiguousTabsRemainSaved" : true,
+  "closedSourceKeepsCustomization" : true,
+  "closedWindowDisconnects" : true,
+  "connectionSurvivesTransientActivationFailure" : true,
+  "connectionSurvivesTransientFailureAndTitleChange" : true,
+  "disconnectedSelectionFallsBackToConnectedTab" : true,
+  "intermediateFrameNotPropagatedToOtherTabs" : true,
+  "laterWindowRestoresSavedTab" : true,
+  "missingAtLaunchKeepsCustomization" : true,
+  "oldFocusCannotUndoNewTabSelection" : true
+}
