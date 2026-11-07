@@ -288,6 +288,43 @@ import WorkspaceCore
                 let result=try await ea.webView.evaluateJavaScript("window.actionClicks") as? Int
                 try expect(result == 1,"Notion action detects creation control: \(action)")
             }
+            // Idle persistence must not rewrite any files or instantiate hidden tabs.
+            store.snapshot();_ = store.save()
+            let writes=store.persistenceWrites,live=store.liveEngineCount
+            let indexURL=root.appendingPathComponent("raycast-index.json")
+            let indexBefore=try FileManager.default.attributesOfItem(atPath:indexURL.path)[.modificationDate] as? Date
+            let saveStart=Date()
+            for _ in 0..<100 { _ = store.save();_ = store.tabSearchRows("Alpha") }
+            let elapsed=Date().timeIntervalSince(saveStart)*1000
+            let indexAfter=try FileManager.default.attributesOfItem(atPath:indexURL.path)[.modificationDate] as? Date
+            try expect(store.persistenceWrites == writes && indexBefore == indexAfter,"100 idle saves perform zero session or Raycast index writes")
+            try expect(store.liveEngineCount == live,"Searching hidden tabs never allocates WebViews")
+            print(String(format:"METRIC 100 idle saves and searches: %.2f ms",elapsed))
+            let beforeRefresh=ea.refreshPasses
+            for _ in 0..<100 {ea.refresh()}
+            try await wait {ea.refreshPasses > beforeRefresh}
+            try expect(ea.refreshPasses == beforeRefresh+1,"100 queued WebKit refreshes coalesce into one pass")
+            var disposable:BrowserEngine?=store.addPage(to:a,url:"about:blank")
+            let disposableID=disposable!.pageID
+            weak var released=disposable
+            store.closePage(disposableID,in:a);disposable=nil
+            try await wait {released == nil}
+            try expect(released == nil,"Closing a tab releases its engine and observers")
+            let icons=root.appendingPathComponent("Icons")
+            try FileManager.default.createDirectory(at:icons,withIntermediateDirectories:true)
+            let bitmap=NSBitmapImageRep(bitmapDataPlanes:nil,pixelsWide:1024,pixelsHigh:1024,bitsPerSample:8,samplesPerPixel:4,hasAlpha:true,isPlanar:false,colorSpaceName:.deviceRGB,bytesPerRow:0,bitsPerPixel:0)!
+            try bitmap.representation(using:.png,properties:[:])!.write(to:icons.appendingPathComponent("large.png"))
+            let cache=LocalIconCache(),image=cache.image(directory:root,name:"large.png")
+            let imageStart=Date()
+            for _ in 0..<1000 {_ = cache.image(directory:root,name:"large.png")}
+            try expect(cache.decodeCount == 1 && image != nil && image!.size.width<=128,"1000 icon lookups reuse one downsampled image")
+            try expect(cache.image(directory:root,name:"../outside.png") == nil,"Icon cache rejects traversal paths")
+            print(String(format:"METRIC 1000 cached icon lookups: %.2f ms",Date().timeIntervalSince(imageStart)*1000))
+            let iconClient=NotionClient()
+            let remotePage:JSONObject=["id":UUID().uuidString,"last_edited_time":"2026-11-07T00:00:00Z"]
+            let downloaded=try await iconClient.downloadIcon(URL(string:"http://127.0.0.1:48761/icon.png")!,page:remotePage,directory:icons)
+            let cachedDownload=try await iconClient.downloadIcon(URL(string:"http://127.0.0.1:1/unreachable")!,page:remotePage,directory:icons)
+            try expect(downloaded == cachedDownload && FileManager.default.fileExists(atPath:downloaded),"Unchanged Notion icon reuses disk cache without another network request")
             store.exportLauncherIndex()
             let launcherFile=root.appendingPathComponent("raycast-index.json")
             let launcher=try JSONDecoder().decode(LauncherIndex.self,from:Data(contentsOf:launcherFile))

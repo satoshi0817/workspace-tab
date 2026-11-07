@@ -203,17 +203,30 @@ actor NotionClient: NotionRequesting {
               FileManager.default.fileExists(atPath: path) else { return nil }
         return path
     }
-    private func downloadIcon(_ url: URL, page: JSONObject) async throws -> String {
+    func downloadIcon(_ url: URL, page: JSONObject, directory:URL = Storage.icons) async throws -> String {
         guard ["https", "http"].contains(url.scheme ?? "") else { throw LVError("非対応の画像 URL です") }
+        let stamp=(page["last_edited_time"] as? String ?? "").replacingOccurrences(of:":",with:"-")
+        let pageID=(page["id"] as? String).flatMap(UUID.init(uuidString:))?.uuidString.lowercased()
+        let prefix=pageID.map{"\($0)-\(stamp)"}
+        if let prefix,!stamp.isEmpty,!stamp.contains("/") {
+            for ext in ["png","jpg","gif","webp","svg"] {
+                let file=directory.appendingPathComponent("\(prefix).\(ext)")
+                if FileManager.default.fileExists(atPath:file.path) {return file.path}
+            }
+        }
         var request = URLRequest(url: url); request.timeoutInterval = 10
         request.setValue("NotionLinkViewer/1.0", forHTTPHeaderField: "User-Agent")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (temporary, response) = try await URLSession.shared.download(for: request)
+        defer {try? FileManager.default.removeItem(at:temporary)}
+        let bytes=(try FileManager.default.attributesOfItem(atPath:temporary.path)[.size] as? NSNumber)?.intValue ?? Int.max
         let types = ["image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg"]
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-              let ext = types[response.mimeType?.lowercased() ?? ""], data.count <= 10_000_000 else { throw LVError("対応する画像を取得できませんでした") }
-        let stamp = (page["last_edited_time"] as? String ?? "0").replacingOccurrences(of: ":", with: "-")
-        let file = Storage.icons.appendingPathComponent("\(page["id"] as? String ?? UUID().uuidString)-\(stamp).\(ext)")
-        try Storage.prepare(); try data.write(to: file, options: .atomic)
+              let ext = types[response.mimeType?.lowercased() ?? ""], bytes <= 10_000_000 else { throw LVError("対応する画像を取得できませんでした") }
+        let safePrefix = (prefix != nil && !stamp.isEmpty && !stamp.contains("/")) ? prefix! : UUID().uuidString
+        let file = directory.appendingPathComponent("\(safePrefix).\(ext)")
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+        let data=try Data(contentsOf:temporary,options:.mappedIfSafe)
+        try data.write(to:file,options:.atomic)
         return file.path
     }
 }

@@ -168,7 +168,7 @@ struct FavoriteIcon: View {
     var body: some View {
         Group {
             if let file = link.iconFile, file == URL(fileURLWithPath: file).lastPathComponent,
-               let image = NSImage(contentsOf: store.directory.appendingPathComponent("Icons").appendingPathComponent(file)) {
+               let image = store.iconCache.image(directory:store.directory,name:file) {
                 Image(nsImage: image).resizable().scaledToFit()
             } else if !link.emoji.isEmpty { Text(link.emoji).font(.system(size: 23)) }
             else { Image(systemName: "link").font(.system(size: 21)).foregroundStyle(.secondary) }

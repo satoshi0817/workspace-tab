@@ -1,6 +1,6 @@
 import { Action, ActionPanel, Icon, List, Toast, closeMainWindow, open, showToast } from "@raycast/api";
 import { useEffect, useState } from "react";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -15,12 +15,19 @@ export default function Launcher({ kind }: { kind: Kind }) {
   const [target, setTarget] = useState("");
   useEffect(() => {
     let active = true;
+    let loading = false;
+    let signature = "";
     async function load() {
+      if (loading) return;
+      loading = true;
       try {
+        const metadata = await stat(path);
+        const nextSignature = `${metadata.ino}:${metadata.mtimeMs}:${metadata.size}`;
+        if (signature === nextSignature) return;
         const value: Index = JSON.parse(await readFile(path, "utf8"));
         if (value.version !== 1 || !value.token || !Array.isArray(value[kind])) throw new Error("Unsupported index");
-        if (active) { setIndex(value); setError(undefined); }
-      } catch { if (active) setError("Workspace Tabsを起動すると一覧が読み込まれます。更新版が必要です。"); }
+        if (active) { signature = nextSignature; setIndex(value); setError(undefined); }
+      } catch { signature = ""; if (active) setError("Workspace Tabsを起動すると一覧が読み込まれます。更新版が必要です。"); } finally { loading = false; }
     }
     void load(); const timer = setInterval(load, 2000);
     return () => { active = false; clearInterval(timer); };

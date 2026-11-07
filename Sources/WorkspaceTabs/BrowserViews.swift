@@ -176,7 +176,7 @@ struct BrowserPane: View {
                 }.buttonStyle(.plain).padding(.trailing,10)
                     .foregroundStyle(Palette.ink(workspace.color)).background(Palette.color(workspace.color))
                 BrowserNavigation(store:store,engine:engine,isRight:isRight)
-                if let failure=engine.failure {HStack {Text(failure).font(.caption).lineLimit(3);Spacer();Button("再読み込み") {engine.webView.reload()}}.padding(8).background(Color.orange.opacity(0.12))}
+                BrowserFailure(engine:engine)
                 WebContent(webView:engine.webView,store:store,workspaceID:workspaceID,detached:detached).frame(maxWidth:.infinity,maxHeight:.infinity)
             }.simultaneousGesture(TapGesture().onEnded {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID)})
         }
@@ -236,7 +236,7 @@ struct WorkspaceIcon:View {
     let size:CGFloat
     var body:some View {
         Group {
-            if let file=workspace.iconFile,file == URL(fileURLWithPath:file).lastPathComponent,let image=NSImage(contentsOf:store.directory.appendingPathComponent("Icons").appendingPathComponent(file)) {Image(nsImage:image).resizable().scaledToFit()}
+            if let file=workspace.iconFile,file == URL(fileURLWithPath:file).lastPathComponent,let image=store.iconCache.image(directory:store.directory,name:file) {Image(nsImage:image).resizable().scaledToFit()}
             else if !workspace.emoji.isEmpty {Text(workspace.emoji).font(.system(size:size*0.85))}
             else {Image(systemName:"globe").resizable().scaledToFit().padding(2)}
         }.frame(width:size,height:size)
@@ -250,4 +250,13 @@ private final class DragAreaView:NSView {
     override func mouseDown(with event:NSEvent) {window?.performDrag(with:event)}
     override func acceptsFirstMouse(for event:NSEvent?)->Bool {true}
     override func resetCursorRects() {addCursorRect(bounds,cursor:.openHand)}
+}
+
+struct BrowserFailure:View {
+    @ObservedObject var engine:BrowserEngine
+    var body:some View {
+        if let failure=engine.failure {
+            HStack {Text(failure).font(.caption).lineLimit(3);Spacer();Button("再読み込み") {engine.webView.reload()}}.padding(8).background(Color.orange.opacity(0.12))
+        }
+    }
 }

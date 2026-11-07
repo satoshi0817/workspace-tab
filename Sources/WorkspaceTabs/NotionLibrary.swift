@@ -31,8 +31,10 @@ import CryptoKit
     func save(){do{try persist()}catch{message="Notion設定を保存できません："+error.localizedDescription}}
     func start(){
         guard writable else{return}
+        timer?.invalidate()
         migrateLinkViewer()
         timer=Timer.scheduledTimer(withTimeInterval:3600,repeats:true){[weak self] _ in Task{@MainActor in await self?.sync()}}
+        timer?.tolerance=60
         if state.enabled {Task{await sync()}}
     }
     func stop(){timer?.invalidate()}
@@ -173,7 +175,7 @@ import CryptoKit
                 if let i=links.firstIndex(where:{$0.id == value.id}) {links[i]=value}else{links.append(value)}
             }
         }
-        store.session.favorites=links;store.changed()
+        if store.favorites != links {store.session.favorites=links;store.changed()}
     }
     private func push(_ edit:NotionEdit)async throws->(String,String?)? {
         guard let sid=edit.value.notionSourceID,let source=state.sources.first(where:{$0.id == sid}) else{throw LVError("保存先のDBがありません")}

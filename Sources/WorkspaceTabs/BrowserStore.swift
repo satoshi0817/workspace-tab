@@ -62,6 +62,12 @@ struct PageReference: Codable, Equatable, Identifiable {
     @Published var hovered = false
     let directory: URL
     private var writable = true
+    private var lastPersistedSession:BrowserSession?
+    private(set) var persistenceWrites=0
+    var lastLauncherIndex:LauncherIndex?
+    lazy var launcherToken:String = loadLauncherToken()
+    let iconCache=LocalIconCache()
+    var liveEngineCount:Int {engines.count}
     private var saveWork: DispatchWorkItem?
     private var timer: Timer?
     private var engines: [UUID: BrowserEngine] = [:]
@@ -102,6 +108,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.snapshot(); self?.save(); self?.pollNotionWorkspace() }
         }
+        timer?.tolerance=1
     }
     func profile(_ id: UUID) -> LoginProfile? { session.profiles.first { $0.id == id } }
     func workspace(_ id: UUID) -> BrowserWorkspace? { session.workspaces.first { $0.id == id } }
@@ -111,7 +118,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         let store = WKWebsiteDataStore(forIdentifier: id); dataStores[id] = store; return store
     }
     func engine(_ workspaceID: UUID, _ pageID: UUID, configuration: WKWebViewConfiguration? = nil, load: Bool = true) -> BrowserEngine? {
-        if let engine = engines[pageID] { return engine }
+        if let engine = engines[pageID],engine.workspaceID == workspaceID { return engine }
         guard let workspace = workspace(workspaceID), let page = workspace.pages.first(where: { $0.id == pageID }) else { return nil }
         let engine = BrowserEngine(store: self, workspace: workspace, page: page, configuration: configuration)
         engines[pageID] = engine
@@ -160,7 +167,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard let i = session.workspaces.firstIndex(where: { $0.id == workspaceID }), let j = session.workspaces[i].pages.firstIndex(where: { $0.id == pageID }) else { return }
         guard session.workspaces[i].pages[j].pinned != true else {notify("ピン留めを解除してから閉じてください");return}
         closedPages.append((workspaceID, session.workspaces[i].pages[j])); closedPages = Array(closedPages.suffix(20))
-        engines.removeValue(forKey: pageID)?.webView.stopLoading()
+        engines.removeValue(forKey: pageID)?.dispose()
         session.workspaces[i].pages.remove(at: j)
         if session.workspaces[i].pages.isEmpty { session.workspaces[i].pages = [BrowserPage(url: session.workspaces[i].homeURL)] }
         if session.workspaces[i].selectedPageID == pageID { session.workspaces[i].selectedPageID = session.workspaces[i].pages[min(j, session.workspaces[i].pages.count - 1)].id }
@@ -190,7 +197,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         alert.addButton(withTitle: "キャンセル"); alert.addButton(withTitle: "閉じる")
         guard alert.runModal() == .alertSecondButtonReturn else { return }
         reattachWorkspace(id,activate:false)
-        for page in workspace.pages { engines.removeValue(forKey: page.id)?.webView.stopLoading() }
+        for page in workspace.pages { engines.removeValue(forKey: page.id)?.dispose() }
         session.workspaces.removeAll { $0.id == id }
         if session.selectedWorkspaceID == id { session.selectedWorkspaceID = session.workspaces.first?.id }
         if split?.workspaceID == id { split = nil }; changed()
@@ -218,7 +225,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         updated.pages = old.pages; updated.selectedPageID = old.selectedPageID
         session.workspaces[i] = updated
         if old.profileID != value.profileID {
-            for page in old.pages { engines.removeValue(forKey: page.id)?.webView.stopLoading() }
+            for page in old.pages { engines.removeValue(forKey: page.id)?.dispose() }
         } else {
             for page in old.pages { engines[page.id]?.updateStyle(updated) }
         }
@@ -272,20 +279,26 @@ struct PageReference: Codable, Equatable, Identifiable {
             if session.splitStateRecorded != true {session.splitStateRecorded=true}
             if session.splitWorkspaceID != split?.workspaceID {session.splitWorkspaceID=split?.workspaceID}
             if session.splitPageID != split?.pageID {session.splitPageID=split?.pageID}
+            if lastPersistedSession == session {exportLauncherIndex();return true}
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let data = try encoder.encode(session.validated())
             let file = directory.appendingPathComponent("browser-session.json")
-            if let old = try? Data(contentsOf: file), old != data {
+            let old = try? Data(contentsOf:file)
+            if let old, old != data {
                 let backups = directory.appendingPathComponent("BrowserBackups")
                 try FileManager.default.createDirectory(at: backups, withIntermediateDirectories: true)
                 try old.write(to: backups.appendingPathComponent("\(Int64(Date().timeIntervalSince1970*1000))-\(UUID()).json"), options: .atomic)
                 let files = try FileManager.default.contentsOfDirectory(at: backups, includingPropertiesForKeys: nil).filter { $0.pathExtension == "json" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
                 for old in files.dropFirst(20) { try? FileManager.default.removeItem(at: old) }
             }
-            if (try? Data(contentsOf:file)) != data {try data.write(to: file, options: .atomic)}
+            if old != data {try data.write(to: file, options: .atomic);persistenceWrites += 1}
             let splitURL = directory.appendingPathComponent("browser-split.json")
-            if let split { try encoder.encode(split).write(to: splitURL, options: .atomic) }
+            if let split {
+                let splitData=try encoder.encode(split)
+                if (try? Data(contentsOf:splitURL)) != splitData {try splitData.write(to:splitURL,options:.atomic)}
+            }
             else if FileManager.default.fileExists(atPath: splitURL.path) { try FileManager.default.removeItem(at: splitURL) }
+            lastPersistedSession=session
             exportLauncherIndex()
             return true
         } catch { self.error = "保存できませんでした：\(error.localizedDescription)";return false }
@@ -321,7 +334,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         }
         guard saveBeforeExit() else{throw LVError("現在の状態を保存できないため復元を中止しました")}
         for id in Array(detachedWorkspaceIDs) {reattachWorkspace(id,activate:false)}
-        for engine in engines.values {engine.webView.stopLoading()};engines.removeAll()
+        for engine in engines.values {engine.dispose()};engines.removeAll()
         restored.favorites=session.favorites;restored.windowFrame=session.windowFrame
         session=restored;split=nil;focusedPage=nil;applyTheme();changed()
     }

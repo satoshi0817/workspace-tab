@@ -27,8 +27,8 @@ import WorkspaceCore
         webView.evaluateJavaScript(NotionWorkspace.detectionScript) { [weak self] result,_ in
             guard let self else {return};self.detectionRunning=false
             guard let result=result as? [String:String],result["url"] == self.webView.url?.absoluteString,
-                  let id=NotionWorkspace.normalizedID(result["spaceID"]) else {self.detectedNotionSpaceID=nil;self.detectedURL=nil;completion?(nil);return}
-            self.detectedNotionSpaceID=id;self.detectedURL=result["url"];completion?(id)
+                  let id=NotionWorkspace.normalizedID(result["spaceID"]) else {if self.detectedNotionSpaceID != nil {self.detectedNotionSpaceID=nil};self.detectedURL=nil;completion?(nil);return}
+            if self.detectedNotionSpaceID != id {self.detectedNotionSpaceID=id};self.detectedURL=result["url"];completion?(id)
             if self.mayRoute, let url=self.webView.url {
                 self.mayRoute=false
                 _ = self.store?.routeNotion(url,detectedID:id,from:PageReference(workspaceID:self.workspaceID,pageID:self.pageID))
@@ -36,6 +36,17 @@ import WorkspaceCore
         }
     }
     private var observations: [NSKeyValueObservation] = []
+    private var refreshPending=false
+    private var disposed=false
+    private var styleScript=""
+    private(set) var refreshPasses=0
+    func dispose() {
+        guard !disposed else{return}
+        disposed=true
+        observations.forEach{$0.invalidate()};observations.removeAll()
+        webView.stopLoading();webView.navigationDelegate=nil;webView.uiDelegate=nil
+        webView.removeFromSuperview();store=nil
+    }
     init(store: BrowserStore, workspace: BrowserWorkspace, page: BrowserPage, configuration: WKWebViewConfiguration? = nil) {
         self.store = store; workspaceID = workspace.id; pageID = page.id; profileID = workspace.profileID
         let config = configuration ?? WKWebViewConfiguration()
@@ -46,6 +57,7 @@ import WorkspaceCore
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
         address = page.url; title = page.title
+        styleScript=Self.style(workspace)
         webView.navigationDelegate = self; webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         observations = [webView.observe(\.url, options: [.new]) { [weak self] _, _ in Task { @MainActor in self?.refresh() } },
@@ -59,8 +71,11 @@ import WorkspaceCore
         BrowserStyle.script(hex: Palette.hex(Palette.color(workspace.color)), enabled: workspace.cssEnabled, strength: workspace.cssStrength)
     }
     func refresh() {
+        guard !disposed,!refreshPending else{return}
+        refreshPending=true
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
+            guard let self,!self.disposed else { return }
+            self.refreshPending=false;self.refreshPasses += 1
             if let url = self.webView.url {
                 if self.address != url.absoluteString {
                     self.detectedNotionSpaceID=nil;self.detectedURL=nil
@@ -84,6 +99,8 @@ import WorkspaceCore
     }
     func updateStyle(_ workspace: BrowserWorkspace) {
         let script = Self.style(workspace)
+        guard script != styleScript else{return}
+        styleScript=script
         webView.configuration.userContentController.removeAllUserScripts()
         webView.configuration.userContentController.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         webView.evaluateJavaScript(script, completionHandler: nil)

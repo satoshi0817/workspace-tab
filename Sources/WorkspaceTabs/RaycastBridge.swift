@@ -1,14 +1,14 @@
 import AppKit
 import WorkspaceCore
 
-struct LauncherEntry: Codable {
+struct LauncherEntry: Codable, Equatable {
     var id:String
     var title:String
     var subtitle:String
     var emoji:String
     var workspaceID:String?
 }
-struct LauncherIndex: Codable {
+struct LauncherIndex: Codable, Equatable {
     var version = 1
     var token:String
     var workspaces:[LauncherEntry]
@@ -33,7 +33,7 @@ struct LauncherRequest {
     }
 }
 extension BrowserStore {
-    var launcherToken:String {
+    func loadLauncherToken()->String {
         let file=directory.appendingPathComponent("launcher-token")
         if let token=try? String(contentsOf:file,encoding:.utf8),UUID(uuidString:token) != nil {return token}
         let token=UUID().uuidString
@@ -49,12 +49,14 @@ extension BrowserStore {
         let favorites=favorites.sorted{if $0.pinned != $1.pinned{return $0.pinned};return ($0.order ?? .infinity)<($1.order ?? .infinity)}.map{link in LauncherEntry(id:link.id.uuidString,title:link.title,subtitle:favoriteWorkspace(link)?.name ?? "開く先が未設定",emoji:link.emoji,workspaceID:favoriteWorkspace(link)?.id.uuidString)}
         let commands=ShortcutPreferences.actions.filter{Self.launcherCommandIDs.contains($0.id)}.map{LauncherEntry(id:$0.id,title:$0.title,subtitle:ShortcutPreferences.shared.binding($0).label,emoji:"")}
         let index=LauncherIndex(token:token,workspaces:workspaces,tabs:tabs,favorites:favorites,commands:commands)
+        guard index != lastLauncherIndex else{return}
         let file=directory.appendingPathComponent("raycast-index.json")
         do {
             let encoder=JSONEncoder();encoder.outputFormatting = [.sortedKeys]
             let data=try encoder.encode(index)
             if (try? Data(contentsOf:file)) != data {try data.write(to:file,options:.atomic)}
             try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:file.path)
+            lastLauncherIndex=index
         }catch{NSLog("Workspace Tabs: launcher index export failed")}
     }
 }
