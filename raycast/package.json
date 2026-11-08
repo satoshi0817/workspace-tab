@@ -72,6 +72,20 @@
       "title": "Open Favorites Launcher",
       "description": "Open Favorites Launcher in Workspace Tabs",
       "mode": "no-view"
+    },
+    {
+      "name": "open-notion-link",
+      "title": "Open Notion Link",
+      "description": "NotionのURLを対応する環境で開く。判定できない場合は環境を選択",
+      "mode": "no-view",
+      "arguments": [
+        {
+          "name": "url",
+          "type": "text",
+          "placeholder": "Notion URL",
+          "required": true
+        }
+      ]
     }
   ],
   "dependencies": {

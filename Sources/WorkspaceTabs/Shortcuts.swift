@@ -19,7 +19,7 @@ struct ShortcutBinding: Codable, Equatable {
     var flags: NSEvent.ModifierFlags { NSEvent.ModifierFlags(rawValue: modifiers) }
     var label: String {
         if let sequence {return sequence.map(\.label).joined(separator:" → ")}
-        return (flags.contains(.control) ? "⌃" : "") + (flags.contains(.option) ? "⌥" : "") + (flags.contains(.shift) ? "⇧" : "") + (flags.contains(.command) ? "⌘" : "") + (key == " " ? "Space" : key == "\u{F702}" ? "←" : key == "\u{F703}" ? "→" : key.uppercased())
+        return (flags.contains(.control) ? "⌃" : "") + (flags.contains(.option) ? "⌥" : "") + (flags.contains(.shift) ? "⇧" : "") + (flags.contains(.command) ? "⌘" : "") + (key == "\t" ? "Tab" : key == " " ? "Space" : key == "\u{F702}" ? "←" : key == "\u{F703}" ? "→" : key.uppercased())
     }
     var carbon: UInt32 {
         UInt32((flags.contains(.command) ? cmdKey : 0) | (flags.contains(.option) ? optionKey : 0) | (flags.contains(.control) ? controlKey : 0) | (flags.contains(.shift) ? shiftKey : 0))
@@ -43,6 +43,7 @@ struct ShortcutAction: Identifiable {
             ("copyURL","現在のURLをコピー","c",8,[.command,.shift]), ("settings","設定…",",",43,.command),
             ("show","ブラウザを表示","0",29,.command), ("fullscreen","フルスクリーンを切り替える","f",3,[.control,.command]),
             ("quit","Workspace Tabsを終了…","q",12,.command),
+            ("recentTabs","最近使ったタブを切り替える","\t",48,.control),
             ("commands","コマンドを検索","p",35,[.command,.shift]),
             ("lastWorkspace","直前のアプリタブ","b",11,[.command,.option]),
             ("previousPage","前のブラウザタブ","[",33,[.command,.shift]),
@@ -55,7 +56,8 @@ struct ShortcutAction: Identifiable {
             ("notionChat","Notion：新規AIチャット","a",0,[.command,.option]),
             ("notionPage","Notion：新規ページ","n",45,[.command,.option]),
             ("notionMeeting","Notion：新規ミーティングノート","m",46,[.command,.option]),
-            ("notionSearch","Notion内を検索","k",40,[.command,.option])]
+            ("notionSearch","Notion内を検索","k",40,[.command,.option]),
+            ("notionSettings","Notion：設定を開く",",",43,[.command,.option])]
 
         var result = local.map { ShortcutAction(id:$0.0,title:$0.1,initial:ShortcutBinding(key:$0.2,code:UInt16($0.3),modifiers:$0.4.rawValue)) }
         result.append(ShortcutAction(id:"previousWorkspace",title:"前のアプリタブ",initial:ShortcutBinding(key:"\u{F702}",code:123,modifiers:NSEvent.ModifierFlags([.command,.option]).rawValue)))
@@ -123,11 +125,12 @@ final class ShortcutStrokeRecorder {
             if flags.isEmpty {
                 defer{reset()}
                 if !chord && !held.isEmpty {return ShortcutStroke(key:"",code:0,modifiers:held.rawValue,modifierOnly:true)}
-            } else if held.isEmpty {held=flags} else if flags.rawValue != held.rawValue {chord=true}
+            } else if held.isEmpty {held=flags;chord=false} else if flags.rawValue != held.rawValue {chord=true}
             return nil
         }
         guard event.type == .keyDown,!event.isARepeat else{return nil}
         chord=true
+        if event.keyCode == 48 {return ShortcutStroke(key:"\t",code:48,modifiers:flags.rawValue)}
         if event.keyCode == 123 || event.keyCode == 124 {return ShortcutStroke(key:event.keyCode == 123 ? "\u{F702}":"\u{F703}",code:event.keyCode,modifiers:flags.rawValue)}
         guard let key=event.characters(byApplyingModifiers: [])?.lowercased(),key.count == 1,key.unicodeScalars.allSatisfy({$0.value >= 32 && $0.value < 127}) else{return nil}
         return ShortcutStroke(key:key,code:event.keyCode,modifiers:flags.rawValue)
@@ -141,7 +144,19 @@ final class ShortcutStrokeRecorder {
     private var buffer:[ShortcutStroke]=[]
     private var last=Date.distantPast
     private var suspended=false
+    private let preferences:ShortcutPreferences
+    init(preferences:ShortcutPreferences? = nil) {self.preferences=preferences ?? .shared}
     var action:((ShortcutAction)->Void)?
+    var canHandleLocal:(()->Bool)?
+    static func localAction(for event:NSEvent,preferences:ShortcutPreferences)->ShortcutAction? {
+        guard event.type == .keyDown,!event.isARepeat else{return nil}
+        let flags=event.modifierFlags.intersection([.command,.control,.option,.shift])
+        return ShortcutPreferences.actions.first { action in
+            let binding=preferences.binding(action)
+            return action.globalID == nil && binding.sequence == nil &&
+                binding.code == event.keyCode && binding.flags == flags
+        }
+    }
     func start(){
         observer=NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in
             MainActor.assumeIsolated {self?.suspended=note.object as? Bool == true;self?.buffer=[];self?.recorder.reset()}
@@ -153,19 +168,26 @@ final class ShortcutStrokeRecorder {
         }
         global=NSEvent.addGlobalMonitorForEvents(matching:mask){[weak self] event in _=self?.handle(event,global:true)}
     }
-    private func handle(_ event:NSEvent,global:Bool)->Bool {
+    func resetInput(){buffer=[];recorder.reset()}
+    func handle(_ event:NSEvent,global:Bool)->Bool {
         guard !suspended else{return false}
+        if !global, canHandleLocal?() == false {buffer=[];recorder.reset();return false}
+        // Resolve app commands before WebKit's asynchronous key-equivalent path.
+        // Carbon continues to own global single chords, avoiding double delivery.
+        if !global,let command=Self.localAction(for:event,preferences:preferences) {
+            _=recorder.consume(event);buffer=[];action?(command);return true
+        }
         if event.type == .leftMouseDown || event.type == .rightMouseDown {buffer=[]}
         guard let stroke=recorder.consume(event) else{return false}
         if Date().timeIntervalSince(last)>1.2 {buffer=[]};last=Date()
         buffer.append(stroke);if buffer.count>4 {buffer.removeFirst()}
-        let candidates=ShortcutPreferences.actions.filter{(!global || $0.globalID != nil) && ShortcutPreferences.shared.binding($0).sequence != nil}
+        let candidates=ShortcutPreferences.actions.filter{(!global || $0.globalID != nil) && preferences.binding($0).sequence != nil}
         for candidate in candidates {
-            let steps=ShortcutPreferences.shared.binding(candidate).strokes
+            let steps=preferences.binding(candidate).strokes
             if buffer.suffix(steps.count).elementsEqual(steps) {buffer=[];action?(candidate);return true}
         }
         return candidates.contains{candidate in
-            let steps=ShortcutPreferences.shared.binding(candidate).strokes
+            let steps=preferences.binding(candidate).strokes
             return (1..<steps.count).contains{count in buffer.suffix(count).elementsEqual(steps.prefix(count))}
         }
     }

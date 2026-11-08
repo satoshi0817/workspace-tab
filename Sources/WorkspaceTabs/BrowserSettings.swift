@@ -69,7 +69,7 @@ struct BrowserSettings:View {
     @Environment(\.dismiss) private var dismiss
     @State private var editingProfile:LoginProfile?
     @State private var section="表示"
-    private let sections=[("表示","paintpalette"),("ログイン環境","person.crop.circle"),("ショートカット","keyboard"),("Notion保存","cloud"),("バックアップ","externaldrive")]
+    private let sections=[("表示","paintpalette"),("ログイン環境","person.crop.circle"),("ショートカット","keyboard"),("Notion保存","cloud"),("作業","square.stack"),("プレビュー","photo"),("診断","waveform.path.ecg"),("バックアップ","externaldrive")]
     var body:some View {
         HStack(spacing:0) {
             VStack(alignment:.leading,spacing:8) {
@@ -103,7 +103,14 @@ struct BrowserSettings:View {
                         ShortcutSettings()
                     } else if section == "Notion保存" {
                         NotionLibrarySettings(library:store.notion)
+                    } else if section == "作業" {
+                        WorkflowSettings(store:store)
+                    } else if section == "プレビュー" {
+                        PreviewSettings(store:store)
+                    } else if section == "診断" {
+                        TimingSettings(log:store.timings,export:store.exportTimings)
                     } else {
+                        HistorySettings(store:store)
                         Section("このMacのデータ") {
                             Text("タブの状態は自動保存されます。ファイルへの書き出し・読み込みはこちらから。").font(.callout)
                             Button("保存フォルダを開く"){NSWorkspace.shared.activateFileViewerSelecting([store.directory])}
@@ -148,6 +155,7 @@ extension BrowserStore {
         do {
             var icons:[String:Data]=[:]
             for w in session.workspaces {if let file=w.iconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
+            for page in session.workspaces.flatMap(\.pages) {if let file=page.tabIconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
             for link in favorites {if let file=link.iconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
             let backup=BrowserBackup(session:session,icons:icons)
             try JSONEncoder().encode(backup).write(to:url,options:.atomic)
@@ -164,8 +172,11 @@ extension BrowserStore {
             let icons=directory.appendingPathComponent("Icons");try FileManager.default.createDirectory(at:icons,withIntermediateDirectories:true)
             for workspace in backup.session.workspaces {
                 var copy=workspace;copy.id=UUID();workspaceMap[workspace.id]=copy.id;copy.profileID=profileMap[workspace.profileID]!
-                copy.pages=workspace.pages.map{page in var page=page;page.id=UUID();return page};copy.selectedPageID=copy.pages.first?.id
+                copy.tabGroups=workspace.resolvedTabGroups.map{group in BrowserTabGroup(id:group.id == workspace.id ? copy.id:group.id,name:group.name)}
+                copy.visibleTabGroupID=workspace.visibleGroupID == workspace.id ? copy.id:workspace.visibleGroupID
+                copy.pages=workspace.pages.map{page in var page=page;page.id=UUID();if page.groupID == workspace.id {page.groupID=copy.id};return page};copy.selectedPageID=copy.pages.first?.id
                 if let name=workspace.iconFile,let imageData=backup.icons[name],imageData.count<2_000_000,NSImage(data:imageData) != nil {let new=UUID().uuidString+".png";try imageData.write(to:icons.appendingPathComponent(new));copy.iconFile=new}else{copy.iconFile=nil}
+                for j in copy.pages.indices {copy.pages[j].tabIconFile=try importTabIcon(copy.pages[j].tabIconFile,from:backup.icons)}
                 importedWorkspaces.append(copy)
             }
             var importedFavorites: [FavoriteLink] = []

@@ -54,7 +54,7 @@ extension BrowserStore {
             return false
         }
         let target = BrowserAddress.savedURL(url)
-        let existing = workspace.pages.first { BrowserAddress.url($0.url).map(BrowserAddress.savedURL) == target }
+        let existing = existingPage(url:target,in:workspace.id)
         selectWorkspace(workspace.id)
         if !newTab, let existing { selectPage(existing.id, in: workspace.id) }
         else { _ = addPage(to: workspace.id, url: target) }
@@ -63,27 +63,61 @@ extension BrowserStore {
     }
 }
 
+struct FavoriteSection:Identifiable {
+    var id:String {category}
+    let category:String
+    var title:String {category.isEmpty ? "未分類":category}
+    let links:[FavoriteLink]
+}
+extension BrowserStore {
+    func favoriteSections(_ input:[FavoriteLink]? = nil)->[FavoriteSection] {
+        let grouped=Dictionary(grouping:input ?? favorites,by:{$0.category.trimmingCharacters(in:.whitespacesAndNewlines)})
+        let categories=notion.state.cache?.sources.flatMap(\.categories) ?? []
+        func rank(_ name:String)->Double {categories.filter{$0.name.trimmingCharacters(in:.whitespacesAndNewlines) == name}.compactMap(\.order).min() ?? .infinity}
+        let names=grouped.keys.sorted {a,b in
+            if a.isEmpty != b.isEmpty {return !a.isEmpty}
+            if rank(a) != rank(b) {return rank(a)<rank(b)}
+            return a.localizedStandardCompare(b) == .orderedAscending
+        }
+        return names.map {name in FavoriteSection(category:name,links:grouped[name]!.sorted {a,b in
+            if a.pinned != b.pinned {return a.pinned}
+            if (a.order ?? .infinity) != (b.order ?? .infinity) {return (a.order ?? .infinity)<(b.order ?? .infinity)}
+            let comparison=a.title.localizedStandardCompare(b.title)
+            return comparison == .orderedSame ? a.id.uuidString<b.id.uuidString:comparison == .orderedAscending
+        })}
+    }
+    func launcherIconPath(_ file:String?)->String? {
+        guard let file,!file.isEmpty,file == URL(fileURLWithPath:file).lastPathComponent else{return nil}
+        let url=directory.appendingPathComponent("Icons").appendingPathComponent(file)
+        return FileManager.default.fileExists(atPath:url.path) ? url.path:nil
+    }
+}
+
 struct FavoritesLauncher: View {
     @ObservedObject var store: BrowserStore
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
-    @State private var category = ""
+    @State private var category:String? = nil
     @State private var draft: FavoriteLink?
     @State private var deleting: FavoriteLink?
     @State private var selection: UUID?
     @FocusState private var searchFocused: Bool
     @FocusState private var listFocused: Bool
-    private var categories: [String] { Array(Set(store.favorites.map(\.category).filter { !$0.isEmpty })).sorted() }
-    private var links: [FavoriteLink] {
-        let words = query.split(whereSeparator: { $0.isWhitespace }).map(String.init)
-        return store.favorites.filter { link in
-            let text = [link.title, link.url, link.category, store.favoriteWorkspace(link)?.name ?? ""].joined(separator: " ")
-            return (category.isEmpty || category == link.category) && words.allSatisfy { text.localizedCaseInsensitiveContains($0) }
-        }.sorted { a,b in
-            if a.pinned != b.pinned {return a.pinned}
-            if (a.order ?? .infinity) != (b.order ?? .infinity) {return (a.order ?? .infinity)<(b.order ?? .infinity)}
-            return a.title.localizedStandardCompare(b.title) == .orderedAscending
-        }
+    private var categories:[FavoriteSection] {store.favoriteSections()}
+    private var sections:[FavoriteSection] {
+        let words=query.split(whereSeparator:{$0.isWhitespace}).map(String.init)
+        return store.favoriteSections(store.favorites.filter {link in
+            let name=link.category.trimmingCharacters(in:.whitespacesAndNewlines)
+            let text=[link.title,link.url,name,store.favoriteWorkspace(link)?.name ?? ""].joined(separator:" ")
+            return (category == nil || category == name) && words.allSatisfy{text.localizedCaseInsensitiveContains($0)}
+        })
+    }
+    private var links:[FavoriteLink] {sections.flatMap(\.links)}
+    private func cycleCategory(_ offset:Int) {
+        let values:[String?]=[nil]+categories.map{Optional($0.category)}
+        let current=values.firstIndex(where:{$0 == category}) ?? 0
+        category=values[(current+offset+values.count)%values.count]
+        selection=links.first?.id;listFocused=true
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -97,8 +131,8 @@ struct FavoritesLauncher: View {
                 .onSubmit { if let link = links.first(where: { $0.id == selection }) ?? links.first { _ = store.openFavorite(link) } }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack {
-                    categoryButton("すべて", value: "")
-                    ForEach(categories, id: \.self) { categoryButton($0, value: $0) }
+                    categoryButton("すべて", value: nil)
+                    ForEach(categories) { categoryButton($0.title, value: $0.category) }
                 }
             }
             if links.isEmpty {
@@ -108,7 +142,9 @@ struct FavoritesLauncher: View {
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(selection: $selection) {
-                    ForEach(links) { link in
+                    ForEach(sections) { section in
+                        Section(section.title) {
+                    ForEach(section.links) { link in
                         HStack(spacing: 10) {
                             Button { _ = store.openFavorite(link) } label: {
                                 HStack(spacing: 10) {
@@ -136,13 +172,17 @@ struct FavoritesLauncher: View {
                             Divider(); Button("削除…", role: .destructive) { deleting = link }
                         }
                     }
+                        }
+                    }
                 }.listStyle(.inset).focused($listFocused)
+                    .onKeyPress(.leftArrow){cycleCategory(-1);return .handled}
+                    .onKeyPress(.rightArrow){cycleCategory(1);return .handled}
                     .onKeyPress(.return) {
                         if let link=links.first(where:{$0.id == selection}) {_ = store.openFavorite(link)}
                         return .handled
                     }
             }
-            Text("CategoriesのWorkspace IDを優先し、未設定ならCategory名で開く先を判定します。")
+            Text("← →でカテゴリ切り替え · ↑↓で選択 · Enterで開く")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(20).frame(width: 740, height: 510)
             .onAppear { selection=links.first?.id;listFocused=true }
@@ -154,7 +194,7 @@ struct FavoritesLauncher: View {
                 Button("削除", role: .destructive) { if let link = deleting { store.deleteFavorite(link.id) }; deleting = nil }
             } message: { Text((deleting?.title ?? "") + (deleting?.notionPageID != nil ? "\nNotionの該当ページもゴミ箱へ移動します。":"")) }
     }
-    private func categoryButton(_ title: String, value: String) -> some View {
+    private func categoryButton(_ title: String, value: String?) -> some View {
         Button(title) { category = value; selection = links.first?.id }
             .buttonStyle(.plain).padding(.horizontal, 10).padding(.vertical, 5)
             .background(category == value ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08), in: Capsule())

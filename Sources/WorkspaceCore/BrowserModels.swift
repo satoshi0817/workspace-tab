@@ -14,9 +14,16 @@ public struct BrowserPage: Codable, Identifiable, Equatable {
     public var pinnedDisplay: String?
     public var tabName: String?
     public var tabEmoji: String?
+    public var tabIconFile: String?
+    public var groupID: UUID?
     public var displayTitle: String {tabName?.isEmpty == false ? tabName! : title}
     public var iconOnly: Bool {pinned == true && pinnedDisplay != "name"}
     public init(url: String) { self.url = url }
+}
+public struct BrowserTabGroup: Codable, Identifiable, Equatable {
+    public var id: UUID
+    public var name: String
+    public init(id:UUID = UUID(),name:String) {self.id=id;self.name=name}
 }
 public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var id: UUID = UUID()
@@ -30,10 +37,25 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var homeURL: String = "https://app.notion.com"
     public var notionSpaceID: String?
     public var notionAutoRoute: Bool?
+    public var previewEnabled: Bool?
     public var cssEnabled = false
     public var cssStrength: Double = 0.18
     public var pages: [BrowserPage]
     public var selectedPageID: UUID?
+    public var tabGroups: [BrowserTabGroup]?
+    public var visibleTabGroupID: UUID?
+    public var resolvedTabGroups: [BrowserTabGroup] {
+        let groups=tabGroups ?? []
+        return groups.contains(where:{$0.id == id}) ? groups:[BrowserTabGroup(id:id,name:"メイン")]+groups
+    }
+    public func groupID(for page:BrowserPage)->UUID {
+        guard let group=page.groupID,resolvedTabGroups.contains(where:{$0.id == group}) else{return id}
+        return group
+    }
+    public var visibleGroupID:UUID {
+        guard let group=visibleTabGroupID,resolvedTabGroups.contains(where:{$0.id == group}) else{return id}
+        return group
+    }
     public init(name: String, profileID: UUID, url: String = "https://app.notion.com") {
         self.name = name; self.profileID = profileID; self.homeURL = url
         let page = BrowserPage(url: url); pages = [page]; selectedPageID = page.id
@@ -59,6 +81,7 @@ public struct FavoriteLink: Codable, Identifiable, Equatable {
     }
 }
 public struct BrowserSession: Codable, Equatable {
+    public var previewEnabled: Bool?
     public var favorites: [FavoriteLink]?
     public var splitWorkspaceID: UUID?
     public var splitPageID: UUID?

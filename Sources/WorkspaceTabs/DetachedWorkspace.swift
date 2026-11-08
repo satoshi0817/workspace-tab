@@ -16,6 +16,7 @@ extension BrowserStore {
         changed();notify("「\(workspace.name)」を切り離しました")
     }
     func reattachWorkspace(_ id: UUID, activate: Bool = true) {
+        defer {if activate {selectionChanged()}}
         guard let controller=detachedControllers.removeValue(forKey:id) else {return}
         controller.window.delegate=nil
         controller.window.contentView=nil
@@ -29,6 +30,7 @@ extension BrowserStore {
         changed()
     }
     func detachedWindowClosed(_ id: UUID) {
+        defer {selectionChanged()}
         guard let controller=detachedControllers.removeValue(forKey:id) else {return}
         controller.window.contentView=nil
         detachedWorkspaceIDs.remove(id)
@@ -44,7 +46,7 @@ extension BrowserStore {
     let workspaceID: UUID
     init(store: BrowserStore, workspaceID: UUID, title: String) {
         self.store=store;self.workspaceID=workspaceID
-        window=NSWindow(contentRect:NSRect(x:160,y:160,width:1100,height:760),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
+        window=BrowserWindow(contentRect:NSRect(x:160,y:160,width:1100,height:760),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
         super.init()
         window.title=title+" — Workspace Tabs";window.isReleasedWhenClosed=false
         window.minSize=NSSize(width:560,height:400);window.collectionBehavior=[.fullScreenPrimary]
@@ -67,7 +69,7 @@ struct DetachedWorkspaceView: View {
             if let workspace=store.workspace(workspaceID), let pageID=workspace.selectedPageID {
                 BrowserPane(store:store,workspaceID:workspaceID,pageID:pageID,isRight:false,detached:true)
             }
-        }.frame(minWidth:560,minHeight:400)
+        }.frame(minWidth:560,minHeight:400).overlay {RecentTabsOverlay(store:store)}
             .overlay(alignment:.bottom) {
                 if let notice=store.notice {
                     Text(notice).font(.callout).padding(12).background(.regularMaterial,in:Capsule())

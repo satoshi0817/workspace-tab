@@ -12,9 +12,22 @@ public enum BrowserStyle {
           if (!\(enabled ? "true" : "false") || location.protocol !== 'https:' ||
               !['app.notion.com','app.dev.notion.com','www.notion.so','notion.so','www.notion.com'].includes(location.hostname)) return;
           const style = document.createElement('style'); style.id = id;
-          style.textContent = `.notion-sidebar-container { background-color: color-mix(in srgb, \(color) \(amount)%, #ffffff) !important; }
-          @media (prefers-color-scheme: dark) { .notion-sidebar-container { background-color: color-mix(in srgb, \(color) \(amount)%, #191919) !important; } }
-          body.dark .notion-sidebar-container, .dark .notion-sidebar-container { background-color: color-mix(in srgb, \(color) \(amount)%, #191919) !important; }`;
+          // ConsoleContainer's first column contains BaseSidebar and its account footer.
+          const sidebar = ':is(.notion-sidebar-container, [data-testid="settings-console-container"] > div:first-child)';
+          const consoleSidebar = '[data-testid="settings-console-container"] > div:first-child';
+          style.textContent = `
+          ${sidebar} {
+            --workspace-tabs-sidebar-color: color-mix(in srgb, \(color) \(amount)%, #ffffff);
+            background-color: var(--workspace-tabs-sidebar-color) !important;
+          }
+          ${consoleSidebar} { --c-bacSec: var(--workspace-tabs-sidebar-color); }
+          ${consoleSidebar} > div { background-color: var(--workspace-tabs-sidebar-color) !important; }
+          @media (prefers-color-scheme: dark) {
+            ${sidebar} { --workspace-tabs-sidebar-color: color-mix(in srgb, \(color) \(amount)%, #191919); }
+          }
+          body.dark ${sidebar}, .dark ${sidebar} {
+            --workspace-tabs-sidebar-color: color-mix(in srgb, \(color) \(amount)%, #191919);
+          }`;
           (document.head || document.documentElement).appendChild(style);
         })();
         """

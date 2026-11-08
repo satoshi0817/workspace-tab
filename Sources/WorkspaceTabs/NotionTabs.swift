@@ -43,8 +43,10 @@ extension NotionLibrary {
                     session.workspaces[i].pages[j].url=BrowserAddress.url(session.workspaces[i].pages[j].url).map(BrowserAddress.savedURL) ?? "about:blank"
                 }
             }
-            if let name=session.workspaces[i].iconFile,name == URL(fileURLWithPath:name).lastPathComponent,
-               let image=NSImage(contentsOf:store.directory.appendingPathComponent("Icons").appendingPathComponent(name)) {
+            let iconNames=[session.workspaces[i].iconFile].compactMap{$0}+session.workspaces[i].pages.compactMap(\.tabIconFile)
+            for name in Set(iconNames) {
+                guard name == URL(fileURLWithPath:name).lastPathComponent,
+                      let image=store.iconCache.image(directory:store.directory,name:name) else{continue}
                 let small=NSImage(size:NSSize(width:48,height:48));small.lockFocus();image.draw(in:NSRect(x:0,y:0,width:48,height:48));small.unlockFocus()
                 if let data=small.tiffRepresentation,let bitmap=NSBitmapImageRep(data:data),let png=bitmap.representation(using:.png,properties:[:]) {icons[name]=png}
             }

@@ -34,10 +34,13 @@ struct TabDragHandle:NSViewRepresentable {
             guard let content=window?.contentView else{return nil}
             func find(_ view:NSView)->Handle? {
                 guard !view.isHidden else{return nil}
-                let local=view.convert(point,from:nil)
-                guard view.visibleRect.contains(local) else{return nil}
+                // SwiftUI may place interactive descendants outside a layout
+                // wrapper's bounds. Do not reject the whole subtree at that wrapper.
                 for child in view.subviews.reversed() {if let target=find(child) {return target}}
-                return view as? Handle
+                guard let handle=view as? Handle else{return nil}
+                let local=handle.convert(point,from:nil)
+                guard handle.bounds.contains(local),handle.visibleRect.contains(local) else{return nil}
+                return handle
             }
             return find(content)
         }

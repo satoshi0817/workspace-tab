@@ -27,25 +27,29 @@ struct BrowserRoot: View {
                 }
             }
         }.frame(minWidth: 800, minHeight: 520)
+            .overlay {RecentTabsOverlay(store:store)}
+            .overlay(alignment:.topTrailing) {if store.networkOffline {Label("オフライン",systemImage:"wifi.slash").font(.caption).padding(8).background(.regularMaterial,in:Capsule()).padding(8).allowsHitTesting(false)}}
             .overlay(alignment: .bottom) {
                 if let notice=store.notice {
-                    Label(notice,systemImage:"checkmark.circle.fill").font(.callout)
+                    Label(notice,systemImage:store.noticeIsError ? "exclamationmark.circle.fill":"checkmark.circle.fill").font(.callout)
                         .padding(.horizontal,16).padding(.vertical,10).background(.regularMaterial,in:Capsule())
                         .shadow(radius:4,y:2).padding(.bottom,20).allowsHitTesting(false)
                 }
             }
-            .sheet(isPresented: $store.favoritesPresented) { FavoritesLauncher(store: store) }
-            .sheet(item: $store.favoriteDraft) { draft in FavoriteEditor(store: store, draft: draft) }
-            .sheet(item:$store.editingBrowserTab) {ref in
+            .sheet(isPresented: $store.favoritesPresented,onDismiss:store.restorePanelFocus) { FavoritesLauncher(store: store) }
+            .sheet(item: $store.favoriteDraft,onDismiss:store.restorePanelFocus) { draft in FavoriteEditor(store: store, draft: draft) }
+            .sheet(item:$store.editingBrowserTab,onDismiss:store.restorePanelFocus) {ref in
                 if let page=store.page(ref) {BrowserTabEditor(store:store,workspaceID:ref.workspaceID,draft:page)}
             }
-            .sheet(isPresented: $store.helpPresented) { BrowserHelp() }
-            .sheet(isPresented: $store.showSettings) { BrowserSettings(store: store) }
-            .sheet(item: Binding(get: { store.editingWorkspace.flatMap { store.workspace($0) } }, set: { if $0 == nil { store.editingWorkspace = nil } })) { workspace in
+            .sheet(isPresented:Binding(get:{store.pendingExternalURL != nil},set:{if !$0 {store.pendingExternalURL=nil}}),onDismiss:store.restorePanelFocus) {ExternalLinkPicker(store:store)}
+            .sheet(isPresented:$store.onboardingPresented,onDismiss:store.restorePanelFocus) {BrowserOnboarding(store:store,firstRun:true)}
+            .sheet(isPresented: $store.helpPresented,onDismiss:store.restorePanelFocus) { BrowserHelp(store:store) }
+            .sheet(isPresented: $store.showSettings,onDismiss:store.restorePanelFocus) { BrowserSettings(store: store) }
+            .sheet(item: Binding(get: { store.editingWorkspace.flatMap { store.workspace($0) } }, set: { if $0 == nil { store.editingWorkspace = nil } }),onDismiss:store.restorePanelFocus) { workspace in
                 WorkspaceEditor(store: store, draft: workspace)
             }
-            .sheet(isPresented: $store.searchPresented) { AllTabsPicker(store:store) }
-            .sheet(isPresented: $store.commandsPresented) { CommandPicker(store:store) }
+            .sheet(isPresented: $store.searchPresented,onDismiss:store.restorePanelFocus) { AllTabsPicker(store:store) }
+            .sheet(isPresented: $store.commandsPresented,onDismiss:store.restorePanelFocus) { CommandPicker(store:store) }
             .alert("Workspace Tabs",isPresented:Binding(get:{store.error != nil},set:{if !$0 {store.error=nil}})) {
                 Button("閉じる") {store.error=nil}
             } message: {Text(store.error ?? "")}
@@ -107,8 +111,8 @@ struct BrowserRoot: View {
 
                     }
                 }.padding(3)
-            }
-            if !horizontal {WindowDragArea().frame(minHeight:20,maxHeight:.infinity)}
+            }.frame(maxHeight:horizontal ? nil:.infinity)
+            if !horizontal {WindowDragArea().frame(height:20)}
             let buttons=icons ? AnyLayout(VStackLayout(spacing:8)):AnyLayout(HStackLayout(spacing:8))
             buttons {
                 Button {let id=store.addWorkspace();store.editingWorkspace=id} label:{Image(systemName:"plus").frame(width:24,height:26)}.help("アプリタブを追加")
@@ -156,9 +160,10 @@ struct BrowserPane: View {
         if let engine=store.engine(workspaceID,pageID),let workspace=store.workspace(workspaceID) {
             VStack(spacing:0) {
                 HStack(spacing:6) {
+                    BrowserGroupPicker(store:store,workspace:workspace)
                     ScrollView(.horizontal,showsIndicators:false) {
                         HStack(spacing:4) {
-                            ForEach(store.orderedPages(in:workspaceID)) {page in
+                            ForEach(store.visibleGroupPages(in:workspaceID)) {page in
                                 BrowserTabButton(store:store,workspace:workspace,page:page,selected:page.id == pageID,isRight:isRight,detached:detached)
                             }
                             Button {
@@ -167,17 +172,18 @@ struct BrowserPane: View {
                                 .help("この環境にブラウザタブを追加").accessibilityLabel("ブラウザタブを追加")
                         }.padding(.horizontal,6).padding(.vertical,5)
                     }
+                    WorkspaceIdentityBadge(engine:engine)
                     Button {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID);store.addressFocus=UUID()} label:{Image(systemName:"link")}.help("URLを表示").accessibilityLabel("URLを表示")
                     if detached {Button("元に戻す") {store.reattachWorkspace(workspaceID)}.help("アプリタブを元のウインドウに戻す")}
                     else if isRight {
                         Button {store.swapSplit()} label:{Image(systemName:"arrow.left.arrow.right")}.help("左右を入れ替え")
                         Button {store.setSplit(nil)} label:{Image(systemName:"rectangle")}.help("Split Viewを解除")
                     } else {SplitPicker(store:store)}
-                }.buttonStyle(.plain).padding(.trailing,10)
+                }.background(TabGroupScrollArea(enabled:workspace.resolvedTabGroups.count>1) {offset in store.cycleTabGroup(offset,in:workspaceID)}.frame(height:42))
+                    .buttonStyle(.plain).padding(.trailing,10)
                     .foregroundStyle(Palette.ink(workspace.color)).background(Palette.color(workspace.color))
                 BrowserNavigation(store:store,engine:engine,isRight:isRight)
-                BrowserFailure(engine:engine)
-                WebContent(webView:engine.webView,store:store,workspaceID:workspaceID,detached:detached).frame(maxWidth:.infinity,maxHeight:.infinity)
+                BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
             }.simultaneousGesture(TapGesture().onEnded {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID)})
         }
     }
@@ -255,8 +261,72 @@ private final class DragAreaView:NSView {
 struct BrowserFailure:View {
     @ObservedObject var engine:BrowserEngine
     var body:some View {
-        if let failure=engine.failure {
-            HStack {Text(failure).font(.caption).lineLimit(3);Spacer();Button("再読み込み") {engine.webView.reload()}}.padding(8).background(Color.orange.opacity(0.12))
+        if let failure=engine.failure,engine.previewImage == nil {
+            HStack {Text(failure).font(.caption).lineLimit(3);Spacer();Button("再読み込み") {engine.retryPreview()}}.padding(8).background(Color.orange.opacity(0.12))
+        }
+    }
+}
+
+struct BrowserSurface:View {
+    let store:BrowserStore
+    @ObservedObject var engine:BrowserEngine
+    let detached:Bool
+    var body:some View {
+        VStack(spacing:0) {
+            if engine.workspaceMismatch {
+                HStack(spacing:8) {
+                    Image(systemName:"exclamationmark.triangle")
+                    Text("設定と異なるワークスペースを表示しています").font(.caption)
+                    Spacer()
+                    Button("一致する環境で開く"){engine.openMatchingWorkspace()}
+                    Button("設定"){store.editingWorkspace=engine.workspaceID}
+                }.padding(8).background(Color.orange.opacity(0.15))
+            }
+            BrowserFailure(engine:engine)
+            ZStack(alignment:.bottom) {
+                WebContent(webView:engine.webView,store:store,workspaceID:engine.workspaceID,detached:detached)
+                    .allowsHitTesting(engine.previewImage == nil)
+                    .accessibilityHidden(engine.previewImage != nil)
+                if let image=engine.previewImage {
+                    GeometryReader { geometry in
+                        Image(nsImage:image).resizable().scaledToFit()
+                            .frame(width:geometry.size.width,height:geometry.size.height,alignment:.top)
+                            .background(Color(nsColor:.windowBackgroundColor))
+                            .clipped()
+                    }.accessibilityLabel("前回表示した画面のプレビュー")
+                }
+                if engine.previewPhase != .none {
+                    HStack(spacing:8) {
+                        if engine.previewPhase == .loading {
+                            ProgressView().controlSize(.small)
+                            Text("最新情報を取得中")
+                        } else if engine.previewPhase == .updated {
+                            Image(systemName:"checkmark.circle.fill").foregroundStyle(.green)
+                            Text("表示を更新しました")
+                        } else {
+                            Image(systemName:"exclamationmark.circle")
+                            Text("読み込めませんでした")
+                            Button("再試行"){engine.retryPreview()}
+                        }
+                        if engine.previewImage != nil {
+                            Text("前回の画面").foregroundStyle(.secondary).help(engine.previewCapturedAt.map{DateFormatter.localizedString(from:$0,dateStyle:.short,timeStyle:.short)} ?? "保存日時不明")
+                            Button {engine.dismissPreview()} label:{Image(systemName:"xmark")}
+                                .help("プレビューを閉じる")
+                        }
+                    }.font(.caption).padding(.horizontal,14).padding(.vertical,9)
+                        .background(.regularMaterial,in:Capsule()).padding(.bottom,42)
+                }
+            }.frame(maxWidth:.infinity,maxHeight:.infinity)
+        }.onAppear {engine.prepareForDisplay()}
+    }
+}
+
+struct WorkspaceIdentityBadge:View {
+    @ObservedObject var engine:BrowserEngine
+    var body:some View {
+        if let label=engine.workspaceIdentityLabel {
+            Image(systemName:engine.workspaceMismatch ? "exclamationmark.shield" : engine.detectedNotionSpaceID == nil ? "questionmark.circle" : "checkmark.shield")
+                .help(label).accessibilityLabel(label)
         }
     }
 }

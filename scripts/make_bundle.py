@@ -11,7 +11,7 @@ info = {
     "CFBundlePackageType": "APPL",
     "CFBundleShortVersionString": "0.2.0",
     "CFBundleVersion": "3",
-    "CFBundleURLTypes": [{"CFBundleURLName": "Workspace Tabs Launcher", "CFBundleURLSchemes": ["workspacetabs"]}],
+    "CFBundleURLTypes": [{"CFBundleURLName": "Workspace Tabs Launcher", "CFBundleURLSchemes": ["workspacetabs"]}, {"CFBundleURLName": "Web Links", "CFBundleTypeRole": "Viewer", "CFBundleURLSchemes": ["http", "https"]}],
     "CFBundleIconFile": "AppIcon",
     "LSMinimumSystemVersion": "14.0",
     "NSHighResolutionCapable": True,

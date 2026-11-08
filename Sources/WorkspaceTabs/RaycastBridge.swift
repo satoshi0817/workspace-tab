@@ -7,6 +7,8 @@ struct LauncherEntry: Codable, Equatable {
     var subtitle:String
     var emoji:String
     var workspaceID:String?
+    var category:String?
+    var iconPath:String?
 }
 struct LauncherIndex: Codable, Equatable {
     var version = 1
@@ -44,10 +46,13 @@ extension BrowserStore {
     func exportLauncherIndex() {
         let token=launcherToken
         guard !token.isEmpty else{return}
-        let workspaces=session.workspaces.map{LauncherEntry(id:$0.id.uuidString,title:$0.name,subtitle:"アプリタブ",emoji:$0.emoji)}
-        let tabs=tabSearchRows("").map{LauncherEntry(id:$0.id.uuidString,title:$0.page.displayTitle,subtitle:$0.workspace.name,emoji:$0.page.tabEmoji ?? $0.workspace.emoji,workspaceID:$0.workspace.id.uuidString)}
-        let favorites=favorites.sorted{if $0.pinned != $1.pinned{return $0.pinned};return ($0.order ?? .infinity)<($1.order ?? .infinity)}.map{link in LauncherEntry(id:link.id.uuidString,title:link.title,subtitle:favoriteWorkspace(link)?.name ?? "開く先が未設定",emoji:link.emoji,workspaceID:favoriteWorkspace(link)?.id.uuidString)}
-        let commands=ShortcutPreferences.actions.filter{Self.launcherCommandIDs.contains($0.id)}.map{LauncherEntry(id:$0.id,title:$0.title,subtitle:ShortcutPreferences.shared.binding($0).label,emoji:"")}
+        let workspaces=session.workspaces.map{LauncherEntry(id:$0.id.uuidString,title:$0.name,subtitle:"アプリタブ",emoji:$0.emoji,iconPath:launcherIconPath($0.iconFile))}
+        let tabs=tabSearchRows("").map{LauncherEntry(id:$0.id.uuidString,title:$0.page.displayTitle,subtitle:$0.workspace.name,emoji:$0.page.tabEmoji ?? $0.workspace.emoji,workspaceID:$0.workspace.id.uuidString,iconPath:launcherIconPath($0.workspace.iconFile))}
+        let favorites=favoriteSections().flatMap {section in section.links.map {link in
+            LauncherEntry(id:link.id.uuidString,title:link.title,subtitle:favoriteWorkspace(link)?.name ?? "開く先が未設定",emoji:link.emoji,workspaceID:favoriteWorkspace(link)?.id.uuidString,category:section.title,iconPath:launcherIconPath(link.iconFile))
+        }}
+        var commands=ShortcutPreferences.actions.filter{Self.launcherCommandIDs.contains($0.id)}.map{LauncherEntry(id:$0.id,title:$0.title,subtitle:ShortcutPreferences.shared.binding($0).label,emoji:"")}
+        commands += worksets.map{LauncherEntry(id:"workset:"+$0.id.uuidString,title:$0.name,subtitle:"作業セットを開く",emoji:"")}
         let index=LauncherIndex(token:token,workspaces:workspaces,tabs:tabs,favorites:favorites,commands:commands)
         guard index != lastLauncherIndex else{return}
         let file=directory.appendingPathComponent("raycast-index.json")
@@ -65,7 +70,22 @@ extension AppDelegate {
         guard store != nil else {pendingLauncherURLs.append(contentsOf:urls);return}
         for url in urls {handleLauncherURL(url)}
     }
+    static func externalNotionURL(_ url:URL)->URL? {
+        if NotionWorkspace.environment(url) != nil,BrowserAddress.url(url.absoluteString) != nil {return url}
+        guard url.scheme == "workspacetabs",url.host == "open",url.path.isEmpty,
+              let parts=URLComponents(url:url,resolvingAgainstBaseURL:false),let items=parts.queryItems,
+              items.count == 1,items[0].name == "url",let value=items[0].value,
+              let target=BrowserAddress.url(value),NotionWorkspace.environment(target) != nil else{return nil}
+        return target
+    }
     func handleLauncherURL(_ url:URL) {
+        if let external=Self.externalNotionURL(url) {
+            guard window.attachedSheet == nil else{store.notify("ダイアログを閉じてからリンクを開いてください",isError:true);return}
+            show();store.openExternalNotion(external);return
+        }
+        if ["http","https"].contains(url.scheme ?? ""),let safari=NSWorkspace.shared.urlForApplication(withBundleIdentifier:"com.apple.Safari") {
+            NSWorkspace.shared.open([url],withApplicationAt:safari,configuration:NSWorkspace.OpenConfiguration());return
+        }
         guard let request=LauncherRequest.parse(url,token:store.launcherToken) else{return}
         guard window.attachedSheet == nil else {store.notify("開いているダイアログを閉じてから再実行してください");return}
         let original=store.commandPage
@@ -80,6 +100,9 @@ extension AppDelegate {
             guard let id=UUID(uuidString:request.id),let link=store.favorites.first(where:{$0.id == id}) else {store.notify("お気に入りが見つかりません");return}
             show();_ = store.openFavorite(link)
         case "command":
+            if request.id.hasPrefix("workset:"),let id=UUID(uuidString:String(request.id.dropFirst(8))) {
+                show();_=store.restoreWorkset(id);return
+            }
             guard BrowserStore.launcherCommandIDs.contains(request.id) else{return}
             var target=original
             if let id=request.workspaceID {

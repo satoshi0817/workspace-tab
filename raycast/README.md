@@ -18,3 +18,10 @@ RaycastのExtensions設定で各コマンドにHotkey / Aliasを割り当てら�
 
 `~/Library/Application Support/WorkspaceTabs/raycast-index.json` は所有者のみ読み書き可能です。
 URLにはローカル連携用トークンを含むため共有しないでください。任意URL・JavaScriptの実行は受け付けません。
+
+お気に入りはカテゴリ別に表示し、CategoriesのOrder順、各カテゴリ内はピン留め・リンクのOrder・名前順です。未分類は最後に表示します。⌘←／⌘→でカテゴリを切り替え、検索欄の左右キーは文字カーソルの移動に使います。画像アイコンを優先し、なければ絵文字を表示します。
+
+
+作業セットはアプリの「設定 → 作業」で保存すると、Run Commandの一覧に表示されます。現在のタブを残したまま復元します。
+
+Open Notion LinkはNotion URLを引数で受け取り、対応する環境で開きます。判定できなければアプリで環境を選択します。

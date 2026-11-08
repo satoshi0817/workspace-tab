@@ -3,10 +3,11 @@ import WebKit
 import WorkspaceCore
 
 @MainActor enum BrowserCommands {
-    static let ids:Set<String>=["commands","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionSearch"]
+    static let ids:Set<String>=["commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionSearch","notionSettings"]
 }
 extension BrowserStore {
     func openCommands() {
+        capturePanelFocus()
         commandTarget=commandPage
         window?.makeKeyAndOrderFront(nil)
         commandsPresented=true
@@ -20,8 +21,32 @@ extension BrowserStore {
             web.window?.makeKeyAndOrderFront(nil);web.window?.makeFirstResponder(web)
         }
     }
+    @discardableResult func openNotionActionTab(_ action:String,from source:PageReference)->BrowserEngine? {
+        guard NotionActions.creationIDs.contains(action),let sourcePage=page(source),let workspace=workspace(source.workspaceID) else{return nil}
+        if let engine=engine(source.workspaceID,source.pageID),engine.workspaceMismatch {
+            notify("別のワークスペースを表示しています。正しい環境に移動してから作成してください",isError:true);return nil
+        }
+        let sourceURL: String
+        if NotionWorkspace.normalizedID(workspace.notionSpaceID) != nil,
+           engine(source.workspaceID,source.pageID)?.detectedNotionSpaceID == nil {
+            sourceURL=workspace.homeURL
+        } else {sourceURL=sourcePage.url}
+        let inSplit=split == source
+        let leftPageID=selectedPage?.id
+        guard let child=addPage(to:source.workspaceID,url:sourceURL,load:false,groupID:workspace.groupID(for:sourcePage)) else{return nil}
+        child.navigate(sourceURL,notionAction:action)
+        let destination=PageReference(workspaceID:child.workspaceID,pageID:child.pageID)
+        if inSplit {
+            if session.selectedWorkspaceID == source.workspaceID,let leftPageID {selectPage(leftPageID,in:source.workspaceID)}
+            setSplit(destination)
+        }
+        focusedPage=destination
+        notify("新しいタブでNotionを準備しています")
+        return child
+    }
     func runCommand(_ id:String,target:PageReference? = nil) {
         let ref=target ?? commandPage
+        if id == "recentTabs" {cycleRecentTabs();return}
         if id == "commands" {openCommands();return}
         if id == "allTabs" {searchForSplit=false;searchPresented=true;return}
         if id == "lastWorkspace" {
@@ -55,41 +80,80 @@ extension BrowserStore {
             let title=page.displayTitle.replacingOccurrences(of:"\\",with:"\\\\").replacingOccurrences(of:"[",with:"\\[").replacingOccurrences(of:"]",with:"\\]").replacingOccurrences(of:"\n",with:" ")
             let url=page.url.replacingOccurrences(of:"(",with:"%28").replacingOccurrences(of:")",with:"%29")
             NSPasteboard.general.clearContents();NSPasteboard.general.setString("[\(title)](\(url))",forType:.string);notify("タイトル付きリンクをコピーしました")
-        case "notionChat","notionPage","notionMeeting","notionSearch":
-            guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify("Notionを表示しているタブで実行してください");return}
-            engine.webView.callAsyncJavaScript(NotionActions.script,arguments:["action":id],in:nil,in:.page) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let value):
-                        let response=value as? [String:Any]
-                        self?.notify(response?["message"] as? String ?? "操作対象を見つけられませんでした")
-                    case .failure: self?.notify("Notionの操作を実行できませんでした。読み込み完了後にお試しください")
-                    }
-                }
-            }
+        case "notionChat","notionPage","notionMeeting","notionSearch","notionSettings":
+            guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify("Notionを表示しているタブで実行してください",isError:true);return}
+            if NotionActions.creationIDs.contains(id) {
+                _=openNotionActionTab(id,from:ref)
+            } else {engine.runNotionAction(id)}
         default:break
         }
     }
 }
 enum NotionActions {
+    static let creationIDs:Set<String>=["notionChat","notionPage","notionMeeting"]
     // Only visible, uniquely named controls are used. No private APIs, credentials,
     // automatic recording, or generic New buttons in an unrelated database.
-    static let script = #"""
-    if (location.protocol !== 'https:' || !['app.notion.com','app.dev.notion.com','notion.so','www.notion.so'].includes(location.hostname)) return {message:'Notionのページで実行してください'};
+    static let script = "const readWorkspaceIdentity=()=>"+NotionWorkspace.detectionScript+";\n" + #"""
+    if (location.protocol !== 'https:' || !['app.notion.com','app.dev.notion.com','notion.so','www.notion.so'].includes(location.hostname)) return {ok:false,message:'Notionのページで実行してください'};
     const visible=e=>e.getClientRects().length>0 && getComputedStyle(e).visibility!=='hidden' && !e.disabled && e.getAttribute('aria-disabled')!=='true';
-    const find=names=>[...document.querySelectorAll('button,[role="button"],[role="tab"],a')].filter(e=>visible(e) && names.some(n=>[e.getAttribute('aria-label'),e.getAttribute('title'),e.textContent?.trim()].includes(n)));
-    const click=names=>{for(const name of names){const found=find([name]);if(found.length===1){found[0].click();return true;}}return false;};
-    const names={notionChat:['New chat','Start new chat','新しいチャット','新規チャット'],notionPage:['New page','新規ページ','新しいページ'],notionSearch:['Search or ask','Search','検索する・質問する','検索'],notionMeeting:['New meeting note','New meeting notes','新しいミーティングノート','新規ミーティングノート']};
-    const done={notionChat:'新しいAIチャットを開きました',notionPage:'新規ページの作成画面を開きました',notionSearch:'Notionの検索を開きました',notionMeeting:'ミーティングノートの作成画面を開きました'};
-    if (click(names[action] || [])) return {message:done[action]};
-    if (action==='notionChat' || action==='notionMeeting') {
-      const section=action==='notionChat'?['Chat','チャット']:['Meetings','ミーティング'];
-      const tabs=[...document.querySelectorAll('[role="tab"]')].filter(e=>visible(e) && [e.getAttribute('aria-label'),e.textContent?.trim()].some(label=>section.includes(label)));
-      if(tabs.length===1) {
-        tabs[0].click();
-        for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,150));if(click(names[action]))return {message:done[action]};}
-      }
-    }
-    return {message:'対応する操作を一意に見つけられませんでした。Notionのサイドバーや権限を確認してください'};
+    const normalize=s=>(s||'').replace(/\s+/g,' ').trim();
+    const labels=e=>[e.getAttribute('aria-label'),e.getAttribute('title'),e.textContent].map(normalize);
+    const names={notionChat:['New chat','Start new chat','新しいチャット','新規チャット'],notionPage:['New page','新規ページ','新しいページ'],notionSearch:['Search or ask','Search','検索する・質問する','検索'],notionSettings:['Settings','Settings & members','設定','設定とメンバー','設定・メンバー'],notionMeeting:['New meeting note','New meeting notes','新しいミーティングノート','新規ミーティングノート']};
+    const done={notionChat:'新しいAIチャットを開きました',notionPage:'新規ページの作成画面を開きました',notionSearch:'Notionの検索を開きました',notionSettings:'Notionの設定を開きました',notionMeeting:'ミーティングノートの作成画面を開きました'};
+    if (!names[action]) return {ok:false,message:'未対応のNotion操作です'};
+    const started=performance.now();
+    const loadingNewTab=typeof waitForReady!=='undefined' && waitForReady;
+    return await new Promise(resolve=>{
+      let finished=false,sidebarOpened=false,sectionOpened=false,menuOpened=false,frame=0;
+      let observer,timer,fallback;
+      globalThis.__workspaceTabsCancelAction?.();
+      const cancel=()=>finish({ok:false,cancelled:true,message:'操作をキャンセルしました'});
+      const finish=response=>{
+        if(finished)return;finished=true;
+        if(globalThis.__workspaceTabsCancelAction===cancel)delete globalThis.__workspaceTabsCancelAction;
+        observer?.disconnect();clearTimeout(timer);clearInterval(fallback);cancelAnimationFrame(frame);
+        resolve({...response,elapsedMS:performance.now()-started});
+      };
+      globalThis.__workspaceTabsCancelAction=cancel;
+      const step=()=>{
+        cancelAnimationFrame(frame);frame=0;if(finished)return;
+        if(['notionChat','notionPage','notionMeeting'].includes(action) && typeof expectedSpaceID==='string' && expectedSpaceID){
+          if(typeof expectedEnvironment==='string' && expectedEnvironment && (location.hostname==='app.dev.notion.com'?'dev':'production')!==expectedEnvironment){finish({ok:false,message:'Notionの本番・開発環境が設定と異なるため作成を中止しました'});return;}
+          const identity=readWorkspaceIdentity();
+          if(!identity)return;
+          if(identity.spaceID!==expectedSpaceID){finish({ok:false,message:'設定と異なるワークスペースのため作成を中止しました'});return;}
+        }
+        const controls=[...document.querySelectorAll('button,[role="button"],[role="tab"],[role="menuitem"],a')];
+        const indexed=controls.map(e=>({e,labels:labels(e)}));
+        // Match labels before asking for layout: unrelated links need no visibility check.
+        const click=values=>{
+          const matches=indexed.filter(x=>values.some(n=>x.labels.includes(n)) && visible(x.e));
+          for(const name of values){const found=matches.filter(x=>x.labels.includes(name));if(found.length===1){found[0].e.click();return true;}}
+          return false;
+        };
+        if(click(names[action])){finish({ok:true,message:done[action]});return;}
+        if(!sidebarOpened && click(['Open sidebar','Show sidebar','サイドバーを開く','サイドバーを表示'])){sidebarOpened=true;return;}
+        if(action==='notionSettings' && !menuOpened){
+          const sidebar=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
+          if(sidebar){
+            const explicit=[...sidebar.querySelectorAll('.notion-sidebar-switcher,[data-testid="workspace-switcher"]')].filter(visible);
+            const candidates=explicit.length ? explicit:[...sidebar.querySelectorAll('[aria-haspopup="menu"],[aria-haspopup="true"]')].filter(e=>! /new page|新規ページ|新しいページ|library|trash|help|more|ライブラリ|ゴミ箱|ヘルプ|その他/i.test(labels(e).join(' ')) && visible(e));
+            if(candidates.length===1){menuOpened=true;candidates[0].click();return;}
+          }
+        }
+        if(!sectionOpened && (action==='notionChat' || action==='notionMeeting')){
+          const section=action==='notionChat'?['Chat','チャット']:['Meetings','ミーティング'];
+          const tabs=controls.filter(e=>e.getAttribute('role')==='tab' && labels(e).some(value=>section.some(name=>value===name || (value.startsWith(name) && /^(?:[,、]?\s*\d+\s*(?:unread chats?|unread|件の未読.*|件)?|[,、]\s*未読.*)$/.test(value.slice(name.length))))) && visible(e));
+          if(tabs.length===1){sectionOpened=true;tabs[0].click();}
+        }
+      };
+      const schedule=()=>{if(!finished && !frame)frame=requestAnimationFrame(step);};
+      observer=new MutationObserver(schedule);
+      observer.observe(document,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden','disabled','aria-disabled','aria-label','title','role','aria-haspopup']});
+      timer=setTimeout(()=>finish({ok:false,message:({notionChat:'新規AIチャット',notionPage:'新規ページ',notionMeeting:'新規ミーティングノート',notionSearch:'Notion検索',notionSettings:'Notion設定'})[action]+(typeof expectedSpaceID==='string' && expectedSpaceID && !readWorkspaceIdentity() ? 'の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください':'のボタンが見つかりません。Notionのサイドバーを表示して再実行してください')}),loadingNewTab?12000:3500);
+      // Covers CSS/layout changes with no DOM mutation and background-tab rAF throttling.
+      fallback=setInterval(step,250);
+      step();
+    });
     """#
 }

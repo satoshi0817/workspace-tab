@@ -14,12 +14,39 @@ enum AppTheme: String, CaseIterable, Identifiable {
 }
 
 enum Palette {
+    private static let appMark: NSImage? = Bundle.main.url(forResource:"AppMark",withExtension:"pdf").flatMap{NSImage(contentsOf:$0)}
+    private static let menuGlyphs=NSCache<NSString,NSImage>()
     static func menuGlyph(_ ink: Color) -> NSImage {
+        let key=hex(ink) as NSString
+        if let cached=menuGlyphs.object(forKey:key){return cached}
         let image = NSImage(size: NSSize(width: 24, height: 24))
         image.lockFocus()
-        NSImage(systemSymbolName: "ellipsis", accessibilityDescription: nil)?.draw(in: NSRect(x: 3, y: 5, width: 18, height: 14))
+        if let appMark {appMark.draw(in:NSRect(x:0,y:0,width:24,height:24))}
+        else {NSImage(systemSymbolName:"rectangle.on.rectangle",accessibilityDescription:nil)?.draw(in:NSRect(x:3,y:3,width:18,height:18))}
         NSColor(ink).setFill(); NSRect(x: 0, y: 0, width: 24, height: 24).fill(using: .sourceAtop)
         image.unlockFocus(); image.isTemplate = false
+        menuGlyphs.countLimit=16;menuGlyphs.setObject(image,forKey:key)
+        return image
+    }
+    private static let groupMenuLabels=NSCache<NSString,NSImage>()
+    static func groupMenuLabel(_ title:String,ink:Color)->NSImage {
+        let key=(hex(ink)+"|"+title) as NSString
+        if let image=groupMenuLabels.object(forKey:key) {return image}
+        let paragraph=NSMutableParagraphStyle();paragraph.lineBreakMode = .byTruncatingTail
+        let attributes:[NSAttributedString.Key:Any]=[
+            .font:NSFont.systemFont(ofSize:12,weight:.semibold),
+            .foregroundColor:NSColor(ink),.paragraphStyle:paragraph
+        ]
+        let text=NSAttributedString(string:title,attributes:attributes)
+        let width=min(130,ceil(text.size().width))
+        let image=NSImage(size:NSSize(width:width+18,height:20))
+        image.lockFocus()
+        text.draw(in:NSRect(x:0,y:2,width:width,height:17))
+        let arrow=NSBezierPath();arrow.lineWidth=1.4;arrow.lineCapStyle = .round;arrow.lineJoinStyle = .round
+        arrow.move(to:NSPoint(x:width+6,y:12));arrow.line(to:NSPoint(x:width+10,y:8));arrow.line(to:NSPoint(x:width+14,y:12))
+        NSColor(ink).setStroke();arrow.stroke()
+        image.unlockFocus();image.isTemplate=false
+        groupMenuLabels.countLimit=128;groupMenuLabels.setObject(image,forKey:key)
         return image
     }
     static let names = ["violet", "blue", "green", "amber", "rose", "gray"]

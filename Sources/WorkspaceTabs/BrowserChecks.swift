@@ -14,6 +14,44 @@ import WorkspaceCore
                 guard value else { throw Failure.check(name) }
                 print("PASS " + name)
             }
+            let previews=PagePreviewCache(directory:root)
+            let previewProfile=UUID(),previewPage=UUID(),previewURL="https://example.test/page"
+            let previewBitmap=NSBitmapImageRep(bitmapDataPlanes:nil,pixelsWide:32,pixelsHigh:32,bitsPerSample:8,samplesPerPixel:3,hasAlpha:false,isPlanar:false,colorSpaceName:.deviceRGB,bytesPerRow:0,bitsPerPixel:0)!
+            let preview=NSImage(size:NSSize(width:32,height:32));preview.addRepresentation(previewBitmap)
+            previews.save(preview,profile:previewProfile,page:previewPage,url:previewURL);previews.flush()
+            try expect(previews.image(profile:previewProfile,page:previewPage,url:previewURL) != nil,"Preview persists locally")
+            try expect(previews.image(profile:UUID(),page:previewPage,url:previewURL) == nil && previews.image(profile:previewProfile,page:previewPage,url:previewURL+"/other") == nil,"Preview rejects another login profile or URL")
+            let reopenedPreviews=PagePreviewCache(directory:root)
+            try expect(reopenedPreviews.image(profile:previewProfile,page:previewPage,url:previewURL) != nil,"Preview survives cache recreation")
+            previews.remove(profile:previewProfile,page:previewPage);previews.flush()
+            try expect(previews.image(profile:previewProfile,page:previewPage,url:previewURL) == nil,"Closed page preview is removed")
+            let escapeWindow = EscapeCheckWindow(contentRect:.zero,styleMask:[.titled,.resizable],backing:.buffered,defer:false)
+            escapeWindow.isReleasedWhenClosed=false
+            escapeWindow.cancelOperation(nil)
+            func escapeEvent()->NSEvent {
+                NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:ProcessInfo.processInfo.systemUptime,windowNumber:escapeWindow.windowNumber,context:nil,characters:"\u{1b}",charactersIgnoringModifiers:"\u{1b}",isARepeat:false,keyCode:53)!
+            }
+            let escape=escapeEvent()
+            escapeWindow.keyDown(with:escape)
+            try expect(escapeWindow.fullscreenRequests == 0,"Unhandled Escape never requests fullscreen exit")
+            let escapeResponder=EscapeCheckResponder(frame:.zero)
+            escapeWindow.contentView=escapeResponder
+            escapeWindow.makeFirstResponder(escapeResponder)
+            escapeWindow.sendEvent(escape)
+            try expect(escapeResponder.received == 1 && escapeWindow.fullscreenRequests == 0,"Window dispatch delivers Escape to focused content exactly once")
+            try expect(escapeWindow.performKeyEquivalent(with:escape) && escapeResponder.received == 1,"Re-sent Escape is consumed without delivering it to content twice")
+            escapeResponder.forwardToWindow=true
+            escapeWindow.sendEvent(escapeEvent())
+            try expect(escapeResponder.received == 2 && escapeWindow.fullscreenRequests == 0,"Unhandled responder Escape stops at the window boundary")
+            let escapeApplication=NSApp as! BrowserApplication
+            let resentEscape=escapeEvent()
+            try expect(escapeApplication.routeEscape(resentEscape) && escapeResponder.received == 3,"Application entry point routes Escape before AppKit fullscreen handling")
+            try expect(escapeApplication.routeEscape(resentEscape) && escapeResponder.received == 3,"WebKit asynchronous resend is consumed at the application entry point")
+            escapeResponder.requestFullscreen=true
+            escapeWindow.sendEvent(escapeEvent())
+            try expect(escapeWindow.fullscreenRequests == 0,"A focused responder cannot toggle fullscreen while handling Escape")
+            escapeWindow.toggleFullScreen(nil)
+            try expect(escapeWindow.fullscreenRequests == 1,"Explicit fullscreen commands remain available")
             let nativeTab = WorkspaceTab(bundleID: "notion.dev.id", windowTitle: "Same", name: "Dev workspace", emoji: "🌙", color: "#123456")
             let native = SavedState(groups:[WorkspaceGroup(tabs:[nativeTab,WorkspaceTab(bundleID:"notion.id",windowTitle:"Same")])])
             let migrated = BrowserSession.migrate(native)
@@ -48,9 +86,62 @@ import WorkspaceCore
             let ea = store.engine(a,wa.pages[0].id)!, eb = store.engine(b,wb.pages[0].id)!
             try await wait { ea.webView.url?.host == "127.0.0.1" && !ea.webView.isLoading && !eb.webView.isLoading }
             try expect(ea.failure == nil && eb.failure == nil, "Both browser environments load the local fixture")
+            let faviconPage=BrowserAddress.savedURL(ea.webView.url!)
+            try await wait {store.faviconCache.image(profile:ea.profileID,pageURL:faviconPage) != nil}
+            try expect(store.faviconCache.image(profile:UUID(),pageURL:faviconPage) == nil,"Declared site favicon loads without sharing the login profile cache")
+            let cachedIcon=store.faviconCache.image(profile:ea.profileID,pageURL:faviconPage)
+            try expect(cachedIcon === store.faviconCache.image(profile:ea.profileID,pageURL:faviconPage),"Favicon rendering reuses its decoded image")
+            await store.faviconCache.load(profile:ea.profileID,pageURL:faviconPage)
+            let reopenedIcons=FaviconCache(directory:root)
+            await reopenedIcons.load(profile:ea.profileID,pageURL:faviconPage)
+            try expect(reopenedIcons.image(profile:ea.profileID,pageURL:faviconPage) != nil,"Favicon disk cache survives reopening")
+            try expect(FaviconCache.fallback("https://example.test:8443/page?x=1#anchor")?.absoluteString == "https://example.test:8443/favicon.ico" && FaviconCache.fallback("about:blank") == nil,"Favicon fallback preserves the origin and excludes page queries")
+            let iconBytes=NSBitmapImageRep(data:cachedIcon!.tiffRepresentation!)!.representation(using:.png,properties:[:])!
+            let importedTabIcon=try store.importTabIcon("test.png",from:["test.png":iconBytes])
+            var customPage=store.workspace(a)!.pages[0]
+            customPage.tabIconFile=importedTabIcon
+            store.updateBrowserTab(customPage,in:a)
+            let savedSession=try JSONDecoder().decode(BrowserSession.self,from:JSONEncoder().encode(store.session))
+            try expect(savedSession.workspaces.first(where:{$0.id == a})?.pages[0].tabIconFile == importedTabIcon && importedTabIcon != nil,"Browser tab image survives session serialization")
+            try expect(store.iconCache.image(directory:store.directory,name:importedTabIcon!) != nil,"Imported browser tab image renders from the local copy")
+            let rejectedTabIcon=try store.importTabIcon("broken",from:["broken":Data("bad image".utf8)])
+            try expect(rejectedTabIcon == nil,"Invalid browser tab image is rejected")
+            let tabImageBackup=try NotionLibrary.tabBackup(store:store,includePages:true)
+            try expect(tabImageBackup.icons[importedTabIcon!] != nil,"Notion tab backup includes custom browser tab images")
+            let restoredTabImage=try store.importTabIcon(importedTabIcon,from:tabImageBackup.icons)
+            try expect(restoredTabImage != nil && store.iconCache.image(directory:store.directory,name:restoredTabImage!) != nil,"Browser tab image restores from backup")
+            customPage.tabIconFile=nil
+            store.updateBrowserTab(customPage,in:a)
+            try expect(store.workspace(a)!.pages[0].tabIconFile == nil,"Browser tab image can be cleared to restore the default icon")
+            let retryIcons=FaviconCache(directory:root.appendingPathComponent("retry-icons"))
+            let retryPage="http://127.0.0.1:48761/retry"
+            let retrySource="http://127.0.0.1:48761/flaky-icon.png"
+            await retryIcons.load(profile:ea.profileID,pageURL:retryPage,declared:retrySource)
+            try expect(retryIcons.image(profile:ea.profileID,pageURL:retryPage) == nil,"Unavailable favicon falls back without an invalid image")
+            await retryIcons.load(profile:ea.profileID,pageURL:retryPage,declared:retrySource)
+            try expect(retryIcons.image(profile:ea.profileID,pageURL:retryPage) != nil,"Favicon discovery recovers after an earlier network failure")
             _ = try await ea.webView.evaluateJavaScript("localStorage.setItem('environment','alpha')")
             let otherStorage = try await eb.webView.evaluateJavaScript("localStorage.getItem('environment') === null") as? Bool
             try expect(otherStorage == true, "Local storage is isolated between profiles")
+            let navigationCount=ea.navigationStarts
+            _ = try await ea.webView.evaluateJavaScript("window.tabStateSentinel=42")
+            store.selectWorkspace(b);store.selectWorkspace(a)
+            store.selectPage(wa.pages[0].id,in:a)
+            let sentinel=try await ea.webView.evaluateJavaScript("window.tabStateSentinel") as? Int
+            try expect(store.engine(a,wa.pages[0].id) === ea && sentinel == 42 && ea.navigationStarts == navigationCount,"Live tab switching preserves engine, JS state and navigation count")
+            let recoveryURL=BrowserAddress.savedURL(eb.webView.url!)
+            store.previewCache.save(preview,profile:wb.profileID,page:eb.pageID,url:recoveryURL);store.previewCache.flush()
+            let restoredEngine=BrowserEngine(store:store,workspace:wb,page:store.page(PageReference(workspaceID:b,pageID:eb.pageID))!)
+            try expect(restoredEngine.previewImage != nil && restoredEngine.previewPhase == .loading,"Restored page offers saved preview before loading")
+            restoredEngine.dispose()
+            let beforeRecovery=eb.navigationStarts
+            eb.webViewWebContentProcessDidTerminate(eb.webView)
+            try expect(eb.needsRestore && eb.previewImage != nil,"Inactive terminated page retains a recovery preview")
+            eb.prepareForDisplay()
+            try await wait {eb.previewPhase == .updated}
+            try expect(eb.previewImage == nil && !eb.needsRestore && eb.navigationStarts == beforeRecovery+1,"Recovery replaces preview only after live content is ready")
+            eb.prepareForDisplay()
+            try expect(eb.navigationStarts == beforeRecovery+1,"Displaying recovered content does not reload again")
             let routeFixture="LRU:KeyValueStore2:"
             _ = try await ea.webView.evaluateJavaScript("localStorage.setItem('\(routeFixture)lastVisitedRoute',JSON.stringify({value:{name:'page',blockId:'11111111-1111-1111-1111-111111111111'}}));localStorage.setItem('\(routeFixture)lastVisitedRouteSpaceId',JSON.stringify({value:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'}))")
             let detection=NotionWorkspace.detectionScript.replacingOccurrences(of:"location.protocol",with:"'https:'").replacingOccurrences(of:"location.hostname",with:"'app.notion.com'").replacingOccurrences(of:"location.pathname",with:"'/p/acme/11111111111111111111111111111111'")
@@ -84,14 +175,46 @@ import WorkspaceCore
             _ = try await ea.webView.evaluateJavaScript(simulated)
             let exists = try await ea.webView.evaluateJavaScript("!!document.getElementById('workspace-tabs-sidebar-theme')") as? Bool
             try expect(exists == true, "Notion style creates a scoped stylesheet on an allowed host")
+            // Match ConsoleContainer / BaseSidebar, including the opaque account footer.
+            _ = try await ea.webView.evaluateJavaScript("""
+            const consoleFixture=document.createElement('div');consoleFixture.id='console-style-fixture';
+            consoleFixture.dataset.testid='settings-console-container';
+            consoleFixture.innerHTML='<div id="console-left"><div id="console-sidebar" style="background:var(--c-bacSec, rgb(238,238,238))"><button aria-current="page" style="background:rgb(100,110,120)">General</button><div><div id="console-account" style="background:var(--c-bacSec, rgb(238,238,238))">Account</div></div></div></div><div id="organization-console-content" style="background:rgb(250,250,250)">Content</div>';
+            document.body.appendChild(consoleFixture); null;
+            """)
+            let consoleStyled=try await ea.webView.evaluateJavaScript("""
+            (()=>{const bg=id=>getComputedStyle(document.getElementById(id)).backgroundColor;
+            const sidebar=getComputedStyle(document.querySelector('.notion-sidebar-container')).backgroundColor;
+            return bg('console-left')===sidebar && bg('console-sidebar')===sidebar && bg('console-account')===sidebar
+              && bg('organization-console-content')==='rgb(250, 250, 250)'
+              && getComputedStyle(document.querySelector('#console-sidebar button')).backgroundColor==='rgb(100, 110, 120)'})()
+            """) as? Bool
+            try expect(consoleStyled == true,"Organization console sidebar and footer are tinted without changing content or selected controls")
+            _ = try await ea.webView.evaluateJavaScript("document.body.classList.add('dark')")
+            let darkConsole=try await ea.webView.evaluateJavaScript("getComputedStyle(document.getElementById('console-sidebar')).backgroundColor === getComputedStyle(document.querySelector('.notion-sidebar-container')).backgroundColor") as? Bool
+            try expect(darkConsole == true,"Organization console tint follows the same dark theme as the normal sidebar")
+            _ = try await ea.webView.evaluateJavaScript("document.body.classList.remove('dark')")
             _ = try await ea.webView.evaluateJavaScript(BrowserStyle.script(hex:"#123456",enabled:false,strength:0.3))
             let removed = try await ea.webView.evaluateJavaScript("document.getElementById('workspace-tabs-sidebar-theme') === null") as? Bool
             try expect(removed == true, "CSS toggle removes the injected stylesheet immediately")
+            let consoleReset=try await ea.webView.evaluateJavaScript("getComputedStyle(document.getElementById('console-account')).backgroundColor === 'rgb(238, 238, 238)'") as? Bool
+            try expect(consoleReset == true,"Disabling tint restores the organization console background token")
+            _ = try await ea.webView.evaluateJavaScript("document.getElementById('console-style-fixture').remove()")
+
             let testWindow = NSWindow(contentRect:NSRect(x:100,y:100,width:1100,height:700),styleMask:[.titled,.resizable],backing:.buffered,defer:false)
             testWindow.contentView = NSHostingView(rootView:BrowserRoot(store:store))
             testWindow.contentView?.layoutSubtreeIfNeeded()
             try await wait { testWindow.contentView?.layoutSubtreeIfNeeded(); return ea.webView.frame.width > 250 && ea.webView.frame.height > 200 && eb.webView.frame.width > 250 && eb.webView.frame.height > 200 }
             try expect(ea.webView.superview !== eb.webView.superview, "Split View mounts both live WebViews in distinct visible-sized panes")
+            let capturedURL=BrowserAddress.savedURL(ea.webView.url!)
+            ea.capturePreview(force:true)
+            try expect(store.previewCache.image(profile:ea.profileID,page:ea.pageID,url:capturedURL) == nil,"Hidden windows do not capture previews")
+            testWindow.orderFront(nil)
+            ea.capturePreview(force:true)
+            try await wait {store.previewCache.image(profile:ea.profileID,page:ea.pageID,url:capturedURL) != nil}
+            try expect(store.previewCache.image(profile:ea.profileID,page:ea.pageID,url:capturedURL) != nil,"Mounted live page snapshot can be captured and restored")
+
+            testWindow.orderOut(nil)
             // Exercise native event handlers in an offscreen test window; no OS input injection.
             let dragRoot=NSView(frame:NSRect(x:0,y:0,width:600,height:200))
             let dragSource=TabDragHandle.Handle(frame:NSRect(x:0,y:0,width:100,height:40))
@@ -208,6 +331,10 @@ import WorkspaceCore
             func keyEvent(_ type:NSEvent.EventType,_ flags:NSEvent.ModifierFlags,_ key:String="",_ code:UInt16=55)->NSEvent {
                 NSEvent.keyEvent(with:type,location:.zero,modifierFlags:flags,timestamp:0,windowNumber:0,context:nil,characters:key,charactersIgnoringModifiers:key,isARepeat:false,keyCode:code)!
             }
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"C",8),preferences:prefs)?.id == "copyURL","Local chord resolves on first keydown before WebKit")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.option],"˚",40),preferences:prefs)?.id == "notionSearch","Local chord uses physical key despite Option-generated characters")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[],"c",8),preferences:prefs) == nil,"Normal text input is never intercepted as an app shortcut")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.control,.option],"1",18),preferences:prefs) == nil,"Carbon global chords are not dispatched twice locally")
             try expect(strokeRecorder.consume(keyEvent(.flagsChanged,.command)) == nil && strokeRecorder.consume(keyEvent(.flagsChanged,[])) == tap,"Modifier tap records only after release")
             _=strokeRecorder.consume(keyEvent(.flagsChanged,.command))
             let chord=strokeRecorder.consume(keyEvent(.keyDown,.command,"k",40))
@@ -216,6 +343,30 @@ import WorkspaceCore
             try expect(optionChord?.key == "k" && optionChord?.modifiers == NSEvent.ModifierFlags([.command,.option]).rawValue,"Option chord records the base key rather than the generated symbol")
             let shiftedChord=strokeRecorder.consume(keyEvent(.keyDown,[.command,.shift],"C",8))
             try expect(shiftedChord?.key == "c" && shiftedChord?.label == "⇧⌘C","Shift chord records a single normalized stroke")
+            let favoriteAction=ShortcutPreferences.actions.first{$0.id == "favorites"}!
+            let optionTap=ShortcutStroke(key:"",code:0,modifiers:NSEvent.ModifierFlags.option.rawValue,modifierOnly:true)
+            try expect(prefs.set(ShortcutBinding(sequence:[optionTap,optionTap],key:"",code:0,modifiers:optionTap.modifiers),for:favoriteAction) == nil,"Configure the actual Option double-tap favorites shortcut")
+            let tapMonitor=ShortcutSequenceMonitor(preferences:prefs)
+            var favoriteInvocations=0
+            tapMonitor.action={if $0.id == "favorites" {favoriteInvocations += 1}}
+            _=tapMonitor.handle(keyEvent(.keyDown,[],"a",0),global:false)
+            for _ in 0..<2 {
+                _=tapMonitor.handle(keyEvent(.flagsChanged,.option,"",58),global:false)
+                _=tapMonitor.handle(keyEvent(.flagsChanged,[],"",58),global:false)
+            }
+            try expect(favoriteInvocations == 1,"Favorites opens after exactly two Option taps following ordinary typing")
+            _=tapMonitor.handle(mouse(.leftMouseDown,20,20),global:false)
+            for _ in 0..<2 {
+                _=tapMonitor.handle(keyEvent(.flagsChanged,.option,"",58),global:false)
+                _=tapMonitor.handle(keyEvent(.flagsChanged,[],"",58),global:false)
+            }
+            try expect(favoriteInvocations == 2,"Favorites opens after exactly two Option taps following a click")
+            _=tapMonitor.handle(keyEvent(.flagsChanged,.option,"",58),global:false)
+            _=tapMonitor.handle(keyEvent(.keyDown,.option,"å",0),global:false)
+            _=tapMonitor.handle(keyEvent(.flagsChanged,[],"",58),global:false)
+            _=tapMonitor.handle(keyEvent(.flagsChanged,.option,"",58),global:false)
+            _=tapMonitor.handle(keyEvent(.flagsChanged,[],"",58),global:false)
+            try expect(favoriteInvocations == 2,"Option typing plus one tap never triggers favorites")
             var categoryLink=FavoriteLink(title:"Category route",url:"https://example.com",workspaceID:b)
             categoryLink.category=store.workspace(a)!.name
             try expect(store.favoriteWorkspace(categoryLink)?.id == a,"Category name takes precedence over a stale explicit favorite destination")
@@ -288,6 +439,57 @@ import WorkspaceCore
                 let result=try await ea.webView.evaluateJavaScript("window.actionClicks") as? Int
                 try expect(result == 1,"Notion action detects creation control: \(action)")
             }
+            _ = try await ea.webView.evaluateJavaScript(#"document.body.innerHTML='';window.actionClicks=0;const chatTab=document.createElement('div');chatTab.setAttribute('role','tab');chatTab.setAttribute('aria-label','Chat, 13 unread chats');chatTab.textContent='Chat13';chatTab.onclick=()=>{const b=document.createElement('button');b.textContent='New chat';b.onclick=()=>window.actionClicks++;document.body.appendChild(b)};document.body.appendChild(chatTab);true"#)
+            try await runNotionScript(actionScript)
+            let unreadChatClicks=try await ea.webView.evaluateJavaScript("window.actionClicks") as? Int
+            try expect(unreadChatClicks == 1,"Notion chat action accepts sidebar labels with unread counts")
+            _ = try await ea.webView.evaluateJavaScript(#"document.body.innerHTML='<nav aria-label="Sidebar"><button aria-haspopup="menu" id="switcher">Workspace</button><button aria-haspopup="menu" aria-label="Library, Trash, more…">Library</button></nav>';window.actionClicks=0;document.getElementById('switcher').onclick=()=>{const b=document.createElement('button');b.textContent='Settings';b.onclick=()=>window.actionClicks++;document.body.appendChild(b)};true"#)
+            let settingsResult:Any = try await withCheckedThrowingContinuation { continuation in
+                ea.webView.callAsyncJavaScript(actionScript,arguments:["action":"notionSettings"],in:nil,in:.page) {continuation.resume(with:$0)}
+            }
+            let settingsClicks=try await ea.webView.evaluateJavaScript("window.actionClicks") as? Int
+            try expect((settingsResult as? [String:Any])?["ok"] as? Bool == true && settingsClicks == 1,"Notion settings opens through the workspace switcher, ignoring Library")
+            let settingsElapsed=(settingsResult as? [String:Any])?["elapsedMS"] as? Double ?? .infinity
+            print("METRIC Settings workspace-menu traversal: \(settingsElapsed) ms (previous fixed wait: at least 1200 ms)")
+            try expect(settingsElapsed < 1000,"Visible Notion settings no longer waits for the old fixed delay")
+            let readyChild=store.addPage(to:a,url:"http://127.0.0.1:48761/slow-page",load:false)!
+            readyChild.navigate("http://127.0.0.1:48761/slow-page",notionAction:"notionChat")
+            try await wait {readyChild.pendingNotionAction == nil}
+            try expect(readyChild.webView.isLoading,"Notion action starts at DOM readiness before slow subresources finish")
+            try expect(readyChild.webView.configuration.userContentController.userScripts.count == 1,"DOM readiness hook is removed before action execution to prevent duplicate creation")
+            store.closePage(readyChild.pageID,in:a)
+            let sourceRef=PageReference(workspaceID:a,pageID:wa.pages[0].id)
+            store.selectWorkspace(a);store.selectPage(sourceRef.pageID,in:a);store.setSplit(nil)
+            let sourceURL=store.page(sourceRef)!.url
+            for action in NotionActions.creationIDs.sorted() {
+                let previousCount=store.workspace(a)!.pages.count
+                let child=store.openNotionActionTab(action,from:sourceRef)!
+                try expect(child.pageID != sourceRef.pageID && child.profileID == ea.profileID && store.workspace(a)!.pages.count == previousCount+1 && child.pendingNotionAction == action,"Creation command queues once in a new tab with the same login: \(action)")
+                try expect(store.page(sourceRef)!.url == sourceURL && store.engine(a,sourceRef.pageID) === ea,"Creation command preserves the original live tab: \(action)")
+                store.closePage(child.pageID,in:a)
+                try expect(child.pendingNotionAction == nil,"Closing an unready action tab cancels its queued command")
+            }
+            store.selectPage(sourceRef.pageID,in:a)
+            let right=store.addPage(to:a,url:"http://127.0.0.1:48761/")!
+            store.selectPage(sourceRef.pageID,in:a)
+            let rightRef=PageReference(workspaceID:a,pageID:right.pageID)
+            store.setSplit(rightRef)
+            let splitChild=store.openNotionActionTab("notionChat",from:rightRef)!
+            try expect(store.selectedPage?.id == sourceRef.pageID && store.split?.pageID == splitChild.pageID,"Creation in same-workspace Split preserves the left pane and opens on the right")
+            store.closePage(splitChild.pageID,in:a);store.closePage(right.pageID,in:a);store.setSplit(nil)
+            try expect(!NotionActions.creationIDs.contains("notionSettings") && !NotionActions.creationIDs.contains("notionSearch"),"Settings and search stay in the current tab")
+            let oldFavorites=store.session.favorites,oldCache=store.notion.state.cache
+            var z=FavoriteLink(title:"Zulu",url:"https://example.com",workspaceID:a);z.category="Beta";z.order=0
+            var x=FavoriteLink(title:"Alpha",url:"https://example.com",workspaceID:a);x.category="Alpha";x.order=0
+            var pinned=FavoriteLink(title:"Pinned",url:"https://example.com",workspaceID:a);pinned.category="Alpha";pinned.order=99;pinned.pinned=true;pinned.iconFile="fixture.png"
+            let unclassified=FavoriteLink(title:"Unclassified",url:"https://example.com",workspaceID:a)
+            store.session.favorites=[unclassified,z,x,pinned]
+            store.notion.state.cache=LinkData(syncedAt:"",sources:[SourceMeta(id:"fixture",categories:[Category(id:"a",name:"Alpha",order:1),Category(id:"b",name:"Beta",order:0)],tags:[])],links:[])
+            let sections=store.favoriteSections()
+            try expect(sections.map(\.title) == ["Beta","Alpha","未分類"] && sections[1].links.map(\.title) == ["Pinned","Alpha"],"Favorites use category Order, then pinned and link Order; uncategorized is last")
+            store.exportLauncherIndex()
+            try expect(store.lastLauncherIndex?.favorites.map(\.title) == sections.flatMap(\.links).map(\.title) && store.lastLauncherIndex?.favorites.first?.category == "Beta","Raycast and native favorites share identical sections and order")
+            store.session.favorites=oldFavorites;store.notion.state.cache=oldCache
             // Idle persistence must not rewrite any files or instantiate hidden tabs.
             store.snapshot();_ = store.save()
             let writes=store.persistenceWrites,live=store.liveEngineCount
@@ -338,6 +540,9 @@ import WorkspaceCore
             store.save()
             let reordered=BrowserStore(directory:root)
             try expect(reordered.session.workspaces == store.session.workspaces,"App and browser tab order survive reload")
+            try await WorkflowChecks.run(root:root,webView:ea.webView)
+            try await StabilityChecks.run(root:root)
+            try await TabGroupChecks.run(root:root)
             reordered.shutdown()
             exited.shutdown();loaded.shutdown();store.shutdown()
             for id in profiles { try? await WKWebsiteDataStore.remove(forIdentifier:id) }
@@ -355,5 +560,22 @@ import WorkspaceCore
             if Date()>end {throw Failure.check("Timed out waiting for WebKit")}
             try await Task.sleep(nanoseconds:100_000_000)
         }
+    }
+}
+
+@MainActor private final class EscapeCheckWindow: BrowserWindow {
+    var fullscreenRequests=0
+    override func performFullscreenTransition(_ sender: Any?) { fullscreenRequests += 1 }
+}
+
+@MainActor private final class EscapeCheckResponder: NSView {
+    var received=0
+    var forwardToWindow=false
+    var requestFullscreen=false
+    override var acceptsFirstResponder:Bool {true}
+    override func keyDown(with event:NSEvent) {
+        received += 1
+        if requestFullscreen {window?.toggleFullScreen(nil)}
+        if forwardToWindow {super.keyDown(with:event)}
     }
 }

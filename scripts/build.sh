@@ -8,7 +8,7 @@ task_app="$PWD/build/Workspace Tabs.app"
 rtk proxy mkdir -p "$task_app/Contents/MacOS" "$task_app/Contents/Resources"
 rtk proxy cp "$task_bin/WorkspaceTabs" "$task_app/Contents/MacOS/WorkspaceTabs"
 rtk proxy python3 scripts/make_bundle.py "$task_app"
-if [ ! -f "$task_app/Contents/Resources/AppIcon.icns" ] || [ scripts/make_icon.swift -nt "$task_app/Contents/Resources/AppIcon.icns" ]; then
+if [ ! -f "$task_app/Contents/Resources/AppIcon.icns" ] || [ ! -f "$task_app/Contents/Resources/AppMark.pdf" ] || [ scripts/make_icon.swift -nt "$task_app/Contents/Resources/AppIcon.icns" ]; then
     rtk proxy swift scripts/make_icon.swift "$task_app/Contents/Resources"
 fi
 task_sign="${WORKSPACE_TABS_SIGN_IDENTITY:-}"

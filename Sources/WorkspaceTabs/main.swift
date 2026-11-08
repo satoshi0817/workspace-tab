@@ -13,14 +13,21 @@ import WorkspaceCore
     private var shortcutObservers:[NSObjectProtocol]=[]
     func applicationDidFinishLaunching(_ notification:Notification){
         store=BrowserStore(directory:uiCheckDirectory.map{URL(fileURLWithPath:$0)})
-        window=NSWindow(contentRect:NSRect(x:100,y:100,width:1280,height:820),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
+        window=BrowserWindow(contentRect:NSRect(x:100,y:100,width:1280,height:820),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
         window.title="Workspace Tabs";window.isReleasedWhenClosed=false;window.minSize=NSSize(width:800,height:520)
         window.collectionBehavior=[.fullScreenPrimary];window.delegate=self
         window.contentView=NSHostingView(rootView:BrowserRoot(store:store));store.window=window
         if let saved=store.session.windowFrame?.cgRect,let screen=NSScreen.screens.max(by:{a,b in let x=a.frame.intersection(saved),y=b.frame.intersection(saved);return (x.isNull ? 0:x.width*x.height)<(y.isNull ? 0:y.width*y.height)}) {
             window.setFrame(WorkspaceRules.fit(saved,inside:screen.visibleFrame,barHeight:0,minimum:CGSize(width:800,height:520)),display:false)
         }else{window.center()}
-        clickMonitor=NSEvent.addLocalMonitorForEvents(matching:[.leftMouseDown,.rightMouseDown]) { [weak self] event in self?.store.trackClick(event);return event }
+        clickMonitor=NSEvent.addLocalMonitorForEvents(matching:[.leftMouseDown,.rightMouseDown,.leftMouseDragged,.scrollWheel,.keyDown,.flagsChanged]) { [weak self] event in
+            guard let self else{return event}
+            self.store.noteInteraction()
+            if self.store.handleRecentEvent(event) {return nil}
+            if event.type == .leftMouseDown || event.type == .rightMouseDown {self.store.trackClick(event)}
+            return event
+        }
+        store.startRuntimeMonitoring()
         store.exportLauncherIndex()
         createMenu();window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
         hotkeys.action={[weak self] code in
@@ -30,9 +37,15 @@ import WorkspaceCore
         }
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {self?.refreshShortcuts()} })
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in MainActor.assumeIsolated {if note.object as? Bool == true {self?.hotkeys.unregister()} else {self?.refreshShortcuts()}} })
+        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in self?.sequences.resetInput()}
+        sequences.canHandleLocal={
+            guard let key=NSApp.keyWindow as? BrowserWindow else{return false}
+            return key.attachedSheet == nil
+        }
         sequences.action={[weak self] action in self?.performShortcut(action)};sequences.start()
         if uiCheckDirectory == nil {store.importLinkViewerOnce();store.notion.start()}
         let failures=uiCheckDirectory == nil ? hotkeys.register():[];if !failures.isEmpty{store.error=failures.joined(separator:"\n")}
+        if store.firstLaunch,uiCheckDirectory == nil {DispatchQueue.main.async { [weak self] in self?.store.onboardingPresented=true}}
         let pending=pendingLauncherURLs;pendingLauncherURLs=[];pending.forEach(handleLauncherURL)
     }
     func createMenu(){
@@ -72,6 +85,11 @@ import WorkspaceCore
         }
     }
     func performShortcut(_ action:ShortcutAction){
+        let started=ProcessInfo.processInfo.systemUptime
+        if let event=NSApp.currentEvent,[NSEvent.EventType.keyDown,.flagsChanged].contains(event.type),started-event.timestamp>=0,started-event.timestamp<5 {
+            store.timings.add("キーイベントから受付",milliseconds:(started-event.timestamp)*1000)
+        }
+        defer {store.recordTiming("ショートカット処理: "+action.id,since:started)}
         if let code=action.globalID {hotkeys.action?(code);return}
         // Do not invoke browser commands while a settings/editor sheet owns focus.
         guard window.attachedSheet == nil else{return}
@@ -87,12 +105,12 @@ import WorkspaceCore
         let failures=uiCheckDirectory == nil ? hotkeys.register():[];if !failures.isEmpty {store.error=failures.joined(separator:"\n")}
     }
     @objc func extraCommand(_ sender:NSMenuItem) {guard window.attachedSheet == nil,let id=sender.representedObject as? String else{return};store.runCommand(id)}
-    @objc func allTabs(){show();store.searchForSplit=false;store.searchPresented=true}
+    @objc func allTabs(){store.capturePanelFocus();show();store.searchForSplit=false;store.searchPresented=true}
     @objc func previousWorkspace(){store.cycleWorkspace(-1)}
     @objc func nextWorkspace(){store.cycleWorkspace(1)}
     @objc func show(){window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)}
-    @objc func favorites(){show();store.favoritesPresented=true}
-    @objc func settings(){show();store.showSettings=true}
+    @objc func favorites(){store.capturePanelFocus();show();store.favoritesPresented=true}
+    @objc func settings(){store.capturePanelFocus();show();store.showSettings=true}
     @objc func about(){NSApp.orderFrontStandardAboutPanel(nil)}
     @objc func fullscreen(){(NSApp.keyWindow ?? window).toggleFullScreen(nil)}
     @objc func copyURL(){store.copyPageURL()}
@@ -115,13 +133,16 @@ import WorkspaceCore
         return .terminateNow
     }
     func applicationWillTerminate(_ notification:Notification){store.shutdown()}
+    func windowDidEnterFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("entered-fullscreen")}
+    func windowDidExitFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("exited-fullscreen")}
     func windowDidBecomeKey(_ notification:Notification){store.focusedPage=nil}
     func windowWillClose(_ notification:Notification){store.saveBeforeExit()}
     func windowDidResize(_ notification:Notification){store.snapshot();store.changed()}
     func windowDidMove(_ notification:Notification){store.snapshot();store.changed()}
 }
 MainActor.assumeIsolated {
-    let app=NSApplication.shared
+    let app=BrowserApplication.shared
+    precondition(app is BrowserApplication,"Custom application event routing is required")
     if CommandLine.arguments.contains("--notion-connection-check") {
         app.setActivationPolicy(.accessory)
         Task {

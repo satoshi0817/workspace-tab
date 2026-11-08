@@ -33,6 +33,8 @@ declare namespace Preferences {
   export type Show = ExtensionPreferences & {}
   /** Preferences accessible in the `open-favorites` command */
   export type OpenFavorites = ExtensionPreferences & {}
+  /** Preferences accessible in the `open-notion-link` command */
+  export type OpenNotionLink = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -56,4 +58,9 @@ declare namespace Arguments {
   export type Show = {}
   /** Arguments passed to the `open-favorites` command */
   export type OpenFavorites = {}
+  /** Arguments passed to the `open-notion-link` command */
+  export type OpenNotionLink = {
+  /** Notion URL */
+  "url": string
+}
 }
