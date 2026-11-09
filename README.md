@@ -14,22 +14,18 @@
 
 ## インストール
 
-現在はソースからビルドして利用します。
+**macOS 14以降・Apple Silicon搭載Mac**に対応した試用版を配布しています。
 
-必要なもの：**macOS 14以降**、**Xcode 26以降のmacOS SDKとSwift 6ツールチェーン**、**Python 3**。初回ビルド前にXcodeのセットアップを完了してください。
+1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v0.2.0)の **Assets** から `Workspace-Tabs-0.2.0-arm64.dmg` をダウンロードします。
+2. DMGをダブルクリックして開きます。
+3. **Workspace Tabs.app** を隣の **Applications** フォルダへドラッグします。
+4. アプリケーションフォルダから **Workspace Tabs** を開きます。
 
-```sh
-git clone https://github.com/satoshi0817/workspace-tab.git
-cd workspace-tab
-bash scripts/build.sh
-```
+インストール・利用にターミナル、Xcode、Python、Homebrewなどの追加ツールは不要です。更新時は、起動中のWorkspace Tabsを終了してから入れ替えてください。リポジトリが非公開の場合、ダウンロードにはアクセス権のあるGitHubアカウントでのサインインが必要です。
 
-`build/Workspace Tabs.app` が生成されます。既に起動しているWorkspace Tabsがある場合は終了してから、アプリケーションフォルダにコピーします。
+現在の試用版はAppleの公証を受けていません。初回起動をmacOSが保留する場合は、配布元を確認したうえで、システム設定 → プライバシーとセキュリティに表示される「このまま開く」から許可してください。
 
-```sh
-ditto "build/Workspace Tabs.app" "/Applications/Workspace Tabs.app"
-open "/Applications/Workspace Tabs.app"
-```
+Intel Macで使う場合や自分でビルドしたい場合は、下の[ソースからビルド](#ソースからビルド)を参照してください。
 
 ## 使い始める
 
@@ -108,6 +104,26 @@ Notion向けには、ホームURL、ワークスペースIDによる振り分け
 [サービス連携・同期・ワークスペース判定の詳細](docs/FEATURES.md#notion保存と振り分け)
 
 </details>
+
+## ソースからビルド
+
+開発者向けの手順です。Xcode 26以降のmacOS SDKとSwift 6ツールチェーン、Python 3が必要です。初回ビルド前にXcodeのセットアップを完了してください。
+
+```sh
+git clone https://github.com/satoshi0817/workspace-tab.git
+cd workspace-tab
+bash scripts/build.sh
+```
+
+`build/Workspace Tabs.app` が生成されます。Finderで `build` フォルダを開き、アプリを「アプリケーション」へドラッグして起動してください。
+
+配布用DMGもmacOS標準コマンドだけで作成できます。
+
+```sh
+bash scripts/package.sh
+```
+
+`build/release/` に、ビルドしたCPUアーキテクチャを名前に含むDMGとSHA-256チェックサムを生成します。パッケージ作成だけではAppleの公証は行いません。
 
 ## 開発・検証
 
