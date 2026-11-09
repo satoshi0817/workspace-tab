@@ -1,6 +1,7 @@
 import pathlib
 import plistlib
 import sys
+import shutil
 
 bundle = pathlib.Path(sys.argv[1])
 info = {
@@ -19,3 +20,5 @@ info = {
     "NSHumanReadableCopyright": "Workspace Tabs",
 }
 (bundle / "Contents" / "Info.plist").write_bytes(plistlib.dumps(info))
+
+shutil.copyfile(pathlib.Path(__file__).resolve().parent.parent / "Resources" / "NotionLogo.png", bundle / "Contents" / "Resources" / "NotionLogo.png")

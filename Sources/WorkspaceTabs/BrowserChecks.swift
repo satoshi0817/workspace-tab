@@ -14,6 +14,13 @@ import WorkspaceCore
                 guard value else { throw Failure.check(name) }
                 print("PASS " + name)
             }
+            try expect(BrowserAddress.searchOrURL(" example.com/path ")?.absoluteString == "https://example.com/path", "New tab recognizes bare domain URLs")
+            try expect(BrowserAddress.searchOrURL("http://localhost:48761/test")?.absoluteString == "http://localhost:48761/test", "New tab preserves explicit URL schemes and ports")
+            for query in ["Notion", "日本語 検索", "a+b & c"] {
+                let result=BrowserAddress.searchOrURL(query)!
+                try expect(result.host == "www.google.com" && URLComponents(url:result,resolvingAgainstBaseURL:false)?.queryItems?.first?.value == query, "New tab encodes search: " + query)
+            }
+            try expect(BrowserAddress.searchOrURL("  ") == nil && BrowserAddress.searchOrURL("file:///etc/passwd") == nil && BrowserAddress.searchOrURL("https://user:pass@example.com") == nil,"New tab rejects empty input and unsupported explicit URLs")
             let previews=PagePreviewCache(directory:root)
             let previewProfile=UUID(),previewPage=UUID(),previewURL="https://example.test/page"
             let previewBitmap=NSBitmapImageRep(bitmapDataPlanes:nil,pixelsWide:32,pixelsHigh:32,bitsPerSample:8,samplesPerPixel:3,hasAlpha:false,isPlanar:false,colorSpaceName:.deviceRGB,bytesPerRow:0,bitsPerPixel:0)!
@@ -74,6 +81,15 @@ import WorkspaceCore
             let a = store.addWorkspace(name:"Alpha",url:"http://127.0.0.1:48761/")
             let b = store.addWorkspace(name:"Beta",url:"http://127.0.0.1:48761/")
             let wa = store.workspace(a)!, wb = store.workspace(b)!
+            let start=store.addPage(to:a,startPage:true)!
+            let startRef=PageReference(workspaceID:a,pageID:start.pageID)
+            try expect(store.page(startRef)?.isStartPage == true && start.webView.url == nil && !start.webView.isLoading,"New tab starts without loading a website")
+            let savedStart=try JSONDecoder().decode(BrowserSession.self,from:JSONEncoder().encode(store.session)).validated()
+            try expect(savedStart.workspaces.first(where:{$0.id == a})?.pages.first(where:{$0.id == start.pageID})?.isStartPage == true,"Start page survives session restoration")
+            start.navigate("http://127.0.0.1:48761/")
+            try expect(store.page(startRef)?.isStartPage != true && store.page(startRef)?.url == "http://127.0.0.1:48761/","Submitting new tab replaces the start page in place")
+            store.closePage(start.pageID,in:a)
+
             profiles = store.session.profiles.map(\.id)
             let da = store.dataStore(wa.profileID), db = store.dataStore(wb.profileID)
             let cookie = HTTPCookie(properties:[.domain:"127.0.0.1",.path:"/",.name:"workspace_test",.value:"alpha",.expires:Date().addingTimeInterval(3600)])!

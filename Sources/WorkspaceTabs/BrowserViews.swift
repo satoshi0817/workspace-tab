@@ -167,7 +167,7 @@ struct BrowserPane: View {
                                 BrowserTabButton(store:store,workspace:workspace,page:page,selected:page.id == pageID,isRight:isRight,detached:detached)
                             }
                             Button {
-                                if let new=store.addPage(to:workspaceID),isRight {store.setSplit(PageReference(workspaceID:workspaceID,pageID:new.pageID))}
+                                store.newTabRequest=PageReference(workspaceID:workspaceID,pageID:pageID)
                             } label:{Image(systemName:"plus").frame(width:28,height:32)}
                                 .help("この環境にブラウザタブを追加").accessibilityLabel("ブラウザタブを追加")
                         }.padding(.horizontal,6).padding(.vertical,5)
@@ -183,8 +183,22 @@ struct BrowserPane: View {
                     .buttonStyle(.plain).padding(.trailing,10)
                     .foregroundStyle(Palette.ink(workspace.color)).background(Palette.color(workspace.color))
                 BrowserNavigation(store:store,engine:engine,isRight:isRight)
-                BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
+                if workspace.pages.first(where:{$0.id == pageID})?.isStartPage == true {
+                    NewBrowserTab(store:store,engine:engine).id(pageID)
+                } else {
+                    BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
+                }
             }.simultaneousGesture(TapGesture().onEnded {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID)})
+                .sheet(isPresented:Binding(get:{store.newTabRequest == PageReference(workspaceID:workspaceID,pageID:pageID)},set:{if !$0 {store.newTabRequest=nil}})) {
+                    NewTabChoice { web in
+                        store.newTabRequest=nil
+                        if let child=store.addPage(to:workspaceID,startPage:web) {
+                            let ref=PageReference(workspaceID:workspaceID,pageID:child.pageID)
+                            if isRight {store.setSplit(ref)}
+                            store.focusedPage=ref
+                        }
+                    } cancel:{store.newTabRequest=nil}
+                }
         }
     }
 }
@@ -328,5 +342,91 @@ struct WorkspaceIdentityBadge:View {
             Image(systemName:engine.workspaceMismatch ? "exclamationmark.shield" : engine.detectedNotionSpaceID == nil ? "questionmark.circle" : "checkmark.shield")
                 .help(label).accessibilityLabel(label)
         }
+    }
+}
+
+struct NewBrowserTab:View {
+    @ObservedObject var store:BrowserStore
+    let engine:BrowserEngine
+    @State private var query=""
+    @State private var invalid=false
+    @FocusState private var focused:Bool
+    var body:some View {
+        VStack(spacing:24) {
+            Spacer()
+                HStack(spacing:12) {
+                    Image(systemName:"magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Googleで検索、またはURLを入力",text:$query)
+                        .textFieldStyle(.plain).focused($focused).onSubmit(open)
+                        .accessibilityLabel("検索キーワードまたはURL")
+                    Button(action:open) {Image(systemName:"arrow.right.circle.fill").font(.title2)}
+                        .buttonStyle(.plain).disabled(query.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)
+                        .accessibilityLabel("開く")
+                }.padding(16).background(.quaternary.opacity(0.45),in:Capsule())
+                    .frame(maxWidth:540).padding(.horizontal,24)
+                if invalid {Text("http / httpsのURLを入力してください。").font(.caption).foregroundStyle(.secondary)}
+            Spacer()
+            Spacer().frame(height:40)
+        }.frame(maxWidth:.infinity,maxHeight:.infinity)
+            .background(Color(nsColor:.textBackgroundColor))
+            .task {
+                try? await Task.sleep(for:.milliseconds(300))
+                guard !Task.isCancelled else{return}
+                focused=false
+                focused=true
+            }
+    }
+    private func open() {
+        guard let url=BrowserAddress.searchOrURL(query) else {invalid=true;return}
+        invalid=false;engine.navigate(url.absoluteString)
+    }
+}
+
+struct NewTabChoice:View {
+    let open:(Bool)->Void
+    let cancel:()->Void
+    @State private var submitted=false
+    @FocusState private var focused:Bool
+    private static let notionLogo=Bundle.main.url(forResource:"NotionLogo",withExtension:"png").flatMap{NSImage(contentsOf:$0)}
+    var body:some View {
+        VStack(spacing:20) {
+            Text("新しいタブ").font(.headline)
+            HStack(spacing:12) {
+                choice("Notion",description:"この環境のNotionを開く\n設定したホームページに移動",key:"←",web:false)
+                choice("URL・検索",description:"URLを入力してサイトを開く\nキーワードならGoogleで検索",key:"→",web:true)
+            }
+            HStack {
+                Button("キャンセル",action:cancel).keyboardShortcut(.cancelAction)
+                Spacer()
+                Text("クリック、または矢印キーですぐに開く").font(.caption).foregroundStyle(.secondary)
+            }
+        }.padding(24).frame(width:480)
+            .focusable().focused($focused).focusEffectDisabled()
+            .onKeyPress(.leftArrow) {submit(false);return .handled}
+            .onKeyPress(.rightArrow) {submit(true);return .handled}
+            .onAppear {focused=true}
+    }
+    private func submit(_ web:Bool) {
+        guard !submitted else{return}
+        submitted=true;open(web)
+    }
+    private func choice(_ title:String,description:String,key:String,web:Bool)->some View {
+        Button {submit(web)} label:{
+            VStack(spacing:12) {
+                Group {
+                    if !web,let logo=Self.notionLogo {
+                        Image(nsImage:logo).resizable().scaledToFit().padding(3)
+                            .background(.white,in:RoundedRectangle(cornerRadius:6))
+                    } else {Image(systemName:"magnifyingglass").font(.system(size:28))}
+                }.frame(width:38,height:38)
+                Text(title).font(.headline)
+                Text(description).font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center).lineSpacing(3).fixedSize(horizontal:false,vertical:true)
+                Text(key).font(.body.monospaced()).padding(.horizontal,9).padding(.vertical,3)
+                    .background(.quaternary,in:RoundedRectangle(cornerRadius:5))
+            }.frame(maxWidth:.infinity).padding(.vertical,18)
+                .background(Color.primary.opacity(0.04),in:RoundedRectangle(cornerRadius:12))
+                .contentShape(RoundedRectangle(cornerRadius:12))
+        }.buttonStyle(.plain)
     }
 }

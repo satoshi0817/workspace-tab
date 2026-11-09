@@ -300,6 +300,7 @@ import WorkspaceCore
             webView.configuration.userContentController.add(NotionReadyHandler(self),contentWorld:.defaultClient,name:"workspaceNotionReady")
             resetUserScripts()
         }
+        store?.leaveStartPage(workspaceID,pageID,url:url)
         failure = nil;currentNavigation=webView.load(URLRequest(url: url))
         if pendingNotionAction != nil {pendingActionNavigation=currentNavigation}
     }

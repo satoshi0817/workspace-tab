@@ -37,6 +37,7 @@ struct PageReference: Codable, Equatable, Identifiable {
     @Published var error: String?
     @Published var notice: String?
     var noticeIsError=false
+    @Published var newTabRequest:PageReference?
     @Published var focusedPage: PageReference?
     private var noticeID=UUID()
     var commandPage: PageReference? {
@@ -151,7 +152,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard let workspace = workspace(workspaceID), let page = workspace.pages.first(where: { $0.id == pageID }) else { return nil }
         let engine = BrowserEngine(store: self, workspace: workspace, page: page, configuration: configuration)
         engines[pageID] = engine
-        if load, let url = BrowserAddress.url(page.url) { engine.webView.load(URLRequest(url: url)) }
+        if load, page.isStartPage != true, let url = BrowserAddress.url(page.url) { engine.webView.load(URLRequest(url: url)) }
         return engine
     }
     func selectWorkspace(_ id: UUID) {
@@ -192,16 +193,25 @@ struct PageReference: Codable, Equatable, Identifiable {
         session.workspaces.append(workspace); session.selectedWorkspaceID = workspace.id
         changed(); return workspace.id
     }
-    @discardableResult func addPage(to workspaceID: UUID? = nil, url: String? = nil, configuration: WKWebViewConfiguration? = nil, load:Bool = true, groupID:UUID? = nil) -> BrowserEngine? {
+    @discardableResult func addPage(to workspaceID: UUID? = nil, url: String? = nil, configuration: WKWebViewConfiguration? = nil, load:Bool = true, groupID:UUID? = nil, startPage:Bool = false) -> BrowserEngine? {
         defer {selectionChanged()}
         guard let id = workspaceID ?? session.selectedWorkspaceID, let i = session.workspaces.firstIndex(where: { $0.id == id }) else { return nil }
         captureVisiblePreviews()
-        var page = BrowserPage(url: url ?? session.workspaces[i].homeURL)
+        var page = BrowserPage(url: startPage ? "about:blank" : (url ?? session.workspaces[i].homeURL))
+        page.isStartPage=startPage ? true:nil
         page.groupID=groupID ?? session.workspaces[i].visibleGroupID
         session.workspaces[i].visibleTabGroupID=page.groupID
         session.workspaces[i].pages.append(page); session.workspaces[i].selectedPageID = page.id
         changed()
         return engine(id, page.id, configuration: configuration, load: configuration == nil && load)
+    }
+    func leaveStartPage(_ workspaceID:UUID,_ pageID:UUID,url:URL) {
+        guard let i=session.workspaces.firstIndex(where:{$0.id == workspaceID}),
+              let j=session.workspaces[i].pages.firstIndex(where:{$0.id == pageID}),
+              session.workspaces[i].pages[j].isStartPage == true else{return}
+        session.workspaces[i].pages[j].isStartPage=nil
+        session.workspaces[i].pages[j].url=BrowserAddress.savedURL(url)
+        changed()
     }
     func closePage(_ pageID: UUID, in workspaceID: UUID) {
         defer {selectionChanged()}

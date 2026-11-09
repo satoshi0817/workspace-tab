@@ -115,8 +115,7 @@ import WorkspaceCore
     @objc func fullscreen(){(NSApp.keyWindow ?? window).toggleFullScreen(nil)}
     @objc func copyURL(){store.copyPageURL()}
     @objc func newTab(){
-        let target=store.commandPage;let right=target != nil && target == store.split
-        if let engine=store.addPage(to:target?.workspaceID) {let ref=PageReference(workspaceID:engine.workspaceID,pageID:engine.pageID);if right {store.setSplit(ref)};store.focusedPage=ref}
+        store.newTabRequest=store.commandPage
     }
     @objc func closeTab(){if let ref=store.commandPage{store.closePage(ref.pageID,in:ref.workspaceID)}}
     @objc func reopenTab(){store.reopenPage()}

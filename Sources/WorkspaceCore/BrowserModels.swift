@@ -10,6 +10,7 @@ public struct BrowserPage: Codable, Identifiable, Equatable {
     public var id: UUID = UUID()
     public var url: String
     public var title: String = "新しいタブ"
+    public var isStartPage: Bool?
     public var pinned: Bool?
     public var pinnedDisplay: String?
     public var tabName: String?
@@ -145,6 +146,19 @@ public struct BrowserSession: Codable, Equatable {
 }
 public enum BrowserSessionError: Error { case invalid }
 public enum BrowserAddress {
+    public static func searchOrURL(_ input: String) -> URL? {
+        let value=input.trimmingCharacters(in:.whitespacesAndNewlines)
+        guard !value.isEmpty else{return nil}
+        if !value.contains(where:{$0.isWhitespace}) {
+            if value.contains("://") {return url(value)}
+            if let candidate=url(value),let host=candidate.host,
+               host.contains(".") || host == "localhost" || host.contains(":") {return candidate}
+        }
+        var parts=URLComponents(string:"https://www.google.com/search")!
+        parts.queryItems=[URLQueryItem(name:"q",value:value)]
+        return parts.url
+    }
+
     public static func url(_ input: String) -> URL? {
         let raw = input.trimmingCharacters(in: .whitespacesAndNewlines)
         if raw == "about:blank" { return URL(string: raw) }
