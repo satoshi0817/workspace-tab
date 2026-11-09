@@ -187,6 +187,7 @@ extension BrowserStore {
                 copy.iconFile=try importTabIcon(link.iconFile,from:backup.icons)
                 importedFavorites.append(copy)
             }
+            guard saveBeforeExit(forceBackup:true) else{throw LVError("現在の状態を保存できないため読み込みを中止しました")}
             session.favorites = favorites + importedFavorites
             session.profiles.append(contentsOf:importedProfiles);session.workspaces.append(contentsOf:importedWorkspaces)
             if session.selectedWorkspaceID == nil {session.selectedWorkspaceID=session.workspaces.first?.id};changed()

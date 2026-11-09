@@ -207,6 +207,7 @@ struct HistorySettings:View {
     @State private var entries:[SessionHistoryEntry]=[]
     var body:some View {
         Section("復元履歴（直近20件）") {
+            Text("通常は5分間隔、設定の読み込み・復元前にも保存します。現在状態の自動保存は継続します。").font(.caption).foregroundStyle(.secondary)
             Button("履歴を更新"){entries=store.sessionHistory()}
             ForEach(entries) {entry in
                 HStack {Text(entry.date,format:.dateTime.month().day().hour().minute().second());Text("\(entry.tabCount)タブ").foregroundStyle(.secondary);Spacer();Button("復元…"){store.restoreHistory(entry);entries=store.sessionHistory()}}

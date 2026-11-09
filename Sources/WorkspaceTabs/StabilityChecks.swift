@@ -9,6 +9,54 @@ import WorkspaceCore
             guard value else{throw BrowserChecks.Failure.check(name)}
             print("PASS "+name)
         }
+        let historyRoot=root.appendingPathComponent("history-sampling")
+        let first=Data("first".utf8),second=Data("second".utf8),third=Data("third".utf8)
+        let time=Date(timeIntervalSince1970:1_700_000_000)
+        let history=SessionHistoryArchive(directory:historyRoot)
+        try expect(try history.record(first,now:time),"First recovery snapshot is retained")
+        var skipped=true
+        for offset in 1..<300 {if try history.record(second,now:time.addingTimeInterval(Double(offset))) {skipped=false}}
+        try expect(skipped,"Frequent session changes do not replace recovery history within five minutes")
+        let reopened=SessionHistoryArchive(directory:historyRoot)
+        try expect(try !reopened.record(second,now:time.addingTimeInterval(299)),"Recovery history sampling interval survives app restart")
+        try expect(try reopened.record(second,now:time.addingTimeInterval(300)),"Changed recovery snapshot is retained at the five-minute boundary")
+        try expect(try reopened.record(third,force:true,now:time.addingTimeInterval(301)),"Checkpoint before replacement bypasses the normal interval")
+        try expect(try !reopened.record(third,force:true,now:time.addingTimeInterval(302)),"Identical forced snapshots do not create duplicate history")
+        for index in 1...25 {_=try reopened.record(Data("state-\(index)".utf8),now:time.addingTimeInterval(301+Double(index)*300))}
+        let retained=try FileManager.default.contentsOfDirectory(at:historyRoot.appendingPathComponent("BrowserBackups"),includingPropertiesForKeys:nil)
+        try expect(retained.count == 20 && retained.allSatisfy{(try? Data(contentsOf:$0)) != first},"Sampled recovery history retains the newest twenty snapshots")
+        let samplingStore=BrowserStore(directory:root.appendingPathComponent("sampled-store"))
+        var allSaved=true
+        for index in 0..<100 {samplingStore.session.workspaces[0].name="Edit \(index)";if !samplingStore.save() {allSaved=false}}
+        let sampledRoot=samplingStore.directory.appendingPathComponent("BrowserBackups")
+        let sampledFiles=try FileManager.default.contentsOfDirectory(at:sampledRoot,includingPropertiesForKeys:nil)
+        let currentBytes=try Data(contentsOf:samplingStore.directory.appendingPathComponent("browser-session.json"))
+        let current=try JSONDecoder().decode(BrowserSession.self,from:currentBytes)
+        try expect(allSaved && sampledFiles.count == 1 && current.workspaces[0].name == "Edit 99","One hundred rapid saves keep the latest session and only one recovery snapshot")
+        samplingStore.session.workspaces[0].name="Immediately before restore"
+        var replacement=samplingStore.session;replacement.workspaces[0].name="Restored"
+        try samplingStore.restoreTabBackup(BrowserBackup(session:replacement,icons:[:]))
+        let protectedFiles=try FileManager.default.contentsOfDirectory(at:sampledRoot,includingPropertiesForKeys:nil)
+        let protectedSessions=try protectedFiles.map{try JSONDecoder().decode(BrowserSession.self,from:Data(contentsOf:$0))}
+        try expect(protectedSessions.contains{$0.workspaces[0].name == "Immediately before restore"} && samplingStore.session.workspaces[0].name == "Restored","Actual restore checkpoints the latest unsaved configuration before replacement")
+        samplingStore.shutdown()
+
+        let idleRoot=root.appendingPathComponent("idle-history")
+        try FileManager.default.createDirectory(at:idleRoot,withIntermediateDirectories:true)
+        let latest=try Data(contentsOf:samplingStore.directory.appendingPathComponent("browser-session.json"))
+        try latest.write(to:idleRoot.appendingPathComponent("browser-session.json"))
+        _=try SessionHistoryArchive(directory:idleRoot).record(currentBytes,now:Date().addingTimeInterval(-301))
+        let idleStore=BrowserStore(directory:idleRoot)
+        try expect(idleStore.save() && idleStore.save(),"Periodic saves can checkpoint a final edit without a new user action")
+        let idleFiles=try FileManager.default.contentsOfDirectory(at:idleRoot.appendingPathComponent("BrowserBackups"),includingPropertiesForKeys:nil)
+        let idleSessions=try idleFiles.map{try JSONDecoder().decode(BrowserSession.self,from:Data(contentsOf:$0))}
+        try expect(idleFiles.count == 2 && idleSessions.contains{$0.workspaces[0].name == "Restored"},"After five minutes an idle session archives its latest state rather than only the earlier edit")
+        let beforeIdle=idleFiles.count
+        for _ in 0..<100 {_=idleStore.save()}
+        let afterIdle=try FileManager.default.contentsOfDirectory(at:idleRoot.appendingPathComponent("BrowserBackups"),includingPropertiesForKeys:nil).count
+        try expect(beforeIdle == afterIdle,"Unchanged idle snapshots never accumulate duplicate recovery files")
+        idleStore.shutdown()
+
         let directory=root.appendingPathComponent("stability")
         let store=BrowserStore(directory:directory)
         store.session=BrowserSession()

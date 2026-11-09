@@ -93,6 +93,8 @@ struct PageReference: Codable, Equatable, Identifiable {
     let directory: URL
     private var writable = true
     private var lastPersistedSession:BrowserSession?
+    private var lastPersistedData:Data?
+    private lazy var historyArchive=SessionHistoryArchive(directory:directory)
     private(set) var persistenceWrites=0
     var lastLauncherIndex:LauncherIndex?
     lazy var launcherToken:String = loadLauncherToken()
@@ -337,7 +339,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         for engine in engines.values { updatePage(engine.workspaceID, engine.pageID, url: engine.webView.url, title: engine.webView.title) }
         if let window, !window.styleMask.contains(.fullScreen), session.windowFrame != WindowRect(window.frame) { session.windowFrame = WindowRect(window.frame) }
     }
-    @discardableResult func save() -> Bool {
+    @discardableResult func save(forceBackup:Bool=false) -> Bool {
         let started=ProcessInfo.processInfo.systemUptime
         defer {if ProcessInfo.processInfo.systemUptime-started>0.008 {recordTiming("セッション保存",since:started)}}
         guard writable else { return false }
@@ -345,18 +347,18 @@ struct PageReference: Codable, Equatable, Identifiable {
             if session.splitStateRecorded != true {session.splitStateRecorded=true}
             if session.splitWorkspaceID != split?.workspaceID {session.splitWorkspaceID=split?.workspaceID}
             if session.splitPageID != split?.pageID {session.splitPageID=split?.pageID}
-            if lastPersistedSession == session {exportLauncherIndex();return true}
+            if lastPersistedSession == session && !forceBackup {
+                // The periodic save can archive the final edit after the interval,
+                // even when the user has stopped interacting in the meantime.
+                if let lastPersistedData {try historyArchive.record(lastPersistedData)}
+                exportLauncherIndex();return true
+            }
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let data = try encoder.encode(session.validated())
             let file = directory.appendingPathComponent("browser-session.json")
             let old = try? Data(contentsOf:file)
-            if let old, old != data {
-                let backups = directory.appendingPathComponent("BrowserBackups")
-                try FileManager.default.createDirectory(at: backups, withIntermediateDirectories: true)
-                try old.write(to: backups.appendingPathComponent("\(Int64(Date().timeIntervalSince1970*1000))-\(UUID()).json"), options: .atomic)
-                let files = try FileManager.default.contentsOfDirectory(at: backups, includingPropertiesForKeys: nil).filter { $0.pathExtension == "json" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
-                for old in files.dropFirst(20) { try? FileManager.default.removeItem(at: old) }
-            }
+            if forceBackup {try historyArchive.record(data,force:true)}
+            else if let old,old != data {try historyArchive.record(old)}
             if old != data {try data.write(to: file, options: .atomic);persistenceWrites += 1}
             let splitURL = directory.appendingPathComponent("browser-split.json")
             if let split {
@@ -364,12 +366,12 @@ struct PageReference: Codable, Equatable, Identifiable {
                 if (try? Data(contentsOf:splitURL)) != splitData {try splitData.write(to:splitURL,options:.atomic)}
             }
             else if FileManager.default.fileExists(atPath: splitURL.path) { try FileManager.default.removeItem(at: splitURL) }
-            lastPersistedSession=session
+            lastPersistedSession=session;lastPersistedData=data
             exportLauncherIndex()
             return true
         } catch { self.error = "保存できませんでした：\(error.localizedDescription)";return false }
     }
-    @discardableResult func saveBeforeExit() -> Bool {snapshot();saveWork?.cancel();return save()}
+    @discardableResult func saveBeforeExit(forceBackup:Bool=false) -> Bool {snapshot();saveWork?.cancel();return save(forceBackup:forceBackup)}
     var visiblePageIDs:Set<UUID> {
         var ids=Set<UUID>()
         if let id=selectedPage?.id {ids.insert(id)}
@@ -402,7 +404,7 @@ struct PageReference: Codable, Equatable, Identifiable {
                 restored.workspaces[i].tabGroups![j].iconFile=try importTabIcon(restored.workspaces[i].tabGroups![j].iconFile,from:backup.icons)
             }
         }
-        guard saveBeforeExit() else{throw LVError("現在の状態を保存できないため復元を中止しました")}
+        guard saveBeforeExit(forceBackup:true) else{throw LVError("現在の状態を保存できないため復元を中止しました")}
         for id in Array(detachedWorkspaceIDs) {reattachWorkspace(id,activate:false)}
         for engine in engines.values {engine.dispose()};engines.removeAll()
         restored.favorites=session.favorites;restored.windowFrame=session.windowFrame
