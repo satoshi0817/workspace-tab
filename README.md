@@ -15,9 +15,9 @@
 
 ## インストール
 
-**macOS 14以降の Apple Silicon／Intel Mac** に対応する v1.0.0（ビルド6）を配布しています。Developer ID で署名し、Apple の公証を受けた Universal アプリです。ソースからビルドする場合は main ブランチまたは v1.0.0 タグを使用してください。
+**macOS 14以降の Apple Silicon／Intel Mac** に対応する v1.0.1（ビルド7）を配布しています。Developer ID で署名し、Apple の公証を受けた Universal アプリです。ソースからビルドする場合は main ブランチまたは v1.0.1 タグを使用してください。
 
-1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v1.0.0)の **Assets** から `Workspace-Tabs-1.0.0-universal.dmg` をダウンロードします。
+1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v1.0.1)の **Assets** から `Workspace-Tabs-1.0.1-universal.dmg` をダウンロードします。
 2. DMGをダブルクリックして開きます。
 3. **Workspace Tabs.app** を隣の **Applications** フォルダへドラッグします。
 4. アプリケーションフォルダから **Workspace Tabs** を開きます。
