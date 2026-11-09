@@ -47,11 +47,6 @@ import WorkspaceCore
         try expect(store.commandPage?.pageID == pb,"Cancelling recent-tab switching leaves selection unchanged")
         store.cycleRecentTabs();store.finishRecentTabs(commit:true)
         try expect(store.commandPage?.pageID == pa,"Committing recent-tab switching activates the selected existing tab")
-        store.noteInteraction()
-        try expect(!store.previewsMayCapture,"Typing and scrolling defer screenshot capture")
-        store.lastInteraction -= 3
-        try expect(store.previewsMayCapture,"Screenshot capture resumes after idle time")
-
         // Cancel an actual waiting JS action before its control appears.
         let actionScript=NotionActions.script.replacingOccurrences(of:"location.protocol",with:"'https:'").replacingOccurrences(of:"location.hostname",with:"'app.notion.com'")
         _=try await ea.webView.evaluateJavaScript("document.body.innerHTML='';window.cancelledClicks=0")

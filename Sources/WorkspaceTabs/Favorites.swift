@@ -209,7 +209,7 @@ struct FavoriteIcon: View {
         Group {
             if let file = link.iconFile, file == URL(fileURLWithPath: file).lastPathComponent,
                let image = store.iconCache.image(directory:store.directory,name:file) {
-                Image(nsImage: image).resizable().scaledToFit()
+                Image(nsImage: image).renderingMode(image.isTemplate ? .template:.original).resizable().scaledToFit()
             } else if !link.emoji.isEmpty { Text(link.emoji).font(.system(size: 23)) }
             else { Image(systemName: "link").font(.system(size: 21)).foregroundStyle(.secondary) }
         }.frame(width: 32, height: 32)
@@ -241,11 +241,7 @@ struct FavoriteEditor: View {
                     Text("ログイン環境：" + (store.profile(workspace.profileID)?.name ?? "")).font(.caption).foregroundStyle(.secondary)
                 }
                 TextField("アイコン（絵文字・文字）", text: $draft.emoji)
-                HStack {
-                    FavoriteIcon(store: store, link: draft); Spacer()
-                    Button("画像を選ぶ…") { if let file = store.chooseIcon() { draft.iconFile = file } }
-                    if draft.iconFile != nil { Button("画像を解除") { draft.iconFile = nil } }
-                }
+                IconSelectionRow(store:store,file:$draft.iconFile,defaultSymbol:"link")
                 TextField("カテゴリ", text: $draft.category)
                 Text("Category名とアプリタブ名が一致すると、そちらを優先して開きます。同名のタブが複数ある場合は開けません。").font(.caption).foregroundStyle(.secondary)
                 Toggle("ピン留め", isOn: $draft.pinned)

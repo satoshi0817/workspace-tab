@@ -3,7 +3,7 @@ import WebKit
 import WorkspaceCore
 
 @MainActor enum BrowserCommands {
-    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionSearch","notionSettings"]
+    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings"]
 }
 extension BrowserStore {
     func openCommands() {
@@ -81,7 +81,7 @@ extension BrowserStore {
             let title=page.displayTitle.replacingOccurrences(of:"\\",with:"\\\\").replacingOccurrences(of:"[",with:"\\[").replacingOccurrences(of:"]",with:"\\]").replacingOccurrences(of:"\n",with:" ")
             let url=page.url.replacingOccurrences(of:"(",with:"%28").replacingOccurrences(of:")",with:"%29")
             NSPasteboard.general.clearContents();NSPasteboard.general.setString("[\(title)](\(url))",forType:.string);notify("タイトル付きリンクをコピーしました")
-        case "notionChat","notionPage","notionMeeting","notionSearch","notionSettings":
+        case "notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings":
             guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify("Notionを表示しているタブで実行してください",isError:true);return}
             if NotionActions.creationIDs.contains(id) {
                 _=openNotionActionTab(id,from:ref)
@@ -91,7 +91,7 @@ extension BrowserStore {
     }
 }
 enum NotionActions {
-    static let creationIDs:Set<String>=["notionChat","notionPage","notionMeeting"]
+    static let creationIDs:Set<String>=["notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage"]
     // Only visible, uniquely named controls are used. No private APIs, credentials,
     // automatic recording, or generic New buttons in an unrelated database.
     static let script = "const readWorkspaceIdentity=()=>"+NotionWorkspace.detectionScript+";\n" + #"""
@@ -99,8 +99,8 @@ enum NotionActions {
     const visible=e=>e.getClientRects().length>0 && getComputedStyle(e).visibility!=='hidden' && !e.disabled && e.getAttribute('aria-disabled')!=='true';
     const normalize=s=>(s||'').replace(/\s+/g,' ').trim();
     const labels=e=>[e.getAttribute('aria-label'),e.getAttribute('title'),e.textContent].map(normalize);
-    const names={notionChat:['New chat','Start new chat','新しいチャット','新規チャット'],notionPage:['New page','新規ページ','新しいページ'],notionSearch:['Search or ask','Search','検索する・質問する','検索'],notionSettings:['Settings','Settings & members','設定','設定とメンバー','設定・メンバー'],notionMeeting:['New meeting note','New meeting notes','新しいミーティングノート','新規ミーティングノート']};
-    const done={notionChat:'新しいAIチャットを開きました',notionPage:'新規ページの作成画面を開きました',notionSearch:'Notionの検索を開きました',notionSettings:'Notionの設定を開きました',notionMeeting:'ミーティングノートの作成画面を開きました'};
+    const names={notionDatabase:['New database','新規データベース','新しいデータベース'],notionCustomPage:['Custom page','カスタムページ'],notionChat:['New chat','Start new chat','新しいチャット','新規チャット'],notionPage:['New page','新規ページ','新しいページ'],notionSearch:['Search or ask','Search','検索する・質問する','検索'],notionSettings:['Settings','Settings & members','設定','設定とメンバー','設定・メンバー'],notionMeeting:['New meeting note','New meeting notes','新しいミーティングノート','新規ミーティングノート']};
+    const done={notionDatabase:'データベースの作成画面を開きました',notionCustomPage:'カスタムページの作成画面を開きました',notionChat:'新しいAIチャットを開きました',notionPage:'新規ページの作成画面を開きました',notionSearch:'Notionの検索を開きました',notionSettings:'Notionの設定を開きました',notionMeeting:'ミーティングノートの作成画面を開きました'};
     if (!names[action]) return {ok:false,message:'未対応のNotion操作です'};
     const started=performance.now();
     const loadingNewTab=typeof waitForReady!=='undefined' && waitForReady;
@@ -118,7 +118,7 @@ enum NotionActions {
       globalThis.__workspaceTabsCancelAction=cancel;
       const step=()=>{
         cancelAnimationFrame(frame);frame=0;if(finished)return;
-        if(['notionChat','notionPage','notionMeeting'].includes(action) && typeof expectedSpaceID==='string' && expectedSpaceID){
+        if(['notionChat','notionPage','notionMeeting','notionDatabase','notionCustomPage'].includes(action) && typeof expectedSpaceID==='string' && expectedSpaceID){
           if(typeof expectedEnvironment==='string' && expectedEnvironment && (location.hostname==='app.dev.notion.com'?'dev':'production')!==expectedEnvironment){finish({ok:false,message:'Notionの本番・開発環境が設定と異なるため作成を中止しました'});return;}
           const identity=readWorkspaceIdentity();
           if(!identity)return;
@@ -134,6 +134,16 @@ enum NotionActions {
         };
         if(click(names[action])){finish({ok:true,message:done[action]});return;}
         if(!sidebarOpened && click(['Open sidebar','Show sidebar','サイドバーを開く','サイドバーを表示'])){sidebarOpened=true;return;}
+        if((action==='notionDatabase' || action==='notionCustomPage') && !menuOpened){
+          // Open only the sidebar's explicit creation dropdown. Never click a generic
+          // page-creation button or synthesize private routes before identity checks.
+          const sidebar=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
+          if(sidebar){
+            const candidates=[...sidebar.querySelectorAll('[data-inp-target="sidebar-create-page"] button,[data-inp-target="sidebar-create-page"] [role="button"],button[aria-haspopup],[role="button"][aria-haspopup]')]
+              .filter(e=>labels(e).some(n=>['More options','その他のオプション','その他のオプションを表示','New…','新規…'].includes(n)) && visible(e));
+            if(candidates.length===1){menuOpened=true;candidates[0].click();return;}
+          }
+        }
         if(action==='notionSettings' && !menuOpened){
           const sidebar=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
           if(sidebar){
@@ -151,7 +161,7 @@ enum NotionActions {
       const schedule=()=>{if(!finished && !frame)frame=requestAnimationFrame(step);};
       observer=new MutationObserver(schedule);
       observer.observe(document,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden','disabled','aria-disabled','aria-label','title','role','aria-haspopup']});
-      timer=setTimeout(()=>finish({ok:false,message:({notionChat:'新規AIチャット',notionPage:'新規ページ',notionMeeting:'新規ミーティングノート',notionSearch:'Notion検索',notionSettings:'Notion設定'})[action]+(typeof expectedSpaceID==='string' && expectedSpaceID && !readWorkspaceIdentity() ? 'の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください':'のボタンが見つかりません。Notionのサイドバーを表示して再実行してください')}),loadingNewTab?12000:3500);
+      timer=setTimeout(()=>finish({ok:false,message:({notionDatabase:'新規データベース',notionCustomPage:'カスタムページ',notionChat:'新規AIチャット',notionPage:'新規ページ',notionMeeting:'新規ミーティングノート',notionSearch:'Notion検索',notionSettings:'Notion設定'})[action]+(typeof expectedSpaceID==='string' && expectedSpaceID && !readWorkspaceIdentity() ? 'の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください':'のボタンが見つかりません。Notionのサイドバーを表示して再実行してください')}),loadingNewTab?12000:3500);
       // Covers CSS/layout changes with no DOM mutation and background-tab rAF throttling.
       fallback=setInterval(step,250);
       step();

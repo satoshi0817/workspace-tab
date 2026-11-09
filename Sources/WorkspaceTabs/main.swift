@@ -13,6 +13,11 @@ import WorkspaceCore
     private var shortcutObservers:[NSObjectProtocol]=[]
     func applicationDidFinishLaunching(_ notification:Notification){
         store=BrowserStore(directory:uiCheckDirectory.map{URL(fileURLWithPath:$0)})
+        // Deterministic, isolated visual QA of the initial loading view; never used for normal sessions.
+        if uiCheckDirectory != nil,ProcessInfo.processInfo.environment["WORKSPACE_TABS_UI_CHECK_PAUSE_LOADING"] == "1",
+           let workspace=store.selected,let page=store.selectedPage {
+            _=store.engine(workspace.id,page.id,load:false)
+        }
         window=BrowserWindow(contentRect:NSRect(x:100,y:100,width:1280,height:820),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
         window.title="Workspace Tabs";window.isReleasedWhenClosed=false;window.minSize=NSSize(width:800,height:520)
         window.collectionBehavior=[.fullScreenPrimary];window.delegate=self
@@ -22,7 +27,6 @@ import WorkspaceCore
         }else{window.center()}
         clickMonitor=NSEvent.addLocalMonitorForEvents(matching:[.leftMouseDown,.rightMouseDown,.leftMouseDragged,.scrollWheel,.keyDown,.flagsChanged]) { [weak self] event in
             guard let self else{return event}
-            self.store.noteInteraction()
             self.store.handleWorkspaceHintEvent(event)
             if self.store.handleRecentEvent(event) {return nil}
             if event.type == .leftMouseDown || event.type == .rightMouseDown {self.store.trackClick(event)}
@@ -38,7 +42,7 @@ import WorkspaceCore
         }
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {self?.refreshShortcuts()} })
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in MainActor.assumeIsolated {self?.store.workspaceHintsSuspended=note.object as? Bool == true;self?.store.resetWorkspaceHints();if note.object as? Bool == true {self?.hotkeys.unregister()} else {self?.refreshShortcuts()}} })
-        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in self?.sequences.resetInput();self?.store.notionCreationMenu?.menu.cancelTracking()}
+        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in self?.sequences.resetInput();self?.store.notionCreationMenu?.dismiss()}
         sequences.canHandleLocal={
             guard let key=NSApp.keyWindow as? BrowserWindow else{return false}
             return key.attachedSheet == nil

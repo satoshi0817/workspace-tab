@@ -12,6 +12,12 @@ class Fixture(BaseHTTPRequestHandler):
     def do_GET(self):
         body = b'<!doctype html><title>Browser fixture</title><link rel="icon" href="/icon.png"><nav class="notion-sidebar-container">Sidebar</nav><a href="/child" target="_blank">Child</a>'
         mime = "text/html; charset=utf-8"
+        if self.path == "/native-skeleton":
+            body = b'<!doctype html><title>Native skeleton</title><body><div id="skeleton" role="progressbar" style="position:fixed;inset:0;background:#eee"></div><script>setTimeout(()=>{document.getElementById("skeleton").remove();document.body.innerHTML="<main>Native ready content</main>"},1200)</script></body>'
+        if self.path == "/skeleton-delayed":
+            body = b'<!doctype html><title>Skeleton ready</title><body><script>setTimeout(()=>{document.body.innerHTML="<main>Ready content</main>"},700)</script></body>'
+        if self.path == "/skeleton-slow":
+            time.sleep(4)
         if self.path == "/slow-page":
             body = b'<!doctype html><title>DOM ready fixture</title><img src="/slow-image">'
         if self.path == "/slow-image":

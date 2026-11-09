@@ -29,7 +29,7 @@ struct WorkspaceEditor:View {
                 if !detectionMessage.isEmpty {Text(detectionMessage).font(.caption).foregroundStyle(.secondary)}
                 Text("IDとホームURLの環境（本番／開発）を照合します。判定不能・複数候補では切り替えません。Notionの内部仕様変更で自動取得できなくなる場合があります。").font(.caption).foregroundStyle(.secondary)
                 TextField("絵文字・文字",text:$draft.emoji)
-                HStack {Text("画像アイコン");Spacer();Button("選ぶ…") {if let file=store.chooseIcon(){draft.iconFile=file}};if draft.iconFile != nil {Button("解除"){draft.iconFile=nil}}}
+                IconSelectionRow(store:store,file:$draft.iconFile)
                 ColorPickerRow(selection:$draft.color)
                 Picker("文字色",selection:Binding(get:{draft.textColor ?? "auto"},set:{draft.textColor=$0 == "auto" ? nil:$0})) {
                     Text("自動").tag("auto");Text("白").tag("white");Text("黒").tag("black")
@@ -69,7 +69,7 @@ struct BrowserSettings:View {
     @Environment(\.dismiss) private var dismiss
     @State private var editingProfile:LoginProfile?
     @State private var section="表示"
-    private let sections=[("表示","paintpalette"),("ログイン環境","person.crop.circle"),("ショートカット","keyboard"),("Notion保存","cloud"),("作業","square.stack"),("プレビュー","photo"),("診断","waveform.path.ecg"),("バックアップ","externaldrive")]
+    private let sections=[("表示","paintpalette"),("リンクの受け取り","link"),("ログイン環境","person.crop.circle"),("ショートカット","keyboard"),("Notion保存","cloud"),("作業","square.stack"),("診断","waveform.path.ecg"),("バックアップ","externaldrive")]
     var body:some View {
         HStack(spacing:0) {
             VStack(alignment:.leading,spacing:8) {
@@ -93,6 +93,8 @@ struct BrowserSettings:View {
                             Picker("アプリタブの位置",selection:$store.session.sidebarPosition){Text("左側").tag("left");Text("上部").tag("top")}
                             Picker("サイドバー",selection:$store.session.sidebarMode){Text("通常").tag("full");Text("アイコンのみ").tag("icons");Text("左端で展開").tag("hover")}.disabled(store.session.sidebarPosition != "left")
                         }
+                    } else if section == "リンクの受け取り" {
+                        NotionLinkRoutingSettings(routing:store.linkRouting)
                     } else if section == "ログイン環境" {
                         Section {
                             ForEach(store.session.profiles){profile in
@@ -105,8 +107,6 @@ struct BrowserSettings:View {
                         NotionLibrarySettings(library:store.notion)
                     } else if section == "作業" {
                         WorkflowSettings(store:store)
-                    } else if section == "プレビュー" {
-                        PreviewSettings(store:store)
                     } else if section == "診断" {
                         TimingSettings(log:store.timings,export:store.exportTimings)
                     } else {
@@ -154,6 +154,7 @@ extension BrowserStore {
         guard panel.runModal() == .OK,let url=panel.url else{return}
         do {
             var icons:[String:Data]=[:]
+            for group in session.workspaces.flatMap({$0.resolvedTabGroups}) {if let file=group.iconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
             for w in session.workspaces {if let file=w.iconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
             for page in session.workspaces.flatMap(\.pages) {if let file=page.tabIconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
             for link in favorites {if let file=link.iconFile,file == URL(fileURLWithPath:file).lastPathComponent {icons[file]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(file))}}
@@ -172,17 +173,18 @@ extension BrowserStore {
             let icons=directory.appendingPathComponent("Icons");try FileManager.default.createDirectory(at:icons,withIntermediateDirectories:true)
             for workspace in backup.session.workspaces {
                 var copy=workspace;copy.id=UUID();workspaceMap[workspace.id]=copy.id;copy.profileID=profileMap[workspace.profileID]!
-                copy.tabGroups=workspace.resolvedTabGroups.map{group in BrowserTabGroup(id:group.id == workspace.id ? copy.id:group.id,name:group.name)}
+                copy.tabGroups=workspace.resolvedTabGroups.map{group in BrowserTabGroup(id:group.id == workspace.id ? copy.id:group.id,name:group.name,iconFile:group.iconFile)}
                 copy.visibleTabGroupID=workspace.visibleGroupID == workspace.id ? copy.id:workspace.visibleGroupID
                 copy.pages=workspace.pages.map{page in var page=page;page.id=UUID();if page.groupID == workspace.id {page.groupID=copy.id};return page};copy.selectedPageID=copy.pages.first?.id
-                if let name=workspace.iconFile,let imageData=backup.icons[name],imageData.count<2_000_000,NSImage(data:imageData) != nil {let new=UUID().uuidString+".png";try imageData.write(to:icons.appendingPathComponent(new));copy.iconFile=new}else{copy.iconFile=nil}
+                copy.iconFile=try importTabIcon(workspace.iconFile,from:backup.icons)
+                for j in (copy.tabGroups ?? []).indices {copy.tabGroups![j].iconFile=try importTabIcon(copy.tabGroups![j].iconFile,from:backup.icons)}
                 for j in copy.pages.indices {copy.pages[j].tabIconFile=try importTabIcon(copy.pages[j].tabIconFile,from:backup.icons)}
                 importedWorkspaces.append(copy)
             }
             var importedFavorites: [FavoriteLink] = []
             for link in backup.session.favorites ?? [] {
                 var copy=link;copy.id=UUID();copy.workspaceID=workspaceMap[link.workspaceID] ?? UUID();copy.notionSourceID=nil;copy.notionPageID=nil;copy.notionEditedTime=nil;copy.importKey=nil
-                if let name=link.iconFile,let imageData=backup.icons[name],imageData.count<2_000_000,NSImage(data:imageData) != nil {let new=UUID().uuidString+".png";try imageData.write(to:icons.appendingPathComponent(new));copy.iconFile=new}else{copy.iconFile=nil}
+                copy.iconFile=try importTabIcon(link.iconFile,from:backup.icons)
                 importedFavorites.append(copy)
             }
             session.favorites = favorites + importedFavorites

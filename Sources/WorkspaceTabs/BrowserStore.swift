@@ -18,7 +18,6 @@ struct PageReference: Codable, Equatable, Identifiable {
     var selectionRevision:UInt=0
     var selectionWorkQueued=false
     var panelFocus:PanelFocus?
-    var lastInteraction:Double = -.infinity
     var networkMonitor:NWPathMonitor?
     var responsivenessProbe:MainThreadProbe?
     var loadedEngines:[BrowserEngine] {Array(engines.values)}
@@ -31,6 +30,7 @@ struct PageReference: Codable, Equatable, Identifiable {
     func pageID(for webView:WKWebView)->UUID? {engines.first{$0.value.webView === webView}?.key}
 
     lazy var notion=NotionLibrary(store:self)
+    lazy var linkRouting=NotionLinkRouting(directory:directory)
     @Published var split: PageReference?
     @Published var detachedWorkspaceIDs: Set<UUID> = []
     var detachedControllers: [UUID: DetachedWorkspaceController] = [:]
@@ -98,8 +98,6 @@ struct PageReference: Codable, Equatable, Identifiable {
     lazy var launcherToken:String = loadLauncherToken()
     let iconCache=LocalIconCache()
     lazy var faviconCache=FaviconCache(directory:directory)
-    lazy var previewCache=PagePreviewCache(directory:directory)
-    func captureVisiblePreviews(){for id in visiblePageIDs {engines[id]?.capturePreview()}}
     var liveEngineCount:Int {engines.count}
     private var saveWork: DispatchWorkItem?
     private var timer: Timer?
@@ -138,10 +136,11 @@ struct PageReference: Codable, Equatable, Identifiable {
             writable = false
             self.error = "設定を読み込めませんでした。元ファイルは保持しています。\n\(error.localizedDescription)"
         }
+        try? LegacyPagePreviewCleanup.remove(in:self.directory)
         loadWorksets()
         applyTheme()
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.snapshot(); self?.save(); self?.pollNotionWorkspace();self?.captureVisiblePreviews() }
+            MainActor.assumeIsolated { self?.snapshot(); self?.save(); self?.pollNotionWorkspace() }
         }
         timer?.tolerance=1
     }
@@ -163,7 +162,6 @@ struct PageReference: Codable, Equatable, Identifiable {
     func selectWorkspace(_ id: UUID) {
         defer {selectionChanged()}
         if let pid=workspace(id)?.selectedPageID {beginDisplay(pid)}
-        captureVisiblePreviews()
         guard workspace(id) != nil else { return }
         let current=commandPage?.workspaceID ?? session.selectedWorkspaceID
         if current != id {previousWorkspaceID=current}
@@ -184,7 +182,6 @@ struct PageReference: Codable, Equatable, Identifiable {
     func selectPage(_ pageID: UUID, in workspaceID: UUID) {
         defer {selectionChanged()}
         beginDisplay(pageID)
-        captureVisiblePreviews()
         guard let i = session.workspaces.firstIndex(where: { $0.id == workspaceID }), session.workspaces[i].pages.contains(where: { $0.id == pageID }) else { return }
         session.workspaces[i].selectedPageID = pageID
         revealTabGroup(pageID,in:workspaceID)
@@ -201,7 +198,6 @@ struct PageReference: Codable, Equatable, Identifiable {
     @discardableResult func addPage(to workspaceID: UUID? = nil, url: String? = nil, configuration: WKWebViewConfiguration? = nil, load:Bool = true, groupID:UUID? = nil, startPage:Bool = false) -> BrowserEngine? {
         defer {selectionChanged()}
         guard let id = workspaceID ?? session.selectedWorkspaceID, let i = session.workspaces.firstIndex(where: { $0.id == id }) else { return nil }
-        captureVisiblePreviews()
         var page = BrowserPage(url: startPage ? "about:blank" : (url ?? session.workspaces[i].homeURL))
         page.isStartPage=startPage ? true:nil
         page.groupID=groupID ?? session.workspaces[i].visibleGroupID
@@ -224,7 +220,6 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard session.workspaces[i].pages[j].pinned != true else {notify("ピン留めを解除してから閉じてください");return}
         closedPages.append((workspaceID, session.workspaces[i].pages[j])); closedPages = Array(closedPages.suffix(20))
         engines.removeValue(forKey: pageID)?.dispose()
-        previewCache.remove(profile:session.workspaces[i].profileID,page:pageID)
         session.workspaces[i].pages.remove(at: j)
         if session.workspaces[i].pages.isEmpty { session.workspaces[i].pages = [BrowserPage(url: session.workspaces[i].homeURL)] }
         if session.workspaces[i].selectedPageID == pageID {
@@ -262,7 +257,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         alert.addButton(withTitle: "キャンセル"); alert.addButton(withTitle: "閉じる")
         guard alert.runModal() == .alertSecondButtonReturn else { return }
         reattachWorkspace(id,activate:false)
-        for page in workspace.pages { engines.removeValue(forKey: page.id)?.dispose();previewCache.remove(profile:workspace.profileID,page:page.id) }
+        for page in workspace.pages { engines.removeValue(forKey: page.id)?.dispose() }
         session.workspaces.removeAll { $0.id == id }
         if session.selectedWorkspaceID == id { session.selectedWorkspaceID = session.workspaces.first?.id }
         if split?.workspaceID == id { split = nil }; changed()
@@ -393,7 +388,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         notify("「\(workspace(target)?.name ?? "")」で開きました")
         return true
     }
-    func shutdown() { resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll();previewCache.flush() }
+    func shutdown() { resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll() }
     func restoreTabBackup(_ backup:BrowserBackup)throws {
         var restored=try backup.session.validated()
         let iconDir=directory.appendingPathComponent("Icons")
@@ -402,9 +397,10 @@ struct PageReference: Codable, Equatable, Identifiable {
             for j in restored.workspaces[i].pages.indices {
                 restored.workspaces[i].pages[j].tabIconFile=try importTabIcon(restored.workspaces[i].pages[j].tabIconFile,from:backup.icons)
             }
-            if let old=restored.workspaces[i].iconFile,let bytes=backup.icons[old],bytes.count<2_000_000,NSImage(data:bytes) != nil {
-                let name=UUID().uuidString+".png";try bytes.write(to:iconDir.appendingPathComponent(name),options:.atomic);restored.workspaces[i].iconFile=name
-            } else {restored.workspaces[i].iconFile=nil}
+            restored.workspaces[i].iconFile=try importTabIcon(restored.workspaces[i].iconFile,from:backup.icons)
+            for j in (restored.workspaces[i].tabGroups ?? []).indices {
+                restored.workspaces[i].tabGroups![j].iconFile=try importTabIcon(restored.workspaces[i].tabGroups![j].iconFile,from:backup.icons)
+            }
         }
         guard saveBeforeExit() else{throw LVError("現在の状態を保存できないため復元を中止しました")}
         for id in Array(detachedWorkspaceIDs) {reattachWorkspace(id,activate:false)}
@@ -416,20 +412,13 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard let original,let bytes=icons[original],bytes.count<2_000_000,NSImage(data:bytes) != nil else{return nil}
         let dir=directory.appendingPathComponent("Icons")
         try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true)
-        let name=UUID().uuidString+".png"
+        let name=UUID().uuidString+(original.contains(".template.") ? ".template.png":".png")
         try bytes.write(to:dir.appendingPathComponent(name),options:.atomic)
         return name
     }
     func chooseIcon() -> String? {
         let panel = NSOpenPanel(); panel.allowedContentTypes = [.png, .jpeg, .heic]
         guard panel.runModal() == .OK, let url = panel.url, let image = NSImage(contentsOf: url) else { return nil }
-        let resized = NSImage(size: NSSize(width: 128, height: 128)); resized.lockFocus()
-        let ratio = min(128/image.size.width,128/image.size.height)
-        let size = NSSize(width: image.size.width*ratio,height: image.size.height*ratio)
-        image.draw(in: NSRect(x:(128-size.width)/2,y:(128-size.height)/2,width:size.width,height:size.height)); resized.unlockFocus()
-        guard let tiff = resized.tiffRepresentation, let bitmap = NSBitmapImageRep(data:tiff), let png = bitmap.representation(using:.png,properties:[:]) else { return nil }
-        let name = UUID().uuidString+".png", dir = directory.appendingPathComponent("Icons")
-        do { try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true); try png.write(to:dir.appendingPathComponent(name)); return name }
-        catch { self.error = error.localizedDescription; return nil }
+        return saveIcon(image)
     }
 }

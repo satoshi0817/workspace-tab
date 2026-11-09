@@ -16,6 +16,19 @@ enum BrowserLayout {
     static let pageRadius:CGFloat = 16
 }
 
+/// A persistent outline makes every browser tab visible, including inactive tabs.
+struct BrowserStripChip:ViewModifier {
+    let ink:Color
+    var selected=false
+    var hovered=false
+    func body(content:Content)->some View {
+        let shape=RoundedRectangle(cornerRadius:10,style:.continuous)
+        content.frame(height:BrowserLayout.control)
+            .background(ink.opacity(selected ? 0.18:hovered ? 0.10:0.045),in:shape)
+            .overlay(shape.strokeBorder(ink.opacity(selected ? 0.65:hovered ? 0.38:0.22),lineWidth:selected ? 1.25:1))
+    }
+}
+
 enum AppTheme: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: String { rawValue }
@@ -44,8 +57,8 @@ enum Palette {
         return image
     }
     private static let groupMenuLabels=NSCache<NSString,NSImage>()
-    static func groupMenuLabel(_ title:String,ink:Color)->NSImage {
-        let key=(hex(ink)+"|"+title) as NSString
+    static func groupMenuLabel(_ title:String,ink:Color,icon:NSImage?=nil,iconKey:String="folder")->NSImage {
+        let key=(hex(ink)+"|"+title+"|"+iconKey) as NSString
         if let image=groupMenuLabels.object(forKey:key) {return image}
         let paragraph=NSMutableParagraphStyle();paragraph.lineBreakMode = .byTruncatingTail
         let attributes:[NSAttributedString.Key:Any]=[
@@ -53,12 +66,21 @@ enum Palette {
             .foregroundColor:NSColor(ink),.paragraphStyle:paragraph
         ]
         let text=NSAttributedString(string:title,attributes:attributes)
-        let width=min(130,ceil(text.size().width))
-        let image=NSImage(size:NSSize(width:width+18,height:20))
+        let width=min(110,ceil(text.size().width))
+        let image=NSImage(size:NSSize(width:width+38,height:20))
         image.lockFocus()
-        text.draw(in:NSRect(x:0,y:2,width:width,height:17))
+        if let custom=icon {
+            let ratio=min(16/custom.size.width,16/custom.size.height)
+            let size=NSSize(width:custom.size.width*ratio,height:custom.size.height*ratio)
+            custom.draw(in:NSRect(x:(16-size.width)/2,y:(20-size.height)/2,width:size.width,height:size.height))
+            if custom.isTemplate {NSColor(ink).setFill();NSRect(x:0,y:0,width:16,height:20).fill(using:.sourceAtop)}
+        } else if let folder=NSImage(systemSymbolName:"folder",accessibilityDescription:nil) {
+            folder.draw(in:NSRect(x:0,y:3,width:15,height:14))
+            NSColor(ink).setFill();NSRect(x:0,y:3,width:15,height:14).fill(using:.sourceAtop)
+        }
+        text.draw(in:NSRect(x:20,y:2,width:width,height:17))
         let arrow=NSBezierPath();arrow.lineWidth=1.4;arrow.lineCapStyle = .round;arrow.lineJoinStyle = .round
-        arrow.move(to:NSPoint(x:width+6,y:12));arrow.line(to:NSPoint(x:width+10,y:8));arrow.line(to:NSPoint(x:width+14,y:12))
+        arrow.move(to:NSPoint(x:width+26,y:12));arrow.line(to:NSPoint(x:width+30,y:8));arrow.line(to:NSPoint(x:width+34,y:12))
         NSColor(ink).setStroke();arrow.stroke()
         image.unlockFocus();image.isTemplate=false
         groupMenuLabels.countLimit=128;groupMenuLabels.setObject(image,forKey:key)

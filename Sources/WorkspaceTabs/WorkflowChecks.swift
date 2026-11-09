@@ -8,6 +8,7 @@ import WorkspaceCore
             guard value else{throw BrowserChecks.Failure.check(name)}
             print("PASS "+name)
         }
+        try await LinkRoutingChecks.run(root:root)
         // Exercise the actual action script against local HTML only.
         let pageID="11111111111111111111111111111111",spaceID="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         _ = try await webView.evaluateJavaScript("""
@@ -19,9 +20,9 @@ import WorkspaceCore
             .replacingOccurrences(of:"location.hostname",with:"'app.notion.com'")
             .replacingOccurrences(of:"location.pathname",with:"'/\(pageID)'")
             .replacingOccurrences(of:"loadingNewTab?12000:3500",with:"80")
-        func execute(_ source:String,id:String,env:String="production") async throws -> [String:Any] {
+        func execute(_ source:String,id:String,env:String="production",action:String="notionPage") async throws -> [String:Any] {
             let value:Any = try await withCheckedThrowingContinuation {continuation in
-                webView.callAsyncJavaScript(source,arguments:["action":"notionPage","expectedSpaceID":id,"expectedEnvironment":env],in:nil,in:.page){continuation.resume(with:$0)}
+                webView.callAsyncJavaScript(source,arguments:["action":action,"expectedSpaceID":id,"expectedEnvironment":env],in:nil,in:.page){continuation.resume(with:$0)}
             }
             return value as? [String:Any] ?? [:]
         }
@@ -33,6 +34,24 @@ import WorkspaceCore
         let match=try await execute(script,id:spaceID)
         let clicks=try await webView.evaluateJavaScript("window.guardClicks") as? Int
         try expect(match["ok"] as? Bool == true && clicks == 1,"Creation guard allows the matching workspace exactly once")
+
+        for action in ["notionDatabase","notionCustomPage"] {
+            _ = try await webView.evaluateJavaScript("""
+            document.body.innerHTML='<nav class="notion-sidebar-container"><div data-inp-target="sidebar-create-page"><button aria-label="More options">▼</button></div></nav>';
+            window.dropdownClicks=0;window.creationClicks=0;
+            document.querySelector('button').onclick=()=>{
+              window.dropdownClicks++;
+              const button=document.createElement('button');button.textContent='\(action == "notionDatabase" ? "New database":"Custom page")';
+              button.onclick=()=>window.creationClicks++;document.querySelector('nav').append(button);
+            };void 0;
+            """)
+            let rejected=try await execute(script,id:"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",action:action)
+            let untouched=try await webView.evaluateJavaScript("window.dropdownClicks+window.creationClicks") as? Int
+            try expect(rejected["ok"] as? Bool == false && untouched == 0,"\(action) checks workspace before opening creation dropdown")
+            let created=try await execute(script.replacingOccurrences(of:",80);",with:",1500);"),id:spaceID,action:action)
+            let createdCount=try await webView.evaluateJavaScript("window.creationClicks") as? Int
+            try expect(created["ok"] as? Bool == true && createdCount == 1,"\(action) opens the sidebar dropdown and activates its unique creation control")
+        }
 
         let directory=root.appendingPathComponent("workflow")
         let store=BrowserStore(directory:directory)
@@ -83,10 +102,6 @@ import WorkspaceCore
         try expect(AppDelegate.externalNotionURL(URL(string:"workspacetabs://open?url=https%3A%2F%2Fapp.notion.com%2F"+pageID)!) != nil && AppDelegate.externalNotionURL(URL(string:"workspacetabs://open?url=javascript%3Aalert(1)")!) == nil && AppDelegate.externalNotionURL(URL(string:"workspacetabs://open?url=https%3A%2F%2Fapp.notion.com&url=https%3A%2F%2Fevil.test")!) == nil,"External bridge validates host, scheme and duplicate parameters")
         for _ in 0..<205 {store.timings.add("fixture",milliseconds:1)}
         try expect(store.timings.entries.count == 200,"Diagnostic memory ring is bounded")
-        store.setPreviewsEnabled(false,workspaceID:a)
-        try expect(!store.previewsEnabled(a) && store.previewsEnabled(b),"Preview opt-out is isolated to the selected app workspace")
-        store.setPreviewsEnabled(false)
-        try expect(!store.previewsEnabled(b),"Global preview opt-out covers every app workspace")
         store.save()
         store.session.workspaces[0].name="Changed";store.save()
         try expect(!store.sessionHistory().isEmpty,"Existing session backups are available as validated restore history")

@@ -24,7 +24,8 @@ public struct BrowserPage: Codable, Identifiable, Equatable {
 public struct BrowserTabGroup: Codable, Identifiable, Equatable {
     public var id: UUID
     public var name: String
-    public init(id:UUID = UUID(),name:String) {self.id=id;self.name=name}
+    public var iconFile: String?
+    public init(id:UUID = UUID(),name:String,iconFile:String?=nil) {self.id=id;self.name=name;self.iconFile=iconFile}
 }
 public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var id: UUID = UUID()
@@ -38,7 +39,6 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var homeURL: String = "https://app.notion.com"
     public var notionSpaceID: String?
     public var notionAutoRoute: Bool?
-    public var previewEnabled: Bool?
     public var cssEnabled = false
     public var cssStrength: Double = 0.18
     public var pages: [BrowserPage]
@@ -82,7 +82,6 @@ public struct FavoriteLink: Codable, Identifiable, Equatable {
     }
 }
 public struct BrowserSession: Codable, Equatable {
-    public var previewEnabled: Bool?
     public var favorites: [FavoriteLink]?
     public var splitWorkspaceID: UUID?
     public var splitPageID: UUID?

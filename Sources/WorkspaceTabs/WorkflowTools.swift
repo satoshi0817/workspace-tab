@@ -51,24 +51,6 @@ extension BrowserStore {
         do {try ("date,milliseconds,operation\n"+rows.joined(separator:"\n")).write(to:url,atomically:true,encoding:.utf8)}
         catch {self.error=error.localizedDescription}
     }
-    func previewsEnabled(_ id:UUID)->Bool {
-        session.previewEnabled != false && workspace(id)?.previewEnabled != false
-    }
-    func setPreviewsEnabled(_ enabled:Bool,workspaceID:UUID?=nil) {
-        if let workspaceID,let i=session.workspaces.firstIndex(where:{$0.id == workspaceID}) {
-            session.workspaces[i].previewEnabled=enabled
-            if !enabled {for page in session.workspaces[i].pages {previewCache.remove(profile:session.workspaces[i].profileID,page:page.id);engineIfLoaded(page.id)?.dismissPreview()}}
-        } else {
-            session.previewEnabled=enabled
-            if !enabled {clearPreviews()}
-        }
-        changed()
-    }
-    func clearPreviews() {
-        for workspace in session.workspaces {for page in workspace.pages {engineIfLoaded(page.id)?.dismissPreview()}}
-        previewCache.removeAll()
-        notify("保存したプレビューを削除しました")
-    }
     static func pageKey(_ value:String)->String? {
         guard let url=BrowserAddress.url(value) else{return nil}
         // Keep query/fragment: database views and anchored locations are distinct.
@@ -156,6 +138,9 @@ extension BrowserStore {
             for workspace in value.workspaces {
                 if let name=workspace.iconFile,!name.contains("/"),let bytes=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(name)) {icons[name]=bytes}
             }
+            for group in value.workspaces.flatMap({$0.resolvedTabGroups}) {
+                if let name=group.iconFile,name == URL(fileURLWithPath:name).lastPathComponent {icons[name]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(name))}
+            }
             for page in value.workspaces.flatMap(\.pages) {
                 if let name=page.tabIconFile,name == URL(fileURLWithPath:name).lastPathComponent {icons[name]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(name))}
             }
@@ -201,19 +186,6 @@ struct WorkflowSettings:View {
         Section("リンクを開く") {
             Text("外部から受け取ったNotionリンクは、URLのワークスペース名や既存タブから開く先を判定します。一意に決まらない場合は環境を選びます。")
             Text("既定のブラウザは自動変更しません。Raycastの「Open Notion Link」からURLを渡せます。").font(.caption).foregroundStyle(.secondary)
-        }
-    }
-}
-struct PreviewSettings:View {
-    @ObservedObject var store:BrowserStore
-    var body:some View {
-        Section("前回の画面") {
-            Toggle("プレビューを保存",isOn:Binding(get:{store.session.previewEnabled != false},set:{store.setPreviewsEnabled($0)}))
-            ForEach(store.session.workspaces) {workspace in
-                Toggle(workspace.name,isOn:Binding(get:{workspace.previewEnabled != false},set:{store.setPreviewsEnabled($0,workspaceID:workspace.id)})).disabled(store.session.previewEnabled == false)
-            }
-            Text("保存画像はこのMacのみで使用します。最大32件・32 MiB、利用期限7日。オフにすると対象の保存画像を削除します。").font(.caption).foregroundStyle(.secondary)
-            Button("保存したプレビューをすべて削除"){store.clearPreviews()}
         }
     }
 }

@@ -73,8 +73,6 @@ final class MainThreadProbe: @unchecked Sendable {
     init(page:PageReference?,responder:NSResponder?,selection:UInt){self.page=page;self.responder=responder;self.selection=selection}
 }
 extension BrowserStore {
-    var previewsMayCapture:Bool {ProcessInfo.processInfo.systemUptime-lastInteraction>2}
-    func noteInteraction(){lastInteraction=ProcessInfo.processInfo.systemUptime}
     func capturePanelFocus() {
         guard panelFocus == nil else{return}
         let ref=commandPage

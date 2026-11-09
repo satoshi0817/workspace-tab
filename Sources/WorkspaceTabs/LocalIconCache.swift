@@ -24,6 +24,7 @@ import ImageIO
             let size=NSSize(width:original.size.width*ratio,height:original.size.height*ratio)
             image=NSImage(size:size);image.lockFocus();original.draw(in:NSRect(origin:.zero,size:size));image.unlockFocus()
         }
+        image.isTemplate=name.contains(".template.")
         images.setObject(image,forKey:key,cost:cost);decodeCount += 1
         return image
     }

@@ -83,8 +83,8 @@ extension AppDelegate {
             guard window.attachedSheet == nil else{store.notify("ダイアログを閉じてからリンクを開いてください",isError:true);return}
             show();store.openExternalNotion(external);return
         }
-        if ["http","https"].contains(url.scheme ?? ""),let safari=NSWorkspace.shared.urlForApplication(withBundleIdentifier:"com.apple.Safari") {
-            NSWorkspace.shared.open([url],withApplicationAt:safari,configuration:NSWorkspace.OpenConfiguration());return
+        if ["http","https"].contains(url.scheme ?? "") {
+            store.linkRouting.openInBrowser(url) { [weak store] message in store?.notify(message,isError:true) };return
         }
         guard let request=LauncherRequest.parse(url,token:store.launcherToken) else{return}
         guard window.attachedSheet == nil else {store.notify("開いているダイアログを閉じてから再実行してください");return}

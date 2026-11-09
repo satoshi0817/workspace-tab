@@ -43,7 +43,7 @@ extension NotionLibrary {
                     session.workspaces[i].pages[j].url=BrowserAddress.url(session.workspaces[i].pages[j].url).map(BrowserAddress.savedURL) ?? "about:blank"
                 }
             }
-            let iconNames=[session.workspaces[i].iconFile].compactMap{$0}+session.workspaces[i].pages.compactMap(\.tabIconFile)
+            let iconNames=[session.workspaces[i].iconFile].compactMap{$0}+session.workspaces[i].pages.compactMap(\.tabIconFile)+session.workspaces[i].resolvedTabGroups.compactMap(\.iconFile)
             for name in Set(iconNames) {
                 guard name == URL(fileURLWithPath:name).lastPathComponent,
                       let image=store.iconCache.image(directory:store.directory,name:name) else{continue}

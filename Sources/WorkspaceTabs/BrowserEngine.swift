@@ -17,16 +17,13 @@ import WorkspaceCore
     @Published var canForward = false
     @Published var failure: String?
     @Published var detectedNotionSpaceID: String?
-    enum PreviewPhase {case none,loading,updated,failed}
-    @Published private(set) var previewImage:NSImage?
-    @Published private(set) var previewCapturedAt:Date?
-    @Published private(set) var previewPhase:PreviewPhase = .none
-    private var previewURL:String?
+    enum LoadingState:Equatable {case none, loading, failed}
+    @Published private(set) var loadingState:LoadingState = .none
+    @Published private(set) var nativeLoadingPlaceholderVisible=false
     private(set) var needsRestore=false
     private(set) var navigationStarts=0
-    private var previewGeneration=0
-    private var previewTask:Task<Void,Never>?
-    private var capturePending=false
+    private var loadingGeneration=0
+    private var loadingTask:Task<Void,Never>?
     private(set) var documentGeneration:UInt=0
     private var currentNavigation:WKNavigation?
     private var pendingActionNavigation:WKNavigation?
@@ -35,6 +32,7 @@ import WorkspaceCore
     private var hasCommittedDocument=false
     private var mainGET:URL?
     private(set) var connectionRetryURL:URL?
+    private(set) var failedURL:URL?
     func acceptsDocumentResult(_ generation:UInt)->Bool {!disposed && documentGeneration == generation}
     func cancelNotionAction(clearPending:Bool=true) {
         if actionRunID != nil {
@@ -44,7 +42,7 @@ import WorkspaceCore
         if clearPending,pendingNotionAction != nil {clearPendingNotionAction()}
     }
     private func invalidateDocument(cancelAction:Bool=true) {
-        documentGeneration &+= 1;detectionRequest=nil;capturePending=false
+        documentGeneration &+= 1;detectionRequest=nil
         if cancelAction {cancelNotionAction(clearPending:false)}
         detectedNotionSpaceID=nil;detectedURL=nil
     }
@@ -59,77 +57,66 @@ import WorkspaceCore
         currentNavigation=webView.load(URLRequest(url:url))
     }
     private var navigationStarted:Double?
-    private var lastCapture=Date.distantPast
     private var lastAutomaticRecovery=Date.distantPast
     private static let contentReadyScript = #"""
     (()=>{
-      if(document.readyState==='loading' || !document.body)return false;
-      const root=document.querySelector('main,[role="main"],.notion-frame') || document.body;
+      const skeleton=document.getElementById('skeleton');
+      const style=skeleton && getComputedStyle(skeleton);
+      const native=!!(skeleton && skeleton.getAttribute('role')==='progressbar' && skeleton.getClientRects().length && style.display!=='none' && style.visibility!=='hidden' && Number(style.opacity)>0);
+      if(document.readyState==='loading' || !document.body)return {ready:false,native};
+      const main=document.querySelector('main,[role="main"],.notion-frame');
+      if(native && !main)return {ready:false,native:true};
+      const root=main || document.body;
       const text=(root.innerText||'').replace(/\s+/g,' ').trim();
-      if(!text || /^(loading[.\s…]*|読み込み中[.\s…]*)$/i.test(text))return false;
-      return root.getClientRects().length>0;
+      const ready=!!text && !/^(loading[.\s…]*|読み込み中[.\s…]*)$/i.test(text) && root.getClientRects().length>0;
+      return {ready,native:native && !ready};
     })()
     """#
-    func capturePreview(force:Bool=false) {
-        guard store?.previewsEnabled(workspaceID) == true,store?.previewsMayCapture == true,!disposed,!capturePending,!webView.isLoading,!needsRestore,previewImage == nil,
-              webView.window?.isVisible == true,webView.window?.isMiniaturized == false,!webView.isHidden,webView.bounds.width>100,webView.bounds.height>100,
-              force || Date().timeIntervalSince(lastCapture)>30,
-              let url=webView.url.map(BrowserAddress.savedURL) else{return}
-        let generation=documentGeneration
-        capturePending=true;lastCapture=Date()
-        webView.evaluateJavaScript(Self.contentReadyScript) { [weak self] value,_ in
-            guard let self,self.acceptsDocumentResult(generation) else{return}
-            guard !self.disposed,value as? Bool == true,self.webView.url.map(BrowserAddress.savedURL) == url else {self.capturePending=false;return}
-            let config=WKSnapshotConfiguration();config.snapshotWidth=640;config.afterScreenUpdates=false
-            self.webView.takeSnapshot(with:config) { [weak self] image,_ in
-                guard let self,self.acceptsDocumentResult(generation) else{return};self.capturePending=false
-                guard !self.disposed,self.store?.previewsEnabled(self.workspaceID) == true,let image,self.webView.url.map(BrowserAddress.savedURL) == url else{return}
-                self.store?.previewCache.save(image,profile:self.profileID,page:self.pageID,url:url)
-            }
-        }
+    private func beginLoadingPlaceholder() {
+        loadingTask?.cancel();loadingTask=nil;loadingGeneration += 1
+        nativeLoadingPlaceholderVisible=false;loadingState = .loading
+    }
+    private func clearLoadingPlaceholder() {
+        loadingTask?.cancel();loadingTask=nil;loadingGeneration += 1
+        nativeLoadingPlaceholderVisible=false;loadingState = .none
     }
     func prepareForDisplay() {
         retryAfterConnectionReturns()
         guard store?.networkOffline != true,!disposed,needsRestore,!webView.isLoading,Date().timeIntervalSince(lastAutomaticRecovery)>30 else{return}
         lastAutomaticRecovery=Date();needsRestore=false;failure=nil
         if let url=webView.url?.absoluteString ?? store?.page(PageReference(workspaceID:workspaceID,pageID:pageID))?.url {
-            restorePreview(url)
-            previewPhase = .loading
+            beginLoadingPlaceholder()
             if webView.url != nil {webView.reload()}
             else if let target=BrowserAddress.url(url){webView.load(URLRequest(url:target))}
         }
     }
-    private func restorePreview(_ url:String) {
-        guard store?.previewsEnabled(workspaceID) == true else {dismissPreview();return}
-        let saved=BrowserAddress.url(url).map(BrowserAddress.savedURL) ?? url
-        previewURL=saved
-        previewImage=store?.previewCache.image(profile:profileID,page:pageID,url:saved)
-        previewCapturedAt=store?.previewCache.capturedAt(profile:profileID,page:pageID,url:saved)
-        if previewImage != nil {previewPhase = .loading}
+    func retryLoading() {
+        needsRestore=false;failure=nil
+        if let target=failedURL {navigate(target.absoluteString)}
+        else if webView.url != nil {beginLoadingPlaceholder();webView.reload()}
+        else {navigate(address)}
     }
-    func dismissPreview(){previewImage=nil;if previewPhase != .updated {previewPhase = .none}}
-    func retryPreview(){needsRestore=false;failure=nil;previewPhase = .loading;webView.reload()}
-    private func settlePreview() {
-        guard previewPhase == .loading else{return}
-        previewTask?.cancel()
-        let generation=previewGeneration
-        previewTask=Task { [weak self] in
+    func stopLoading() {webView.stopLoading();clearLoadingPlaceholder()}
+    private func settleLoadingPlaceholder() {
+        guard loadingState == .loading,loadingTask == nil else{return}
+        let generation=loadingGeneration
+        loadingTask=Task { [weak self] in
             for _ in 0..<60 {
-                guard !Task.isCancelled,let self,!self.disposed,self.previewGeneration == generation else{return}
-                let ready=try? await self.webView.evaluateJavaScript(Self.contentReadyScript)
-                guard !Task.isCancelled,!self.disposed,self.previewGeneration == generation else{return}
-                if ready as? Bool == true {
-                    self.previewImage=nil;self.previewPhase = .updated
-                    DispatchQueue.main.asyncAfter(deadline:.now()+2) { [weak self] in
-                        guard let self,!self.disposed,self.previewGeneration == generation else{return}
-                        self.previewPhase = .none;self.capturePreview(force:true)
-                    }
+                guard !Task.isCancelled,let self,!self.disposed,self.loadingGeneration == generation else{return}
+                let status=(try? await self.webView.evaluateJavaScript(Self.contentReadyScript)) as? [String:Bool]
+                guard !Task.isCancelled,!self.disposed,self.loadingGeneration == generation else{return}
+                let native=status?["native"] == true
+                if self.nativeLoadingPlaceholderVisible != native {self.nativeLoadingPlaceholderVisible=native}
+                if status?["ready"] == true || self.webView.url?.absoluteString == "about:blank" {
+                    self.nativeLoadingPlaceholderVisible=false;self.loadingState = .none;self.loadingTask=nil
                     return
                 }
                 try? await Task.sleep(for:.milliseconds(200))
             }
-            // Unknown SPA layout: reveal the actual page, never claim fresh data.
-            if let self,!self.disposed,self.previewGeneration == generation {self.dismissPreview()}
+            // Unknown SPA layout: reveal the actual page without claiming data sync completed.
+            if let self,!self.disposed,self.loadingGeneration == generation {
+                self.nativeLoadingPlaceholderVisible=false;self.loadingState = .none;self.loadingTask=nil
+            }
         }
     }
     var workspaceIdentityLabel:String? {
@@ -236,7 +223,7 @@ import WorkspaceCore
     func dispose() {
         guard !disposed else{return}
         cancelNotionAction();invalidateDocument();connectionRetryURL=nil
-        disposed=true;faviconTask?.cancel();faviconTask=nil;previewTask?.cancel();previewTask=nil;previewImage=nil;clearPendingNotionAction()
+        disposed=true;faviconTask?.cancel();faviconTask=nil;loadingTask?.cancel();loadingTask=nil;nativeLoadingPlaceholderVisible=false;loadingState = .none;clearPendingNotionAction()
         observations.forEach{$0.invalidate()};observations.removeAll()
         webView.stopLoading();webView.navigationDelegate=nil;webView.uiDelegate=nil
         webView.removeFromSuperview();store=nil
@@ -252,7 +239,7 @@ import WorkspaceCore
         super.init()
         address = page.url; title = page.title
         styleScript=Self.style(workspace)
-        restorePreview(page.url)
+        if page.isStartPage != true,page.url != "about:blank" {loadingState = .loading}
         webView.navigationDelegate = self; webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         observations = [webView.observe(\.url, options: [.new]) { [weak self] _, _ in Task { @MainActor in self?.refresh() } },
@@ -290,8 +277,8 @@ import WorkspaceCore
         }
     }
     func navigate(_ text: String,notionAction:String? = nil) {
-        invalidateDocument();connectionRetryURL=nil
-        previewTask?.cancel();previewGeneration += 1;dismissPreview();previewPhase = .none;needsRestore=false
+        invalidateDocument();connectionRetryURL=nil;failedURL=nil
+        clearLoadingPlaceholder();needsRestore=false
         clearPendingNotionAction()
         guard let url = BrowserAddress.url(text) else { failure = "http / httpsのURLを入力してください。"; return }
         if store?.routeNotion(url,from:PageReference(workspaceID:workspaceID,pageID:pageID)) == true {return}
@@ -301,7 +288,7 @@ import WorkspaceCore
             resetUserScripts()
         }
         store?.leaveStartPage(workspaceID,pageID,url:url)
-        failure = nil;currentNavigation=webView.load(URLRequest(url: url))
+        failure = nil;beginLoadingPlaceholder();currentNavigation=webView.load(URLRequest(url: url))
         if pendingNotionAction != nil {pendingActionNavigation=currentNavigation}
     }
     func updateStyle(_ workspace: BrowserWorkspace) {
@@ -316,46 +303,51 @@ import WorkspaceCore
         if pendingNotionAction != nil,navigation !== pendingActionNavigation {clearPendingNotionAction()}
         invalidateDocument();currentNavigation=navigation;connectionRetryURL=nil
         navigationStarted=ProcessInfo.processInfo.systemUptime
-        navigationStarts += 1;previewGeneration += 1;previewTask?.cancel()
-        if previewImage != nil {previewPhase = .loading}
+        navigationStarts += 1;failure=nil;failedURL=nil;beginLoadingPlaceholder()
     }
     func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
         guard acceptsNavigation(navigation) else{return}
         hasCommittedDocument=true;connectionRetryURL=nil
-        if previewImage != nil,webView.url.map(BrowserAddress.savedURL) != previewURL {previewImage=nil}
+        settleLoadingPlaceholder()
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard acceptsNavigation(navigation) else{return}
         let generation=documentGeneration
         if let start=navigationStarted {store?.recordTiming("ページ読み込み",since:start);navigationStarted=nil}
-        failure = nil; refresh()
+        failure = nil;failedURL=nil;refresh()
         DispatchQueue.main.async { [weak self] in guard let self,self.acceptsDocumentResult(generation) else{return};self.firstLoadFinished=true;self.detectNotionWorkspace() }
         if let workspace = store?.workspace(workspaceID) { updateStyle(workspace) }
         startPendingNotionAction()
         discoverFavicon()
-        settlePreview()
-        DispatchQueue.main.asyncAfter(deadline:.now()+1) { [weak self] in guard let self,self.acceptsDocumentResult(generation) else{return};self.capturePreview();self.discoverFavicon() }
+        settleLoadingPlaceholder()
+        DispatchQueue.main.asyncAfter(deadline:.now()+1) { [weak self] in guard let self,self.acceptsDocumentResult(generation) else{return};self.discoverFavicon() }
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { if acceptsNavigation(navigation) {failed(error)} }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { if acceptsNavigation(navigation) {failed(error)} }
     private func failed(_ error: Error) {
-        guard !disposed,(error as NSError).code != NSURLErrorCancelled else { return }
+        guard !disposed else{return}
         let networkError=error as NSError
+        if networkError.domain == NSURLErrorDomain,networkError.code == NSURLErrorCancelled {
+            if !webView.isLoading {clearLoadingPlaceholder();refresh()}
+            return
+        }
+        failedURL=(networkError.userInfo[NSURLErrorFailingURLErrorKey] as? URL)
+            ?? (networkError.userInfo[NSURLErrorFailingURLStringErrorKey] as? String).flatMap(URL.init(string:))
+            ?? mainGET ?? webView.url
         if !hasCommittedDocument,networkError.domain == NSURLErrorDomain,
            [NSURLErrorNotConnectedToInternet,NSURLErrorNetworkConnectionLost,NSURLErrorCannotFindHost,NSURLErrorCannotConnectToHost,NSURLErrorDNSLookupFailed].contains(networkError.code),
            let url=networkError.userInfo[NSURLErrorFailingURLErrorKey] as? URL,url == mainGET {connectionRetryURL=url}
         cancelNotionAction(clearPending:false)
         if pendingNotionAction != nil {clearPendingNotionAction();store?.notify("新しいタブを読み込めなかったためNotionの操作を中止しました",isError:true)}
-        previewTask?.cancel();previewGeneration += 1
-        previewPhase = previewImage != nil ? .failed : .none
+        loadingTask?.cancel();loadingTask=nil;loadingGeneration += 1
+        nativeLoadingPlaceholderVisible=false;loadingState = .failed
         failure = error.localizedDescription; refresh()
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         guard !disposed else{return}
         cancelNotionAction();invalidateDocument()
-        previewTask?.cancel();previewGeneration += 1;needsRestore=true
-        if let url=webView.url?.absoluteString {restorePreview(url)}
-        if previewImage != nil {previewPhase = .failed}
+        loadingTask?.cancel();loadingTask=nil;loadingGeneration += 1;needsRestore=true
+        nativeLoadingPlaceholderVisible=false;loadingState = .failed;failedURL=webView.url
         failure = "ページの処理が終了しました。再読み込みしてください。"
         if store?.visiblePageIDs.contains(pageID) == true {prepareForDisplay()}
     }

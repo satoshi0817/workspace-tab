@@ -31,7 +31,7 @@ extension BrowserStore {
         guard !groups.contains(where:{$0.id != value.id && $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame}) else {
             notify("同じ名前のグループがあります",isError:true);return false
         }
-        let group=BrowserTabGroup(id:value.id,name:name)
+        let group=BrowserTabGroup(id:value.id,name:name,iconFile:value.iconFile)
         if let j=groups.firstIndex(where:{$0.id == value.id}) {groups[j]=group} else {groups.append(group)}
         session.workspaces[i].tabGroups=groups;session.workspaces[i].visibleTabGroupID=value.id;changed();return true
     }
@@ -59,6 +59,13 @@ struct BrowserGroupPicker:View {
     @State private var removing=false
     private var current:BrowserTabGroup {workspace.resolvedTabGroups.first{$0.id == workspace.visibleGroupID}!}
     var body:some View {
+        HStack(spacing:BrowserLayout.gap) {
+            selector.padding(.horizontal,BrowserLayout.small).frame(height:BrowserLayout.control)
+            Rectangle().fill(Palette.ink(workspace.color).opacity(0.25)).frame(width:1,height:24)
+                .accessibilityHidden(true)
+        }.fixedSize()
+    }
+    private var selector:some View {
         Menu {
             ForEach(workspace.resolvedTabGroups) {group in
                 Button {store.showTabGroup(group.id,in:workspace.id)} label:{
@@ -67,17 +74,14 @@ struct BrowserGroupPicker:View {
             }
             Divider()
             Button("新しいグループ…") {editing=BrowserTabGroup(name:"")}
-            Button("グループ名を変更…") {editing=current}
+            Button("グループを編集…") {editing=current}
             if current.id != workspace.id {Button("グループを削除…") {removing=true}}
         } label:{
             // AppKit menus replace SwiftUI label foreground styles with system ink.
             // Preserve the tab bar's explicit contrast color, including the chevron.
-            Image(nsImage:Palette.groupMenuLabel(current.name,ink:Palette.ink(workspace.color)))
+            Image(nsImage:Palette.groupMenuLabel(current.name,ink:Palette.ink(workspace.color),icon:current.iconFile.flatMap{store.iconCache.image(directory:store.directory,name:$0)},iconKey:current.iconFile ?? "folder"))
                 .renderingMode(.original)
-        }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(maxWidth:150)
-            .padding(.horizontal,BrowserLayout.gap).frame(height:BrowserLayout.control)
-            .background(Palette.ink(workspace.color).opacity(0.12),in:Capsule())
-            .overlay(Capsule().strokeBorder(Palette.ink(workspace.color).opacity(0.18),lineWidth:0.5))
+        }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(height:20)
             .accessibilityLabel("タブグループ: "+current.name)
             .help("表示するタブグループ。上下スクロールでも切り替えられます。ページはタブをクリックするまで変わりません。")
             .sheet(item:$editing,onDismiss:store.restorePanelFocus) {group in
@@ -98,13 +102,14 @@ private struct BrowserGroupEditor:View {
         VStack(alignment:.leading,spacing:16) {
             Text("タブグループ").font(.title2.weight(.semibold))
             TextField("名前（例：Notion、外部ツール）",text:$draft.name).textFieldStyle(.roundedBorder)
+            IconSelectionRow(store:store,file:$draft.iconFile,defaultSymbol:"folder")
             HStack {
                 Spacer()
                 Button("キャンセル") {dismiss()}.keyboardShortcut(.cancelAction)
                 Button("保存") {if store.saveTabGroup(draft,in:workspaceID) {dismiss()}}
                     .keyboardShortcut(.defaultAction).disabled(draft.name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)
             }
-        }.padding(24).frame(width:340)
+        }.foregroundStyle(Color.primary).padding(24).frame(width:420)
     }
 }
 

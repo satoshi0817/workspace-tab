@@ -243,7 +243,7 @@ struct BrowserNavigation:View {
             HStack(spacing:BrowserLayout.gap) {
                 Button {engine.webView.goBack()} label:{Image(systemName:"chevron.left")}.disabled(!engine.canBack)
                 Button {engine.webView.goForward()} label:{Image(systemName:"chevron.right")}.disabled(!engine.canForward)
-                Button {if engine.loading {engine.webView.stopLoading()} else {engine.webView.reload()}} label:{Image(systemName:engine.loading ? "xmark":"arrow.clockwise")}
+                Button {if engine.loading {engine.stopLoading()} else {engine.webView.reload()}} label:{Image(systemName:engine.loading ? "xmark":"arrow.clockwise")}
                 TextField("URL",text:$address).textFieldStyle(.roundedBorder).focused($editing).onSubmit {engine.navigate(address);editing=false;expanded=false}
                     .onExitCommand {editing=false;expanded=false;store.window?.makeFirstResponder(engine.webView)}
                 Button {store.prepareFavorite(workspaceID: engine.workspaceID, pageID: engine.pageID)} label:{Image(systemName:"star")}.help("このページをお気に入りに追加").accessibilityLabel("このページをお気に入りに追加")
@@ -284,7 +284,7 @@ struct WorkspaceIcon:View {
     let size:CGFloat
     var body:some View {
         Group {
-            if let file=workspace.iconFile,file == URL(fileURLWithPath:file).lastPathComponent,let image=store.iconCache.image(directory:store.directory,name:file) {Image(nsImage:image).resizable().scaledToFit()}
+            if let file=workspace.iconFile,file == URL(fileURLWithPath:file).lastPathComponent,let image=store.iconCache.image(directory:store.directory,name:file) {Image(nsImage:image).renderingMode(image.isTemplate ? .template:.original).resizable().scaledToFit()}
             else if !workspace.emoji.isEmpty {Text(workspace.emoji).font(.system(size:size*0.85))}
             else {Image(systemName:"globe").resizable().scaledToFit().padding(2)}
         }.frame(width:size,height:size)
@@ -303,13 +303,14 @@ private final class DragAreaView:NSView {
 struct BrowserFailure:View {
     @ObservedObject var engine:BrowserEngine
     var body:some View {
-        if let failure=engine.failure,engine.previewImage == nil {
-            HStack {Text(failure).font(.caption).lineLimit(3);Spacer();Button("再読み込み") {engine.retryPreview()}}.padding(8).background(Color.orange.opacity(0.12))
+        if let failure=engine.failure,engine.loadingState != .failed {
+            HStack {Text(failure).font(.caption).lineLimit(3);Spacer();Button("再読み込み") {engine.retryLoading()}}.padding(8).background(Color.orange.opacity(0.12))
         }
     }
 }
 
 struct BrowserSurface:View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let store:BrowserStore
     @ObservedObject var engine:BrowserEngine
     let detached:Bool
@@ -327,39 +328,32 @@ struct BrowserSurface:View {
             BrowserFailure(engine:engine)
             ZStack(alignment:.bottom) {
                 WebContent(webView:engine.webView,store:store,workspaceID:engine.workspaceID,detached:detached)
-                    .allowsHitTesting(engine.previewImage == nil)
-                    .accessibilityHidden(engine.previewImage != nil)
-                if let image=engine.previewImage {
-                    GeometryReader { geometry in
-                        Image(nsImage:image).resizable().scaledToFit()
-                            .frame(width:geometry.size.width,height:geometry.size.height,alignment:.top)
-                            .background(Color(nsColor:.windowBackgroundColor))
-                            .clipped()
-                    }.accessibilityLabel("前回表示した画面のプレビュー")
-                }
-                if engine.previewPhase != .none {
+                    .allowsHitTesting(engine.loadingState == .none)
+                    .accessibilityHidden(engine.loadingState != .none)
+                if engine.loadingState == .loading {
+                    if !engine.nativeLoadingPlaceholderVisible {
+                        PageLoadingSkeleton(notion:BrowserAddress.url(engine.address).map(BrowserAddress.isNotion) ?? false,
+                                            workspace:store.workspace(engine.workspaceID))
+                            .allowsHitTesting(false)
+                    }
                     HStack(spacing:8) {
-                        if engine.previewPhase == .loading {
-                            ProgressView().controlSize(.small)
-                            Text("最新情報を取得中")
-                        } else if engine.previewPhase == .updated {
-                            Image(systemName:"checkmark.circle.fill").foregroundStyle(.green)
-                            Text("表示を更新しました")
-                        } else {
-                            Image(systemName:"exclamationmark.circle")
-                            Text("読み込めませんでした")
-                            Button("再試行"){engine.retryPreview()}
-                        }
-                        if engine.previewImage != nil {
-                            Text("前回の画面").foregroundStyle(.secondary).help(engine.previewCapturedAt.map{DateFormatter.localizedString(from:$0,dateStyle:.short,timeStyle:.short)} ?? "保存日時不明")
-                            Button {engine.dismissPreview()} label:{Image(systemName:"xmark")}
-                                .help("プレビューを閉じる")
-                        }
-                    }.font(.caption).padding(.horizontal,14).padding(.vertical,9)
-                        .background(.regularMaterial,in:Capsule()).padding(.bottom,42)
+                        ProgressView().controlSize(.small)
+                        Text("読み込み直しています")
+                    }.font(.caption).padding(.horizontal,16).padding(.vertical,10)
+                        .background(.regularMaterial,in:Capsule()).shadow(color:.black.opacity(0.08),radius:8,y:2)
+                        .padding(.bottom,24).allowsHitTesting(false)
+                        .transition(.move(edge:.bottom).combined(with:.opacity))
+                } else if engine.loadingState == .failed {
+                    VStack(spacing:12) {
+                        Image(systemName:"wifi.exclamationmark").font(.title).foregroundStyle(.secondary)
+                        Text("読み込めませんでした").font(.headline)
+                        if let failure=engine.failure {Text(failure).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth:360)}
+                        Button("再試行") {engine.retryLoading()}.buttonStyle(.bordered)
+                    }.frame(maxWidth:.infinity,maxHeight:.infinity).background(Color(nsColor:.textBackgroundColor))
                 }
             }.frame(maxWidth:.infinity,maxHeight:.infinity)
-        }.onAppear {engine.prepareForDisplay()}
+        }.animation(reduceMotion ? nil:.easeOut(duration:0.18),value:engine.loadingState)
+            .onAppear {engine.prepareForDisplay()}
     }
 }
 

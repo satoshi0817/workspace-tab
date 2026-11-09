@@ -42,24 +42,32 @@ import WorkspaceCore
             let capturedSource=PageReference(workspaceID:UUID(),pageID:UUID())
             var menuSelections:[(String,PageReference)]=[]
             let creationMenu=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
-            let menu=creationMenu.menu
-            let creationItems=menu.items.filter{$0.representedObject is String}
-            try expect(creationItems.map{$0.keyEquivalent} == ["1","2","3"] && creationItems.allSatisfy{$0.keyEquivalentModifierMask.isEmpty},"Creation menu offers plain digit shortcuts for its actions")
-            let chatIndex=menu.items.firstIndex{($0.representedObject as? String) == "notionChat"}!
-            menu.performActionForItem(at:chatIndex);menu.performActionForItem(at:chatIndex)
+            try expect(NotionCreationMenu.choices.map{$0.id} == ["notionPage","notionChat","notionMeeting","notionDatabase","notionCustomPage"],"Creation picker presents all five Notion creation choices")
+            creationMenu.highlight(4)
+            try expect(creationMenu.selectedIndex == 4,"Creation picker moves its selection independently of creation")
+            let popupFrame=NotionCreationMenu.frame(at:NSPoint(x:999,y:1),inside:NSRect(x:0,y:0,width:1000,height:800))
+            try expect(popupFrame.minY >= 8 && popupFrame.maxX <= 992,"Creation picker stays within screen edges")
+            creationMenu.select(1);creationMenu.select(1)
             try await wait {!menuSelections.isEmpty}
-            try expect(menuSelections.count == 1 && menuSelections[0].0 == "notionChat" && menuSelections[0].1 == capturedSource,"Creation menu dispatches once to the captured source after menu tracking")
-            let previews=PagePreviewCache(directory:root)
-            let previewProfile=UUID(),previewPage=UUID(),previewURL="https://example.test/page"
-            let previewBitmap=NSBitmapImageRep(bitmapDataPlanes:nil,pixelsWide:32,pixelsHigh:32,bitsPerSample:8,samplesPerPixel:3,hasAlpha:false,isPlanar:false,colorSpaceName:.deviceRGB,bytesPerRow:0,bitsPerPixel:0)!
-            let preview=NSImage(size:NSSize(width:32,height:32));preview.addRepresentation(previewBitmap)
-            previews.save(preview,profile:previewProfile,page:previewPage,url:previewURL);previews.flush()
-            try expect(previews.image(profile:previewProfile,page:previewPage,url:previewURL) != nil,"Preview persists locally")
-            try expect(previews.image(profile:UUID(),page:previewPage,url:previewURL) == nil && previews.image(profile:previewProfile,page:previewPage,url:previewURL+"/other") == nil,"Preview rejects another login profile or URL")
-            let reopenedPreviews=PagePreviewCache(directory:root)
-            try expect(reopenedPreviews.image(profile:previewProfile,page:previewPage,url:previewURL) != nil,"Preview survives cache recreation")
-            previews.remove(profile:previewProfile,page:previewPage);previews.flush()
-            try expect(previews.image(profile:previewProfile,page:previewPage,url:previewURL) == nil,"Closed page preview is removed")
+            try expect(menuSelections.count == 1 && menuSelections[0].0 == "notionChat" && menuSelections[0].1 == capturedSource,"Creation picker dispatches once to the captured source after dismissal")
+            func pickerKey(_ code:UInt16,_ text:String,flags:NSEvent.ModifierFlags=[])->NSEvent {
+                NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:flags,timestamp:0,windowNumber:0,context:nil,characters:text,charactersIgnoringModifiers:text,isARepeat:false,keyCode:code)!
+            }
+            let keyboardPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
+            try expect(keyboardPicker.handleKey(pickerKey(125,"")) && keyboardPicker.selectedIndex == 1,"Picker Down moves selection without executing an action")
+            try expect(!keyboardPicker.handleKey(pickerKey(20,"3",flags:.command)),"Picker ignores modified digit shortcuts")
+            try expect(keyboardPicker.handleKey(pickerKey(23,"5")),"Picker accepts digit five")
+            try await wait {menuSelections.count == 2}
+            try expect(menuSelections.last?.0 == "notionCustomPage","Picker digit routes to its matching action")
+            let cancelledPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
+            try expect(cancelledPicker.handleKey(pickerKey(53,"\u{1b}")),"Picker consumes Escape")
+            cancelledPicker.select(0)
+            try expect(menuSelections.count == 2,"Dismissed picker cannot execute a stale action")
+            let oldPreviews=root.appendingPathComponent("PagePreviews")
+            try FileManager.default.createDirectory(at:oldPreviews,withIntermediateDirectories:true)
+            try Data("obsolete image".utf8).write(to:oldPreviews.appendingPathComponent("old.preview"))
+            let preserved=root.appendingPathComponent("preserve-login-and-tabs.txt")
+            try Data("keep".utf8).write(to:preserved)
             let escapeWindow = EscapeCheckWindow(contentRect:.zero,styleMask:[.titled,.resizable],backing:.buffered,defer:false)
             escapeWindow.isReleasedWhenClosed=false
             escapeWindow.cancelOperation(nil)
@@ -105,6 +113,7 @@ import WorkspaceCore
             try expect(NotionWorkspace.target(url:prodURL,detectedID:routingA.notionSpaceID,workspaces:[routingA,duplicate]) == nil && NotionWorkspace.target(url:prodURL,detectedID:"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",workspaces:[routingA]) == nil, "Ambiguous or conflicting Notion identity never routes")
             try expect(NotionWorkspace.target(url:URL(string:"https://app.notion.com/11111111111111111111111111111111")!,detectedID:nil,workspaces:[routingA]) == nil && NotionWorkspace.target(url:URL(string:"https://app.notion.com.evil.test/p/acme/11111111111111111111111111111111")!,detectedID:nil,workspaces:[routingA]) == nil, "Page IDs and lookalike hosts are not workspace evidence")
             let store = BrowserStore(directory:root)
+            try expect(!FileManager.default.fileExists(atPath:oldPreviews.path) && (try Data(contentsOf:preserved)) == Data("keep".utf8),"Startup removes legacy screenshots without deleting adjacent session data")
             store.session = BrowserSession()
             let a = store.addWorkspace(name:"Alpha",url:"http://127.0.0.1:48761/")
             let b = store.addWorkspace(name:"Beta",url:"http://127.0.0.1:48761/")
@@ -157,6 +166,19 @@ import WorkspaceCore
             customPage.tabIconFile=nil
             store.updateBrowserTab(customPage,in:a)
             try expect(store.workspace(a)!.pages[0].tabIconFile == nil,"Browser tab image can be cleared to restore the default icon")
+            let catalog=PresetIcons.shared
+            try expect(catalog.icons.count == 885 && catalog.image("folder") != nil && catalog.image("../folder") == nil,"Bundled Notion presets load offline and reject unknown asset names")
+            try expect(catalog.filtered(query:"フォルダー",category:"").contains{$0.id == "folder"} && catalog.filtered(query:"",category:"people").allSatisfy{$0.category == "people"},"Preset search supports Japanese terms and category filtering")
+            let template=store.saveIcon(catalog.image("star")!,template:true)!
+            try expect(store.iconCache.image(directory:root,name:template)?.isTemplate == true,"Preset icons retain template rendering after local persistence")
+            let groupIcon=BrowserTabGroup(name:"Preset group",iconFile:template)
+            try expect(store.saveTabGroup(groupIcon,in:a),"Group editor saves its selected icon")
+            let groupSession=try JSONDecoder().decode(BrowserSession.self,from:JSONEncoder().encode(store.session))
+            try expect(groupSession.workspaces.first{$0.id == a}?.resolvedTabGroups.first{$0.id == groupIcon.id}?.iconFile == template,"Group icon survives session serialization")
+            let groupBackup=try NotionLibrary.tabBackup(store:store,includePages:false)
+            let importedGroupIcon=try store.importTabIcon(template,from:groupBackup.icons)
+            try expect(groupBackup.icons[template] != nil && importedGroupIcon != nil && store.iconCache.image(directory:root,name:importedGroupIcon!)?.isTemplate == true,"Group presets survive compact Notion backup and import with their tint behavior")
+            store.removeTabGroup(groupIcon.id,in:a)
             let retryIcons=FaviconCache(directory:root.appendingPathComponent("retry-icons"))
             let retryPage="http://127.0.0.1:48761/retry"
             let retrySource="http://127.0.0.1:48761/flaky-icon.png"
@@ -173,19 +195,43 @@ import WorkspaceCore
             store.selectPage(wa.pages[0].id,in:a)
             let sentinel=try await ea.webView.evaluateJavaScript("window.tabStateSentinel") as? Int
             try expect(store.engine(a,wa.pages[0].id) === ea && sentinel == 42 && ea.navigationStarts == navigationCount,"Live tab switching preserves engine, JS state and navigation count")
-            let recoveryURL=BrowserAddress.savedURL(eb.webView.url!)
-            store.previewCache.save(preview,profile:wb.profileID,page:eb.pageID,url:recoveryURL);store.previewCache.flush()
             let restoredEngine=BrowserEngine(store:store,workspace:wb,page:store.page(PageReference(workspaceID:b,pageID:eb.pageID))!)
-            try expect(restoredEngine.previewImage != nil && restoredEngine.previewPhase == .loading,"Restored page offers saved preview before loading")
+            try expect(restoredEngine.loadingState == .loading,"Restored pages begin with a transient loading placeholder")
             restoredEngine.dispose()
             let beforeRecovery=eb.navigationStarts
             eb.webViewWebContentProcessDidTerminate(eb.webView)
-            try expect(eb.needsRestore && eb.previewImage != nil,"Inactive terminated page retains a recovery preview")
+            try expect(eb.needsRestore && eb.loadingState == .failed,"Inactive terminated page waits for recovery without retaining an image")
             eb.prepareForDisplay()
-            try await wait {eb.previewPhase == .updated}
-            try expect(eb.previewImage == nil && !eb.needsRestore && eb.navigationStarts == beforeRecovery+1,"Recovery replaces preview only after live content is ready")
+            try await wait {eb.loadingState == .none && !eb.needsRestore}
+            try expect(eb.navigationStarts == beforeRecovery+1,"Recovery replaces the skeleton only after live content is ready")
             eb.prepareForDisplay()
             try expect(eb.navigationStarts == beforeRecovery+1,"Displaying recovered content does not reload again")
+            let delayed=store.addPage(to:a,url:"http://127.0.0.1:48761/skeleton-delayed")!
+            try expect(delayed.loadingState == .loading,"Cold navigation immediately shows the loading skeleton")
+            try await wait {delayed.loadingState == .none && delayed.webView.title == "Skeleton ready"}
+            let readyText=try await delayed.webView.evaluateJavaScript("document.body.innerText") as? String
+            try expect(readyText?.contains("Ready content") == true,"A delayed SPA keeps its skeleton until actual content appears")
+            delayed.navigate("http://127.0.0.1:48761/native-skeleton")
+            try await wait {delayed.nativeLoadingPlaceholderVisible}
+            try expect(delayed.loadingState == .loading,"The site's own skeleton takes over while the loading pill remains")
+            try await wait {delayed.loadingState == .none}
+            try expect(!delayed.nativeLoadingPlaceholderVisible,"Native skeleton handoff ends when the real content becomes ready")
+            delayed.navigate("http://127.0.0.1:48762/unavailable")
+            try await wait {delayed.loadingState == .failed}
+            try expect(delayed.failure != nil,"Navigation failures replace shimmer with an explicit retry state")
+            let failedStarts=delayed.navigationStarts
+            delayed.retryLoading()
+            try await wait {delayed.navigationStarts>failedStarts && delayed.loadingState == .failed}
+            try expect(delayed.failedURL?.port == 48762,"Retry targets the failed destination instead of the previously displayed page")
+            delayed.navigate("http://127.0.0.1:48761/")
+            try await wait {delayed.loadingState == .none}
+            try expect(delayed.failure == nil,"Successful retry removes the failure state and skeleton")
+            delayed.navigate("http://127.0.0.1:48761/skeleton-slow")
+            delayed.stopLoading()
+            try await Task.sleep(for:.milliseconds(200))
+            try expect(delayed.loadingState == .none,"Stopping navigation also stops the skeleton")
+            store.closePage(delayed.pageID,in:a)
+            try expect(!FileManager.default.fileExists(atPath:oldPreviews.path),"Navigation and recovery never recreate screenshot storage")
             let routeFixture="LRU:KeyValueStore2:"
             _ = try await ea.webView.evaluateJavaScript("localStorage.setItem('\(routeFixture)lastVisitedRoute',JSON.stringify({value:{name:'page',blockId:'11111111-1111-1111-1111-111111111111'}}));localStorage.setItem('\(routeFixture)lastVisitedRouteSpaceId',JSON.stringify({value:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'}))")
             let detection=NotionWorkspace.detectionScript.replacingOccurrences(of:"location.protocol",with:"'https:'").replacingOccurrences(of:"location.hostname",with:"'app.notion.com'").replacingOccurrences(of:"location.pathname",with:"'/p/acme/11111111111111111111111111111111'")
@@ -250,14 +296,6 @@ import WorkspaceCore
             testWindow.contentView?.layoutSubtreeIfNeeded()
             try await wait { testWindow.contentView?.layoutSubtreeIfNeeded(); return ea.webView.frame.width > 250 && ea.webView.frame.height > 200 && eb.webView.frame.width > 250 && eb.webView.frame.height > 200 }
             try expect(ea.webView.superview !== eb.webView.superview, "Split View mounts both live WebViews in distinct visible-sized panes")
-            let capturedURL=BrowserAddress.savedURL(ea.webView.url!)
-            ea.capturePreview(force:true)
-            try expect(store.previewCache.image(profile:ea.profileID,page:ea.pageID,url:capturedURL) == nil,"Hidden windows do not capture previews")
-            testWindow.orderFront(nil)
-            ea.capturePreview(force:true)
-            try await wait {store.previewCache.image(profile:ea.profileID,page:ea.pageID,url:capturedURL) != nil}
-            try expect(store.previewCache.image(profile:ea.profileID,page:ea.pageID,url:capturedURL) != nil,"Mounted live page snapshot can be captured and restored")
-
             testWindow.orderOut(nil)
             // Exercise native event handlers in an offscreen test window; no OS input injection.
             let dragRoot=NSView(frame:NSRect(x:0,y:0,width:600,height:200))

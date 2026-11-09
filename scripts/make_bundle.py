@@ -25,3 +25,5 @@ shutil.copyfile(pathlib.Path(__file__).resolve().parent.parent / "Resources" / "
 
 for notice in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
     shutil.copyfile(pathlib.Path(__file__).resolve().parent.parent / notice, bundle / "Contents" / "Resources" / notice)
+
+shutil.copytree(pathlib.Path(__file__).resolve().parent.parent / "Resources" / "NotionIcons", bundle / "Contents" / "Resources" / "NotionIcons", dirs_exist_ok=True)
