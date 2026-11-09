@@ -15,18 +15,16 @@
 
 ## インストール
 
-**macOS 14以降・Apple Silicon搭載Mac**に対応した試用版を配布しています。v0.2.1（ビルド5）で、起動・保存・同期の異常時処理とアイコンキャッシュを改善しました。ソースからビルドする場合はmainブランチまたはv0.2.1タグを使用してください。
+**macOS 14以降の Apple Silicon／Intel Mac** に対応する v1.0.0（ビルド6）を配布しています。Developer ID で署名し、Apple の公証を受けた Universal アプリです。ソースからビルドする場合は main ブランチまたは v1.0.0 タグを使用してください。
 
-1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v0.2.1)の **Assets** から `Workspace-Tabs-0.2.1-arm64.dmg` をダウンロードします。
+1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v1.0.0)の **Assets** から `Workspace-Tabs-1.0.0-universal.dmg` をダウンロードします。
 2. DMGをダブルクリックして開きます。
 3. **Workspace Tabs.app** を隣の **Applications** フォルダへドラッグします。
 4. アプリケーションフォルダから **Workspace Tabs** を開きます。
 
 インストール・利用にターミナル、Xcode、Python、Homebrewなどの追加ツールは不要です。更新時は、起動中のWorkspace Tabsを終了してから入れ替えてください。リポジトリが非公開の場合、ダウンロードにはアクセス権のあるGitHubアカウントでのサインインが必要です。
 
-現在の試用版はAppleの公証を受けていません。初回起動をmacOSが保留する場合は、配布元を確認したうえで、システム設定 → プライバシーとセキュリティに表示される「このまま開く」から許可してください。
-
-Intel Macで使う場合や自分でビルドしたい場合は、下の[ソースからビルド](#ソースからビルド)を参照してください。
+自分でビルドしたい場合は、下の[ソースからビルド](#ソースからビルド)を参照してください。
 
 ## 使い始める
 
@@ -137,7 +135,7 @@ bash scripts/build.sh
 bash scripts/package.sh
 ```
 
-`build/release/` に、ビルドしたCPUアーキテクチャを名前に含むDMGとSHA-256チェックサムを生成します。パッケージ作成だけではAppleの公証は行いません。
+`build/release/` に、ビルドしたCPUアーキテクチャを名前に含むDMGとSHA-256チェックサムを生成します。パッケージ作成だけではAppleの公証は行いません。公開用には Developer ID 署名証明書と `notarytool` のキーチェーンプロファイルを設定したうえで `scripts/release.sh` を実行します。このスクリプトは両CPU向けのビルド、署名、アプリとDMGの公証、チケット添付、Gatekeeper検証を行います。
 
 ## 開発・検証
 
