@@ -8,7 +8,7 @@ struct BrowserOnboarding:View {
     @State private var step=0
     @State private var name="Notion"
     @State private var homeURL="https://app.notion.com"
-    @State private var color="violet"
+    @State private var color="gray"
     @State private var sidebar="icons"
     @State private var theme="system"
     @State private var previewGroup=0
@@ -80,7 +80,7 @@ struct BrowserOnboarding:View {
     }
     @ViewBuilder private var tabsStep:some View {
         Text("グループとページの切り替えは別の操作です。右のプレビューで試せます。").font(.callout).foregroundStyle(.secondary)
-        guideLine("folder","ピルでグループのタブ列を表示")
+        guideLine("folder","グループ名で表示するタブ列を選ぶ")
         guideLine("cursorarrow","タブをクリックするとページが切り替わる")
         guideLine("hand.draw","タブをドラッグして並べ替え")
         guideLine("magnifyingglass","全タブ検索で環境をまたいで移動")

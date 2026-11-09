@@ -86,7 +86,7 @@ enum Palette {
         groupMenuLabels.countLimit=128;groupMenuLabels.setObject(image,forKey:key)
         return image
     }
-    static let names = ["violet", "blue", "green", "amber", "rose", "gray"]
+    static let names = ["gray", "blue", "violet", "rose", "amber", "green"]
     static func normalizedHex(_ input: String) -> String? {
         var value = input.trimmingCharacters(in: .whitespacesAndNewlines)
         if value.hasPrefix("#") { value.removeFirst() }
@@ -115,8 +115,8 @@ enum Palette {
         case "green": return Color(red: 0.28, green: 0.70, blue: 0.52)
         case "amber": return Color(red: 0.88, green: 0.63, blue: 0.25)
         case "rose": return Color(red: 0.90, green: 0.41, blue: 0.53)
-        case "gray": return Color(red: 0.48, green: 0.50, blue: 0.54)
-        default: return Color(red: 0.58, green: 0.47, blue: 0.91)
+        case "violet": return Color(red: 0.58, green: 0.47, blue: 0.91)
+        default: return Color(red: 0.48, green: 0.50, blue: 0.54)
         }
     }
 }

@@ -63,8 +63,8 @@ struct BrowserRoot: View {
                 Button("OK") {}
             } message: {Text("タブの名前・アイコン・色を引き継ぎました。ログイン環境はタブごとに新しく作成しています。各サイトでログインしてください。元アプリのCookieやパスワードは取り込みません。旧設定ファイルも残しています。")}
     }
-    private var activeColor: Color { Palette.color(store.selected?.color ?? "violet") }
-    private var activeInk: Color { Palette.ink(store.selected?.color ?? "violet", preference:store.selected?.textColor) }
+    private var activeColor: Color { Palette.color(store.selected?.color ?? "gray") }
+    private var activeInk: Color { Palette.ink(store.selected?.color ?? "gray", preference:store.selected?.textColor) }
     private var icons: Bool { store.session.sidebarMode == "icons" && store.session.sidebarPosition == "left" }
     @ViewBuilder private var content: some View {
         if let workspace = store.selected, let page = store.selectedPage {
@@ -345,7 +345,7 @@ struct BrowserSurface:View {
                         .transition(.move(edge:.bottom).combined(with:.opacity))
                 } else if engine.loadingState == .failed {
                     VStack(spacing:12) {
-                        Image(systemName:"wifi.exclamationmark").font(.title).foregroundStyle(.secondary)
+                        Image(systemName:engine.lastHTTPStatus.map{(500...599).contains($0)} == true ? "server.rack":"wifi.exclamationmark").font(.title).foregroundStyle(.secondary)
                         Text("読み込めませんでした").font(.headline)
                         if let failure=engine.failure {Text(failure).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth:360)}
                         Button("再試行") {engine.retryLoading()}.buttonStyle(.bordered)

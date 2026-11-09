@@ -11,7 +11,7 @@
 - **すぐに移動する** — 全タブ検索、お気に入り、キーボード操作、Raycast連携が使えます。
 - **作業を再開する** — 開いていたタブや選択状態を保存し、次回起動時に復元します。
 
-左サイドバー・上部タブ、アイコンのみの表示、左端にマウスを寄せると展開する表示を選べます。ライト／ダーク／システムテーマにも対応します。
+新しい環境の初期色はグレーです。左サイドバー・上部タブ、アイコンのみの表示、左端にマウスを寄せると展開する表示を選べます。ライト／ダーク／システムテーマにも対応します。
 
 ## インストール
 
@@ -121,7 +121,7 @@ Notion向けには、ホームURL、ワークスペースIDによる振り分け
 
 ## ソースからビルド
 
-開発者向けの手順です。Xcode 26以降のmacOS SDKとSwift 6ツールチェーン、Python 3が必要です。初回ビルド前にXcodeのセットアップを完了してください。
+開発者向けの手順です。macOS 26以降のSDKとSwift 6ツールチェーン（Xcode 26以降、または同等のCommand Line Tools）、Python 3が必要です。初回ビルド前に開発ツールのセットアップを完了してください。
 
 ```sh
 git clone https://github.com/satoshi0817/workspace-tab.git
@@ -149,6 +149,14 @@ python3 scripts/browser_checks.py
 ```
 
 ブラウザ検証はローカルのテストページと一時ログイン環境を使います。Raycast拡張は `raycast/` 内で `npm run typecheck` と `npm run build` を実行できます。
+
+初回起動を検証する場合は、次のコマンドで設定とCookieのない環境を毎回作り、Notionの表示を5回確認できます。既存のタブやログイン情報は使いません。インターネット接続が必要で、失敗時はHTTPステータスなどを表示して終了コード1を返します。
+
+```sh
+"build/Workspace Tabs.app/Contents/MacOS/WorkspaceTabs" --startup-checks
+```
+
+504などが出た場合は[初回起動の検証・切り分け](docs/FIRST_LAUNCH_CHECKS.md)を参照してください。
 
 ビルド時にApple Development証明書があれば署名に使用し、なければアドホック署名します。署名の指定は `WORKSPACE_TABS_SIGN_IDENTITY`、ビルド先の指定は `WORKSPACE_TABS_BUILD_DIR` で行えます。配布用の公証は別途必要です。
 

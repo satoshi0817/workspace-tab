@@ -139,6 +139,26 @@ import WorkspaceCore
             let ea = store.engine(a,wa.pages[0].id)!, eb = store.engine(b,wb.pages[0].id)!
             try await wait { ea.webView.url?.host == "127.0.0.1" && !ea.webView.isLoading && !eb.webView.isLoading }
             try expect(ea.failure == nil && eb.failure == nil, "Both browser environments load the local fixture")
+            for route in ["gateway-timeout","server-unavailable"] {
+                let failed=store.addPage(to:a,url:"http://127.0.0.1:48761/"+route)!
+                try await wait {failed.failure != nil && !failed.webView.isLoading}
+                let expected=route == "gateway-timeout" ? 504:503
+                try expect(failed.lastHTTPStatus == expected && failed.failure?.contains("HTTP \(expected)") == true && failed.loadingState == .failed,"Main-frame HTTP \(expected) shows a persistent retryable failure rather than a successful page [status=\(failed.lastHTTPStatus ?? 0), state=\(failed.loadingState), error=\(failed.failure ?? "none")]")
+                store.closePage(failed.pageID,in:a)
+            }
+            let retry=store.addPage(to:a,url:"http://127.0.0.1:48761/startup-retry")!
+            try await wait {retry.lastHTTPStatus == 504 && retry.failure != nil && !retry.webView.isLoading}
+            let serverFailedStarts=retry.navigationStarts
+            store.connectionChanged(online:false);store.connectionChanged(online:true)
+            try expect(retry.navigationStarts == serverFailedStarts && retry.loadingState == .failed,"A server timeout never triggers an automatic reload loop")
+            retry.retryLoading()
+            try await wait {retry.lastHTTPStatus == 200 && retry.failure == nil && !retry.webView.isLoading && retry.loadingState == .none}
+            try expect(retry.webView.url?.path == "/startup-retry","Explicit retry recovers from HTTP 504 at the original URL")
+            store.closePage(retry.pageID,in:a)
+            let partial=store.addPage(to:a,url:"http://127.0.0.1:48761/failed-resource")!
+            try await wait {partial.lastHTTPStatus == 200 && !partial.webView.isLoading && partial.loadingState == .none}
+            try expect(partial.failure == nil,"A failed image subresource does not replace a usable main page with a server error")
+            store.closePage(partial.pageID,in:a)
             let faviconPage=BrowserAddress.savedURL(ea.webView.url!)
             try await wait {store.faviconCache.image(profile:ea.profileID,pageURL:faviconPage) != nil}
             try expect(store.faviconCache.image(profile:UUID(),pageURL:faviconPage) == nil,"Declared site favicon loads without sharing the login profile cache")

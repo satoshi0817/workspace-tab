@@ -50,7 +50,7 @@ import WorkspaceCore
         sequences.action={[weak self] action in self?.performShortcut(action)};sequences.start()
         if uiCheckDirectory == nil {store.importLinkViewerOnce();store.notion.start()}
         let failures=uiCheckDirectory == nil ? hotkeys.register():[];if !failures.isEmpty{store.error=failures.joined(separator:"\n")}
-        if store.firstLaunch,uiCheckDirectory == nil {DispatchQueue.main.async { [weak self] in self?.store.onboardingPresented=true}}
+        if store.firstLaunch,(uiCheckDirectory == nil || ProcessInfo.processInfo.environment["WORKSPACE_TABS_UI_CHECK_FIRST_LAUNCH"] == "1") {DispatchQueue.main.async { [weak self] in self?.store.onboardingPresented=true}}
         let pending=pendingLauncherURLs;pendingLauncherURLs=[];pending.forEach(handleLauncherURL)
     }
     func createMenu(){
@@ -167,6 +167,10 @@ MainActor.assumeIsolated {
         };app.run()
     } else if CommandLine.arguments.contains("--notion-checks") {
         Task { do {try await NotionSetupChecks.run();try await NotionCloudChecks.run();exit(0)}catch{print("FAIL",error);exit(1)} };app.run()
+    } else if CommandLine.arguments.contains("--startup-checks") {
+        app.setActivationPolicy(.accessory)
+        Task {let result=await StartupChecks.run();exit(result)}
+        app.run()
     } else if CommandLine.arguments.contains("--browser-checks") {
         app.setActivationPolicy(.accessory)
         Task { let result = await BrowserChecks.run(); exit(result) }

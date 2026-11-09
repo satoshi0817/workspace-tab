@@ -33,7 +33,7 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var name: String
     public var emoji: String = ""
     public var iconFile: String?
-    public var color: String = "violet"
+    public var color: String = "gray"
     public var textColor: String?
     public var pinned: Bool = false
     public var homeURL: String = "https://app.notion.com"

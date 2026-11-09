@@ -16,6 +16,7 @@ import WorkspaceCore
     @Published var canBack = false
     @Published var canForward = false
     @Published var failure: String?
+    @Published private(set) var lastHTTPStatus:Int?
     @Published var detectedNotionSpaceID: String?
     enum LoadingState:Equatable {case none, loading, failed}
     @Published private(set) var loadingState:LoadingState = .none
@@ -303,7 +304,7 @@ import WorkspaceCore
         if pendingNotionAction != nil,navigation !== pendingActionNavigation {clearPendingNotionAction()}
         invalidateDocument();currentNavigation=navigation;connectionRetryURL=nil
         navigationStarted=ProcessInfo.processInfo.systemUptime
-        navigationStarts += 1;failure=nil;failedURL=nil;beginLoadingPlaceholder()
+        navigationStarts += 1;failure=nil;failedURL=nil;lastHTTPStatus=nil;beginLoadingPlaceholder()
     }
     func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
         guard acceptsNavigation(navigation) else{return}
@@ -327,8 +328,12 @@ import WorkspaceCore
     private func failed(_ error: Error) {
         guard !disposed else{return}
         let networkError=error as NSError
+        // Cancelling an HTTP error response can produce WebKit's secondary
+        // policy-interruption error. Preserve the useful server response instead.
+        if loadingState == .failed,lastHTTPStatus.map({(500...599).contains($0)}) == true,
+           ["WebKitErrorDomain","WKErrorDomain"].contains(networkError.domain),networkError.code == 102 {return}
         if networkError.domain == NSURLErrorDomain,networkError.code == NSURLErrorCancelled {
-            if !webView.isLoading {clearLoadingPlaceholder();refresh()}
+            if !webView.isLoading && loadingState == .loading {clearLoadingPlaceholder();refresh()}
             return
         }
         failedURL=(networkError.userInfo[NSURLErrorFailingURLErrorKey] as? URL)
@@ -377,6 +382,19 @@ import WorkspaceCore
         if alert.runModal() == .alertSecondButtonReturn { NSWorkspace.shared.open(url) }
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        guard !disposed else {decisionHandler(.cancel);return}
+        if navigationResponse.isForMainFrame,let response=navigationResponse.response as? HTTPURLResponse {
+            lastHTTPStatus=response.statusCode
+            if (500...599).contains(response.statusCode) {
+                let text=response.statusCode == 504
+                    ? "接続先のサーバーから応答がありません（HTTP 504）。時間をおいて再試行してください。"
+                    : "接続先のサーバーでエラーが発生しました（HTTP \(response.statusCode)）。時間をおいて再試行してください。"
+                var info:[String:Any]=[NSLocalizedDescriptionKey:text]
+                if let url=response.url {info[NSURLErrorFailingURLErrorKey]=url}
+                failed(NSError(domain:"WorkspaceTabs.HTTP",code:response.statusCode,userInfo:info))
+                decisionHandler(.cancel);return
+            }
+        }
         decisionHandler(navigationResponse.canShowMIMEType ? .allow : .download)
     }
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
