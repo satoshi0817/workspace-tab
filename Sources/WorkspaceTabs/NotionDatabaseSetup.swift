@@ -261,17 +261,18 @@ actor DatabaseSetup {
               relations.count == 1, relations[0]["id"] as? String == p.categoryPageId else { throw LVError("設定用リンクとカテゴリの紐付けを確認できませんでした") }
     }
     private func list(_ token: String, endpoint: String, method: String = "GET", body: JSONObject = [:]) async throws -> [JSONObject] {
-        var result: [JSONObject] = []; var cursor: String?
+        var result: [JSONObject] = [];var pagination=NotionPagination()
         repeat {
+            try Task.checkCancellation()
+            let cursor=pagination.cursor
             var requestBody = body; var path = endpoint
             if method == "GET" {
                 path += "?page_size=100"
                 if let cursor { path += "&start_cursor=\(cursor.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? cursor)" }
             } else { requestBody["page_size"] = 100; if let cursor { requestBody["start_cursor"] = cursor } }
             let response = try await call(token, method, path, method == "GET" ? nil : requestBody)
-            result += response["results"] as? [JSONObject] ?? []
-            cursor = response["has_more"] as? Bool == true ? response["next_cursor"] as? String : nil
-        } while cursor != nil
+            result += try pagination.consume(response)
+        } while pagination.cursor != nil
         return result.filter { $0["in_trash"] as? Bool != true && $0["archived"] as? Bool != true }
     }
     private func searchRoots(title: String, token: String) async throws -> [JSONObject] {

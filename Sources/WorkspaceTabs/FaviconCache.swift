@@ -10,6 +10,7 @@ import WorkspaceCore
     private let directory:URL
     private let session:URLSession
     private var sources:[String:String]=[:]
+    private(set) var networkFetches=0
     private var pending:[String:Task<Void,Never>]=[:]
     private var attempted=Set<String>()
     init(directory:URL) {
@@ -43,7 +44,6 @@ import WorkspaceCore
             if images.object(forKey:key as NSString) != nil {return}
             if declared == nil && attempted.contains(key) {return}
         }
-        let changed=sources[key] != nil && sources[key] != source
         if sources.count>512 {
             let victims=Array(sources.keys.filter{$0 != key && pending[$0] == nil}.prefix(sources.count-256))
             for victim in victims {sources[victim]=nil;attempted.remove(victim)}
@@ -51,24 +51,35 @@ import WorkspaceCore
         sources[key]=source;attempted.insert(key)
         pending[key]?.cancel()
         let file=directory.appendingPathComponent(key+".png")
+        let sourceFile=directory.appendingPathComponent(key+".source")
+        let sourceDigest=Data(SHA256.hash(data:Data(source.utf8)))
         let task=Task { [weak self] in
             guard let self else{return}
             var data:Data?
-            if !changed,declared == nil {
-                data=await Task.detached(priority:.utility) {
+            data=await Task.detached(priority:.utility) {
+                    // A declared icon may use the disk cache too, but only for the
+                    // same source. Persist its hash, never a potentially signed URL.
                     guard let attrs=try? file.resourceValues(forKeys:[.contentModificationDateKey,.fileSizeKey]),
                           (attrs.fileSize ?? 0)<=256*1024,
                           Date().timeIntervalSince(attrs.contentModificationDate ?? .distantPast)<7*86400 else{return nil as Data?}
-                    return try? Data(contentsOf:file)
+                    guard let bytes=try? Data(contentsOf:file) else{return nil as Data?}
+                    if declared != nil {
+                        // Validate both files as a pair if another task replaced one.
+                        let expected=sourceDigest+Data(SHA256.hash(data:bytes))
+                        guard (try? Data(contentsOf:sourceFile)) == expected else{return nil as Data?}
+                    }
+                    return bytes
                 }.value
-            }
             var decoded=data.flatMap(Self.decode)
+            let loadedFromDisk=decoded != nil
             if decoded == nil {
                 for attempt in 0..<2 {
                     guard !Task.isCancelled else{return}
+                    self.networkFetches += 1
                     data=await Self.fetch(source,using:self.session)
                     decoded=data.flatMap(Self.decode)
                     if decoded == nil,source != fallback.absoluteString {
+                        self.networkFetches += 1
                         decoded=await Self.fetch(fallback.absoluteString,using:self.session).flatMap(Self.decode)
                     }
                     if decoded != nil {break}
@@ -77,18 +88,22 @@ import WorkspaceCore
             }
             guard !Task.isCancelled,self.sources[key] == source,let icon=decoded else{return}
             self.images.setObject(icon,forKey:key as NSString,cost:64*64*4);self.attempted.remove(key);self.revision &+= 1
-            if let tiff=icon.tiffRepresentation,let rep=NSBitmapImageRep(data:tiff),let png=rep.representation(using:.png,properties:[:]) {
+            if !loadedFromDisk,let tiff=icon.tiffRepresentation,let rep=NSBitmapImageRep(data:tiff),let png=rep.representation(using:.png,properties:[:]) {
                 let directory=self.directory
                 await Task.detached(priority:.utility) {
                     try? FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
                     try? png.write(to:file,options:.atomic)
                     try? FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:file.path)
+                    let metadata=sourceDigest+Data(SHA256.hash(data:png))
+                    try? metadata.write(to:sourceFile,options:.atomic)
                     let files=((try? FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])) ?? [])
-                        .filter{$0.pathExtension == "png"}.sorted {
-                            ((try? $0.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate) ?? .distantPast) >
-                            ((try? $1.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
-                        }
-                    for old in files.dropFirst(256) {try? FileManager.default.removeItem(at:old)}
+                        .filter{$0.pathExtension == "png"}
+                        .map{($0,(try? $0.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate) ?? .distantPast)}
+                        .sorted{$0.1>$1.1}
+                    for (old,_) in files.dropFirst(256) {
+                        try? FileManager.default.removeItem(at:old)
+                        try? FileManager.default.removeItem(at:old.deletingPathExtension().appendingPathExtension("source"))
+                    }
                 }.value
             }
         }

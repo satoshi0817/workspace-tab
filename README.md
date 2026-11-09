@@ -15,9 +15,9 @@
 
 ## インストール
 
-**macOS 14以降・Apple Silicon搭載Mac**に対応した試用版を配布しています。v0.2.0のDMGはビルド4へ更新し、グレーの初期色・最新のアイコン設定・リンク受け取り・読み込み失敗時の再試行を含みます。ソースからビルドする場合はmainブランチを使用してください。
+**macOS 14以降・Apple Silicon搭載Mac**に対応した試用版を配布しています。v0.2.1（ビルド5）で、起動・保存・同期の異常時処理とアイコンキャッシュを改善しました。ソースからビルドする場合はmainブランチまたはv0.2.1タグを使用してください。
 
-1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v0.2.0)の **Assets** から `Workspace-Tabs-0.2.0-arm64.dmg` をダウンロードします。
+1. [ダウンロードページ](https://github.com/satoshi0817/workspace-tab/releases/tag/v0.2.1)の **Assets** から `Workspace-Tabs-0.2.1-arm64.dmg` をダウンロードします。
 2. DMGをダブルクリックして開きます。
 3. **Workspace Tabs.app** を隣の **Applications** フォルダへドラッグします。
 4. アプリケーションフォルダから **Workspace Tabs** を開きます。

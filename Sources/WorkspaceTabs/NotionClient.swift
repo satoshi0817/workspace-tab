@@ -22,18 +22,41 @@ func extractId(_ value: String) -> String? {
     return String(value[range]).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 }
 
+/// Refuse incomplete or stalled lists before they can replace local data.
+struct NotionPagination {
+    private(set) var cursor:String?
+    private var seen=Set<String>()
+    mutating func consume(_ response:JSONObject)throws->[JSONObject] {
+        try Task.checkCancellation()
+        guard let rows=response["results"] as? [JSONObject],let more=response["has_more"] as? Bool else {
+            throw LVError("Notion APIの一覧応答が不完全なため同期を中止しました")
+        }
+        if more {
+            guard let next=response["next_cursor"] as? String,!next.isEmpty,seen.insert(next).inserted else {
+                throw LVError("Notion APIのページ送りが進まないため同期を中止しました")
+            }
+            cursor=next
+        } else {cursor=nil}
+        return rows
+    }
+}
+
 actor NotionClient: NotionRequesting {
-    private var lastRequest = Date.distantPast
+    private var nextRequestTime:TimeInterval = 0
     private let apiVersion: String
     private let transport:(any NotionRequesting)?
     init(apiVersion: String = "2025-09-03",transport:(any NotionRequesting)? = nil) { self.apiVersion = apiVersion;self.transport=transport }
     func request(token: String, method: String = "GET", endpoint: String, body: JSONObject? = nil) async throws -> JSONObject {
         if let transport {return try await transport.request(token:token,method:method,endpoint:endpoint,body:body)}
         for attempt in 0...3 {
-            let wait = 0.35 - Date().timeIntervalSince(lastRequest)
-            if wait > 0 { try await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000)) }
-            lastRequest = Date()
-            var request = URLRequest(url: URL(string: "https://api.notion.com/v1" + endpoint)!)
+            try Task.checkCancellation()
+            // Reserve before suspension: actor reentrancy must not wake multiple
+            // requests into the same rate-limit slot. Uptime ignores clock changes.
+            let now=ProcessInfo.processInfo.systemUptime
+            let start=max(now,nextRequestTime);nextRequestTime=start+0.35
+            if start>now {try await Task.sleep(for:.seconds(start-now))}
+            guard let url=URL(string:"https://api.notion.com/v1"+endpoint) else {throw LVError("Notion APIのURLが無効です")}
+            var request = URLRequest(url:url)
             request.httpMethod = method; request.timeoutInterval = 20
             request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
             request.setValue(apiVersion, forHTTPHeaderField: "Notion-Version")
@@ -41,28 +64,42 @@ actor NotionClient: NotionRequesting {
             if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { throw LVError("Notion から応答がありません") }
-            let json = try JSONSerialization.jsonObject(with: data) as? JSONObject ?? [:]
-            let status = json["object"] as? String == "error" ? json["status"] as? Int ?? http.statusCode : http.statusCode
-            if status == 429 && attempt < 3 {
-                let delay = min(20.0, max(1, Double(http.value(forHTTPHeaderField: "Retry-After") ?? "1") ?? 1))
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)); continue
+            if http.statusCode == 429 && attempt < 3 {
+                let delay=Self.retryDelay(http.value(forHTTPHeaderField:"Retry-After"))
+                try await Task.sleep(for:.seconds(delay));continue
             }
-            guard (200..<300).contains(status), json["object"] as? String != "error" else {
-                throw NotionAPIError(status: status, message: (json["message"] as? String ?? "取得できませんでした").replacingOccurrences(of:token,with:"[redacted]"))
-            }
-            return json
+            return try Self.decodeResponse(data,http:http,token:token)
         }
         throw LVError("Notion のアクセス制限に達しました。少し待って再試行してください")
     }
+    nonisolated static func retryDelay(_ value:String?)->Double {
+        guard let delay=Double(value ?? ""),delay.isFinite else{return 1}
+        return min(20,max(1,delay))
+    }
+    nonisolated static func decodeResponse(_ data:Data,http:HTTPURLResponse,token:String)throws->JSONObject {
+        let json=(try? JSONSerialization.jsonObject(with:data)) as? JSONObject
+        // Proxies often return HTML for 5xx and 429. Preserve the status, and
+        // never display a proxy response body which may contain private details.
+        guard (200..<300).contains(http.statusCode) else {
+            let message=(json?["message"] as? String ?? "接続先から正常な応答を取得できませんでした")
+            throw NotionAPIError(status:http.statusCode,message:message.replacingOccurrences(of:token,with:"[redacted]"))
+        }
+        guard let json else{throw LVError("Notion APIからJSON形式ではない応答が返されました")}
+        if json["object"] as? String == "error" {
+            throw NotionAPIError(status:json["status"] as? Int ?? http.statusCode,
+                message:(json["message"] as? String ?? "取得できませんでした").replacingOccurrences(of:token,with:"[redacted]"))
+        }
+        return json
+    }
     func pages(token: String, id: String) async throws -> [JSONObject] {
-        var result: [JSONObject] = []; var cursor: String?
+        var result:[JSONObject]=[];var pagination=NotionPagination()
         repeat {
-            var body: JSONObject = ["page_size": 100]
-            if let cursor { body["start_cursor"] = cursor }
-            let response = try await request(token: token, method: "POST", endpoint: "/data_sources/\(id)/query", body: body)
-            result += (response["results"] as? [JSONObject] ?? []).filter { $0["in_trash"] as? Bool != true && $0["archived"] as? Bool != true }
-            cursor = response["has_more"] as? Bool == true ? response["next_cursor"] as? String : nil
-        } while cursor != nil
+            try Task.checkCancellation()
+            var body:JSONObject=["page_size":100]
+            if let cursor=pagination.cursor {body["start_cursor"]=cursor}
+            let response=try await request(token:token,method:"POST",endpoint:"/data_sources/\(id)/query",body:body)
+            result += try pagination.consume(response).filter{$0["in_trash"] as? Bool != true && $0["archived"] as? Bool != true}
+        } while pagination.cursor != nil
         return result
     }
     func checkToken(_ token: String) async throws -> String {

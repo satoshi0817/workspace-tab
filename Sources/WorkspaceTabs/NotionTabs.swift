@@ -99,15 +99,15 @@ extension NotionLibrary {
         let property=object(object(row,"properties"),"Snapshot")
         var payload=richText(property["rich_text"])
         if (property["rich_text"] as? [JSONObject] ?? []).count >= 25,let propertyID=property["id"] as? String {
-            var pieces:[JSONObject]=[],cursor:String?
+            var pagination=NotionPagination();payload=""
             repeat {
+                let cursor=pagination.cursor
                 var endpoint="/pages/\(id)/properties/\(propertyID)?page_size=100"
                 if let cursor {endpoint += "&start_cursor="+cursor}
                 let page=try await client.request(token:token(tid),endpoint:endpoint)
-                pieces += (page["results"] as? [JSONObject] ?? []).map{object($0,"rich_text")}
-                cursor=page["has_more"] as? Bool == true ? page["next_cursor"] as? String:nil
-            } while cursor != nil
-            payload=richText(pieces)
+                payload += richText(try pagination.consume(page).map{object($0,"rich_text")})
+                guard payload.utf8.count<=160_000 else{throw LVError("保存データが不正です")}
+            } while pagination.cursor != nil
         }
         guard let data=payload.data(using:.utf8),data.count<=160_000 else{throw LVError("保存データが不正です")}
         let backup=try JSONDecoder().decode(BrowserBackup.self,from:data);_=try backup.session.validated()

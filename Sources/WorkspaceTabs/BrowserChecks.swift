@@ -645,6 +645,7 @@ import WorkspaceCore
             try expect(reordered.session.workspaces == store.session.workspaces,"App and browser tab order survive reload")
             try await WorkflowChecks.run(root:root,webView:ea.webView)
             try await StabilityChecks.run(root:root)
+            try await StartupSafetyChecks.run(root:root)
             try await TabGroupChecks.run(root:root)
             reordered.shutdown()
             exited.shutdown();loaded.shutdown();store.shutdown()

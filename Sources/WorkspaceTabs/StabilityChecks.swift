@@ -57,6 +57,27 @@ import WorkspaceCore
         try expect(beforeIdle == afterIdle,"Unchanged idle snapshots never accumulate duplicate recovery files")
         idleStore.shutdown()
 
+        let blockedRoot=root.appendingPathComponent("blocked-history")
+        let blockedStore=BrowserStore(directory:blockedRoot)
+        let blockedHistory=blockedRoot.appendingPathComponent("BrowserBackups")
+        try Data("not a directory".utf8).write(to:blockedHistory)
+        blockedStore.session.workspaces[0].name="Saved despite history failure"
+        try expect(blockedStore.saveBeforeExit(),"An unavailable history directory cannot block current-session saves or quitting")
+        let blockedSaved=try JSONDecoder().decode(BrowserSession.self,from:Data(contentsOf:blockedRoot.appendingPathComponent("browser-session.json")))
+        try expect(blockedSaved.workspaces[0].name == "Saved despite history failure","Current state reaches disk even when recovery history fails")
+        try expect(!blockedStore.saveBeforeExit(forceBackup:true),"A destructive restore still requires a successful safety checkpoint")
+        let legacySplit=blockedRoot.appendingPathComponent("browser-split.json")
+        try FileManager.default.createDirectory(at:legacySplit,withIntermediateDirectories:true)
+        blockedStore.session.workspaces[0].name="Legacy split does not block"
+        try expect(blockedStore.save(),"An obsolete split-state file cannot block the authoritative session write")
+        blockedStore.shutdown()
+        let inaccessibleRoot=root.appendingPathComponent("unreadable-history-startup")
+        try FileManager.default.createDirectory(at:inaccessibleRoot,withIntermediateDirectories:true)
+        try Data("not a directory".utf8).write(to:inaccessibleRoot.appendingPathComponent("BrowserBackups"))
+        var refusedUnreadable=false
+        do {_=try SessionRecovery.load(directory:inaccessibleRoot)}catch{refusedUnreadable=true}
+        try expect(refusedUnreadable,"Unreadable recovery storage is never mistaken for a fresh empty session")
+
         let directory=root.appendingPathComponent("stability")
         let store=BrowserStore(directory:directory)
         store.session=BrowserSession()

@@ -16,7 +16,9 @@ enum SessionRecovery {
             if let json=try? JSONSerialization.jsonObject(with:original!) as? [String:Any],let version=json["version"] as? Int,version != 1 {throw BrowserSessionError.invalid}
         }
         let backupDir=directory.appendingPathComponent("BrowserBackups")
-        let files=((try? FileManager.default.contentsOfDirectory(at:backupDir,includingPropertiesForKeys:nil)) ?? [])
+        // An unreadable history directory is not an empty first launch. Preserve it.
+        let files=(FileManager.default.fileExists(atPath:backupDir.path)
+            ? try FileManager.default.contentsOfDirectory(at:backupDir,includingPropertiesForKeys:nil):[])
             .filter{$0.pathExtension == "json"}.sorted{$0.lastPathComponent>$1.lastPathComponent}
         for candidate in files {
             guard let data=try? Data(contentsOf:candidate),let value=try? JSONDecoder().decode(BrowserSession.self,from:data),

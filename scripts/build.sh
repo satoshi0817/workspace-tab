@@ -19,10 +19,5 @@ codesign --force --sign "$task_sign" --identifier com.ssuzuki.WorkspaceTabs "$ta
 codesign --verify --deep --strict "$task_app"
 sh -c 'printf "Built: %s\n" "$1"' _ "$task_app"
 if [ "${1:-}" = "--install" ]; then
-    if [ -d "/Applications/Workspace Tabs.app" ]; then
-        task_backup="/tmp/Workspace-Tabs-previous-$(date +%Y%m%d-%H%M%S).app"
-        ditto "/Applications/Workspace Tabs.app" "$task_backup"
-    fi
-    ditto "$task_app" "/Applications/Workspace Tabs.app"
-    codesign --verify --deep --strict "/Applications/Workspace Tabs.app"
+    python3 scripts/install_app.py "$task_app" "/Applications/Workspace Tabs.app"
 fi

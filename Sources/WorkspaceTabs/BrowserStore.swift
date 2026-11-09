@@ -92,6 +92,7 @@ struct PageReference: Codable, Equatable, Identifiable {
     @Published var hovered = false
     let directory: URL
     private var writable = true
+    private var historyWarningShown=false
     private var lastPersistedSession:BrowserSession?
     private var lastPersistedData:Data?
     private lazy var historyArchive=SessionHistoryArchive(directory:directory)
@@ -350,7 +351,7 @@ struct PageReference: Codable, Equatable, Identifiable {
             if lastPersistedSession == session && !forceBackup {
                 // The periodic save can archive the final edit after the interval,
                 // even when the user has stopped interacting in the meantime.
-                if let lastPersistedData {try historyArchive.record(lastPersistedData)}
+                if let lastPersistedData {recordHistory(lastPersistedData)}
                 exportLauncherIndex();return true
             }
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -358,18 +359,25 @@ struct PageReference: Codable, Equatable, Identifiable {
             let file = directory.appendingPathComponent("browser-session.json")
             let old = try? Data(contentsOf:file)
             if forceBackup {try historyArchive.record(data,force:true)}
-            else if let old,old != data {try historyArchive.record(old)}
+            else if let old,old != data {recordHistory(old)}
             if old != data {try data.write(to: file, options: .atomic);persistenceWrites += 1}
-            let splitURL = directory.appendingPathComponent("browser-split.json")
-            if let split {
-                let splitData=try encoder.encode(split)
-                if (try? Data(contentsOf:splitURL)) != splitData {try splitData.write(to:splitURL,options:.atomic)}
-            }
-            else if FileManager.default.fileExists(atPath: splitURL.path) { try FileManager.default.removeItem(at: splitURL) }
+            // Split state is committed atomically with the session. The legacy file
+            // is only read when splitStateRecorded is absent; it cannot block saving.
             lastPersistedSession=session;lastPersistedData=data
             exportLauncherIndex()
             return true
         } catch { self.error = "保存できませんでした：\(error.localizedDescription)";return false }
+    }
+    private func recordHistory(_ data:Data) {
+        do {try historyArchive.record(data);historyWarningShown=false}
+        catch {
+            // Optional recovery history must not prevent saving the current session.
+            // Explicit pre-restore checkpoints remain mandatory in save(forceBackup:).
+            if !historyWarningShown {
+                historyWarningShown=true
+                notify("復元履歴を保存できません。現在のタブは通常どおり保存します。",isError:true)
+            }
+        }
     }
     @discardableResult func saveBeforeExit(forceBackup:Bool=false) -> Bool {snapshot();saveWork?.cancel();return save(forceBackup:forceBackup)}
     var visiblePageIDs:Set<UUID> {
