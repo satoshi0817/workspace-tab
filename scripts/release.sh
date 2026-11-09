@@ -21,5 +21,7 @@ xcrun notarytool submit "$task_dmg" --keychain-profile "$WORKSPACE_TABS_NOTARY_P
 xcrun stapler staple "$task_dmg"
 xcrun stapler validate "$task_dmg"
 spctl --assess --type execute --verbose "$task_app"
-shasum -a 256 "$task_dmg" > "$task_dmg.sha256"
+task_output="$(dirname "$task_dmg")"
+task_name="$(basename "$task_dmg")"
+(cd "$task_output" && shasum -a 256 "$task_name" > "$task_name.sha256")
 printf 'Ready for GitHub Release: %s\n' "$task_dmg"
