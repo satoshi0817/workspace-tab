@@ -6,19 +6,20 @@ import WorkspaceCore
 struct BrowserRoot: View {
     @ObservedObject var store: BrowserStore
     @State private var query = ""
+    @ObservedObject private var shortcuts=ShortcutPreferences.shared
     var body: some View {
         Group {
             if store.session.sidebarPosition == "top" {
-                VStack(spacing: 0) { appTabs(horizontal: true); Divider(); content }
+                VStack(spacing: 0) { appTabs(horizontal: true); content }
             } else {
                 HStack(spacing: 0) {
                     if store.session.sidebarMode == "hover" {
                         Rectangle().fill(activeColor).frame(width: 8).contentShape(Rectangle()).onHover { if $0 { store.hovered = true } }
-                    } else { appTabs(horizontal: false).frame(width: store.session.sidebarMode == "icons" ? 56 : 220) }
-                    Divider(); content
+                    } else { appTabs(horizontal: false).frame(width: store.session.sidebarMode == "icons" ? BrowserLayout.iconSidebar : BrowserLayout.sidebar) }
+                    content
                 }.overlay(alignment: .leading) {
-                    if store.session.sidebarMode == "hover" && store.hovered {
-                        appTabs(horizontal: false).frame(width:220).shadow(radius: 8)
+                    if store.session.sidebarMode == "hover" && (store.hovered || store.workspaceHintsVisible) {
+                        appTabs(horizontal: false).frame(width:BrowserLayout.sidebar).clipShape(RoundedRectangle(cornerRadius:BrowserLayout.pageRadius,style:.continuous)).shadow(color:.black.opacity(0.15),radius:10,x:3,y:2)
                             .onHover { inside in
                                 if inside { store.hovered = true }
                                 else { DispatchQueue.main.asyncAfter(deadline:.now()+0.2) { store.hovered = false } }
@@ -26,11 +27,16 @@ struct BrowserRoot: View {
                     }
                 }
             }
-        }.frame(minWidth: 800, minHeight: 520)
+        }.background(activeColor).frame(minWidth: 800, minHeight: 520)
             .overlay {RecentTabsOverlay(store:store)}
             .overlay(alignment:.topTrailing) {if store.networkOffline {Label("オフライン",systemImage:"wifi.slash").font(.caption).padding(8).background(.regularMaterial,in:Capsule()).padding(8).allowsHitTesting(false)}}
             .overlay(alignment: .bottom) {
-                if let notice=store.notice {
+                if store.workspaceHintsVisible {
+                    Label(shortcuts.workspaceModifiers.map{ShortcutBinding(key:"1〜9",code:0,modifiers:$0.rawValue).label+" で切り替え"} ?? "各アプリタブのキーで切り替え",systemImage:"keyboard")
+                        .font(.callout.weight(.medium)).padding(.horizontal,16).padding(.vertical,10)
+                        .background(.regularMaterial,in:Capsule()).shadow(radius:4,y:2)
+                        .padding(.bottom,20).allowsHitTesting(false)
+                } else if let notice=store.notice {
                     Label(notice,systemImage:store.noticeIsError ? "exclamationmark.circle.fill":"checkmark.circle.fill").font(.callout)
                         .padding(.horizontal,16).padding(.vertical,10).background(.regularMaterial,in:Capsule())
                         .shadow(radius:4,y:2).padding(.bottom,20).allowsHitTesting(false)
@@ -82,13 +88,13 @@ struct BrowserRoot: View {
         }
     }
     private func appTabs(horizontal: Bool) -> some View {
-        let layout = horizontal ? AnyLayout(HStackLayout(spacing:8)) : AnyLayout(VStackLayout(spacing:8))
+        let layout = horizontal ? AnyLayout(HStackLayout(spacing:BrowserLayout.gap)) : AnyLayout(VStackLayout(spacing:BrowserLayout.gap))
         return layout {
             if !horizontal {
-                HStack { if !icons {Text("アプリ").font(.caption.weight(.semibold)); Spacer()}; appMenu }.padding(.top,8)
+                HStack { if !icons {Text("アプリ").font(.caption.weight(.semibold)); Spacer()}; appMenu.frame(width:BrowserLayout.control,height:BrowserLayout.control) }.frame(height:BrowserLayout.control)
             }
             ScrollView(horizontal ? .horizontal : .vertical,showsIndicators:false) {
-                let tabs = horizontal ? AnyLayout(HStackLayout(spacing:6)) : AnyLayout(VStackLayout(spacing:6))
+                let tabs = horizontal ? AnyLayout(HStackLayout(spacing:BrowserLayout.gap)) : AnyLayout(VStackLayout(spacing:BrowserLayout.gap))
                 tabs {
                     ForEach(Array(store.session.workspaces.enumerated()),id:\.element.id) { index,workspace in
                         appTabLabel(workspace,index:index,horizontal:horizontal)
@@ -110,32 +116,38 @@ struct BrowserRoot: View {
                             }
 
                     }
-                }.padding(3)
+                }
             }.frame(maxHeight:horizontal ? nil:.infinity)
-            if !horizontal {WindowDragArea().frame(height:20)}
-            let buttons=icons ? AnyLayout(VStackLayout(spacing:8)):AnyLayout(HStackLayout(spacing:8))
+            if !horizontal {WindowDragArea().frame(height:BrowserLayout.gap * 2)}
+            let buttons=icons ? AnyLayout(VStackLayout(spacing:BrowserLayout.small)):AnyLayout(HStackLayout(spacing:BrowserLayout.small))
             buttons {
-                Button {let id=store.addWorkspace();store.editingWorkspace=id} label:{Image(systemName:"plus").frame(width:24,height:26)}.help("アプリタブを追加")
-                Button {store.favoritesPresented=true} label:{Image(systemName:"star").frame(width:24,height:26)}.help("お気に入りランチャー").accessibilityLabel("お気に入り")
-                Button {store.searchForSplit=false;store.searchPresented=true} label:{Image(systemName:"magnifyingglass").frame(width:24,height:26)}.help("タブを検索")
-                Button {store.helpPresented=true} label:{Image(systemName:"questionmark.circle").frame(width:24,height:26)}.help("使い方とショートカット").accessibilityLabel("使い方とショートカット")
+                Button {let id=store.addWorkspace();store.editingWorkspace=id} label:{Image(systemName:"plus").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("アプリタブを追加")
+                Button {store.favoritesPresented=true} label:{Image(systemName:"star").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("お気に入りランチャー").accessibilityLabel("お気に入り")
+                Button {store.searchForSplit=false;store.searchPresented=true} label:{Image(systemName:"magnifyingglass").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("タブを検索")
+                Button {store.helpPresented=true} label:{Image(systemName:"questionmark.circle").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("使い方とショートカット").accessibilityLabel("使い方とショートカット")
                 if !icons && !horizontal {Spacer()}
-                if horizontal {appMenu} else {Button {store.showSettings=true} label:{Image(systemName:"gearshape").frame(width:24,height:26)}.help("設定")}
-            }.buttonStyle(.plain).padding(4).settingsGlass()
-        }.padding(.horizontal,horizontal ? 5:icons ? 4:7).padding(.vertical,horizontal ? 5:7).foregroundStyle(activeInk).background(activeColor)
-            .frame(height:horizontal ? 50:nil)
+                if horizontal {appMenu} else {Button {store.showSettings=true} label:{Image(systemName:"gearshape").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("設定")}
+            }.buttonStyle(.plain).padding(BrowserLayout.small).settingsGlass()
+        }.padding(BrowserLayout.inset).foregroundStyle(activeInk).background(activeColor)
+            .frame(height:horizontal ? BrowserLayout.appTab + BrowserLayout.inset * 2:nil)
     }
     private func appTabLabel(_ workspace:BrowserWorkspace,index:Int,horizontal:Bool)->some View {
-        AnyView(HStack(spacing:8) {
+        AnyView(HStack(spacing:BrowserLayout.gap) {
                                 WorkspaceIcon(store:store,workspace:workspace,size:24)
-                                if !icons {Text(workspace.name).font(.system(size:12,weight:workspace.id == store.session.selectedWorkspaceID ? .bold:.regular)).lineLimit(horizontal ? 1:2); if !horizontal {Spacer(minLength:0)}; if index<9 {Text("\(index+1)").font(.system(size:9,design:.monospaced)).opacity(0.7)}}
-                            }.padding(.horizontal,icons ? 0:10).frame(height:icons ? 42:40)
-                                .frame(width:icons ? 42:nil)
-                                .frame(maxWidth:horizontal || icons ? nil:.infinity,alignment:icons ? .center:.leading)
+                                if !icons {Text(workspace.name).font(.system(size:12,weight:workspace.id == store.session.selectedWorkspaceID ? .bold:.regular)).lineLimit(horizontal ? 1:2); if !horizontal {Spacer(minLength:0)}; if store.workspaceHintsVisible,index<9 {WorkspaceShortcutKeycap(binding:shortcuts.binding(ShortcutPreferences.numberedActions[index]),compact:false,ink:Palette.ink(workspace.color,preference:workspace.textColor),color:Palette.color(workspace.color))}}
+                            }.padding(.horizontal,icons ? 0:BrowserLayout.gap).frame(height:BrowserLayout.appTab)
+                                .frame(width:horizontal ? nil:icons ? BrowserLayout.appTab:BrowserLayout.sidebar - BrowserLayout.inset * 2,alignment:icons ? .center:.leading)
                                 .foregroundStyle(Palette.ink(workspace.color,preference:workspace.textColor))
-                                .background(Palette.color(workspace.color),in:RoundedRectangle(cornerRadius:8))
-                                .overlay {RoundedRectangle(cornerRadius:8).strokeBorder(workspace.id == store.session.selectedWorkspaceID ? activeInk:.clear,lineWidth:2)}
-                                .opacity(workspace.id == store.session.selectedWorkspaceID ? 1:0.6))
+                                .background(Palette.color(workspace.color),in:RoundedRectangle(cornerRadius:BrowserLayout.appRadius,style:.continuous))
+                                .overlay {RoundedRectangle(cornerRadius:BrowserLayout.appRadius,style:.continuous).strokeBorder(workspace.id == store.session.selectedWorkspaceID ? activeInk:.clear,lineWidth:2)}
+                                .overlay(alignment:.bottomTrailing) {
+                                    if icons,store.workspaceHintsVisible,index<9 {
+                                        WorkspaceShortcutKeycap(binding:shortcuts.binding(ShortcutPreferences.numberedActions[index]),compact:true,
+                                                                ink:Palette.ink(workspace.color,preference:workspace.textColor),color:Palette.color(workspace.color))
+                                            .padding(2)
+                                    }
+                                }
+                                .opacity(store.workspaceHintsVisible || workspace.id == store.session.selectedWorkspaceID ? 1:0.6))
     }
     private var appMenu: some View {
         Menu {
@@ -156,38 +168,54 @@ struct BrowserPane: View {
     let pageID:UUID
     let isRight:Bool
     var detached=false
+    private var pageInsets:EdgeInsets {
+        // Adjacent chrome already supplies 8pt. Do not double it at shared edges.
+        let splitPane = !detached && store.split != nil && store.split?.pageID != store.selectedPage?.id
+        let leading:CGFloat = isRight ? BrowserLayout.small :
+            (detached || store.session.sidebarPosition == "top" ? BrowserLayout.inset:0)
+        return EdgeInsets(top:0,leading:leading,bottom:BrowserLayout.inset,
+                          trailing:splitPane && !isRight ? BrowserLayout.small:BrowserLayout.inset)
+    }
     var body:some View {
         if let engine=store.engine(workspaceID,pageID),let workspace=store.workspace(workspaceID) {
             VStack(spacing:0) {
-                HStack(spacing:6) {
+                HStack(spacing:BrowserLayout.gap) {
                     BrowserGroupPicker(store:store,workspace:workspace)
                     ScrollView(.horizontal,showsIndicators:false) {
-                        HStack(spacing:4) {
+                        HStack(spacing:BrowserLayout.small) {
                             ForEach(store.visibleGroupPages(in:workspaceID)) {page in
                                 BrowserTabButton(store:store,workspace:workspace,page:page,selected:page.id == pageID,isRight:isRight,detached:detached)
                             }
                             Button {
                                 store.newTabRequest=PageReference(workspaceID:workspaceID,pageID:pageID)
-                            } label:{Image(systemName:"plus").frame(width:28,height:32)}
+                            } label:{Image(systemName:"plus").frame(width:BrowserLayout.control,height:BrowserLayout.control)}
                                 .help("この環境にブラウザタブを追加").accessibilityLabel("ブラウザタブを追加")
-                        }.padding(.horizontal,6).padding(.vertical,5)
-                    }
+                        }.padding(.vertical,BrowserLayout.gap)
+                    }.frame(maxWidth:.infinity).layoutPriority(-1)
                     WorkspaceIdentityBadge(engine:engine)
-                    Button {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID);store.addressFocus=UUID()} label:{Image(systemName:"link")}.help("URLを表示").accessibilityLabel("URLを表示")
+                    Button {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID);store.addressFocus=UUID()} label:{Image(systemName:"link").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("URLを表示").accessibilityLabel("URLを表示")
                     if detached {Button("元に戻す") {store.reattachWorkspace(workspaceID)}.help("アプリタブを元のウインドウに戻す")}
                     else if isRight {
-                        Button {store.swapSplit()} label:{Image(systemName:"arrow.left.arrow.right")}.help("左右を入れ替え")
-                        Button {store.setSplit(nil)} label:{Image(systemName:"rectangle")}.help("Split Viewを解除")
+                        Button {store.swapSplit()} label:{Image(systemName:"arrow.left.arrow.right").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("左右を入れ替え")
+                        Button {store.setSplit(nil)} label:{Image(systemName:"rectangle").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help("Split Viewを解除")
                     } else {SplitPicker(store:store)}
-                }.background(TabGroupScrollArea(enabled:workspace.resolvedTabGroups.count>1) {offset in store.cycleTabGroup(offset,in:workspaceID)}.frame(height:42))
-                    .buttonStyle(.plain).padding(.trailing,10)
+                }.frame(height:BrowserLayout.tabBar)
+                    .padding(.horizontal,BrowserLayout.inset)
+                    .background(TabGroupScrollArea(enabled:workspace.resolvedTabGroups.count>1) {offset in store.cycleTabGroup(offset,in:workspaceID)}.frame(height:BrowserLayout.tabBar))
+                    .buttonStyle(.plain)
                     .foregroundStyle(Palette.ink(workspace.color)).background(Palette.color(workspace.color))
-                BrowserNavigation(store:store,engine:engine,isRight:isRight)
-                if workspace.pages.first(where:{$0.id == pageID})?.isStartPage == true {
-                    NewBrowserTab(store:store,engine:engine).id(pageID)
-                } else {
-                    BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
+                VStack(spacing:0) {
+                    BrowserNavigation(store:store,engine:engine,isRight:isRight)
+                    if workspace.pages.first(where:{$0.id == pageID})?.isStartPage == true {
+                        NewBrowserTab(store:store,engine:engine).id(pageID)
+                    } else {
+                        BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
+                    }
                 }
+                .background(Color(nsColor:.windowBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius:BrowserLayout.pageRadius,style:.continuous))
+                .padding(pageInsets)
+                .background(Palette.color(workspace.color))
             }.simultaneousGesture(TapGesture().onEnded {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID)})
                 .sheet(isPresented:Binding(get:{store.newTabRequest == PageReference(workspaceID:workspaceID,pageID:pageID)},set:{if !$0 {store.newTabRequest=nil}})) {
                     NewTabChoice { web in
@@ -212,7 +240,7 @@ struct BrowserNavigation:View {
     var body:some View {
         VStack(spacing:0) {
             if expanded || editing {
-            HStack(spacing:9) {
+            HStack(spacing:BrowserLayout.gap) {
                 Button {engine.webView.goBack()} label:{Image(systemName:"chevron.left")}.disabled(!engine.canBack)
                 Button {engine.webView.goForward()} label:{Image(systemName:"chevron.right")}.disabled(!engine.canForward)
                 Button {if engine.loading {engine.webView.stopLoading()} else {engine.webView.reload()}} label:{Image(systemName:engine.loading ? "xmark":"arrow.clockwise")}
@@ -226,7 +254,7 @@ struct BrowserNavigation:View {
                         Button("標準ブラウザで開く") {if let url=engine.webView.url {NSWorkspace.shared.open(url)}}
                     } label:{Image(systemName:workspace.cssEnabled ? "paintpalette.fill":"paintpalette")}.menuStyle(.borderlessButton).fixedSize().help("ページの色")
                 }
-            }.buttonStyle(.plain).padding(8)
+            }.buttonStyle(.plain).padding(BrowserLayout.inset)
             }
             if engine.loading {ProgressView(value:engine.progress).progressViewStyle(.linear).frame(height:2)} else {Divider()}
         }.onAppear {address=engine.address}
@@ -247,7 +275,7 @@ struct SplitPicker:View {
                 }
             }
             if store.split != nil {Divider();Button("左右を入れ替え") {store.swapSplit()};Button("Split Viewを解除") {store.setSplit(nil)}}
-        } label:{Image(systemName:"rectangle.split.2x1")}.menuStyle(.borderlessButton).fixedSize().help("別の環境のページを並べて表示")
+        } label:{Image(systemName:"rectangle.split.2x1").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("別の環境のページを並べて表示")
     }
 }
 struct WorkspaceIcon:View {

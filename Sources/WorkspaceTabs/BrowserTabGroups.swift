@@ -75,10 +75,9 @@ struct BrowserGroupPicker:View {
             Image(nsImage:Palette.groupMenuLabel(current.name,ink:Palette.ink(workspace.color)))
                 .renderingMode(.original)
         }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(maxWidth:150)
-            .padding(.horizontal,10).frame(height:28)
+            .padding(.horizontal,BrowserLayout.gap).frame(height:BrowserLayout.control)
             .background(Palette.ink(workspace.color).opacity(0.12),in:Capsule())
             .overlay(Capsule().strokeBorder(Palette.ink(workspace.color).opacity(0.18),lineWidth:0.5))
-            .padding(.leading,8)
             .accessibilityLabel("タブグループ: "+current.name)
             .help("表示するタブグループ。上下スクロールでも切り替えられます。ページはタブをクリックするまで変わりません。")
             .sheet(item:$editing,onDismiss:store.restorePanelFocus) {group in

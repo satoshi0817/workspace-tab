@@ -3,7 +3,7 @@ import WebKit
 import WorkspaceCore
 
 @MainActor enum BrowserCommands {
-    static let ids:Set<String>=["commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionSearch","notionSettings"]
+    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionSearch","notionSettings"]
 }
 extension BrowserStore {
     func openCommands() {
@@ -48,6 +48,7 @@ extension BrowserStore {
         let ref=target ?? commandPage
         if id == "recentTabs" {cycleRecentTabs();return}
         if id == "commands" {openCommands();return}
+        if id == "notionCreateMenu" {openNotionCreationMenu();return}
         if id == "allTabs" {searchForSplit=false;searchPresented=true;return}
         if id == "lastWorkspace" {
             guard let previousWorkspaceID,workspace(previousWorkspaceID) != nil else {notify("直前のアプリタブはありません");return}

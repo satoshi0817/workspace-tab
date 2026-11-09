@@ -21,6 +21,34 @@ import WorkspaceCore
                 try expect(result.host == "www.google.com" && URLComponents(url:result,resolvingAgainstBaseURL:false)?.queryItems?.first?.value == query, "New tab encodes search: " + query)
             }
             try expect(BrowserAddress.searchOrURL("  ") == nil && BrowserAddress.searchOrURL("file:///etc/passwd") == nil && BrowserAddress.searchOrURL("https://user:pass@example.com") == nil,"New tab rejects empty input and unsupported explicit URLs")
+            var hintHold=WorkspaceShortcutHold()
+            let hintFlags:[NSEvent.ModifierFlags]=[.command,[.control,.option]]
+            _=hintHold.consume(.flagsChanged,flags:.command,time:10,allowed:hintFlags)
+            try expect(!hintHold.ready(at:10.2) && hintHold.ready(at:10.5),"Workspace hints appear only after a deliberate modifier hold")
+            _=hintHold.consume(.keyDown,flags:.command,time:10.6,allowed:hintFlags)
+            _=hintHold.consume(.flagsChanged,flags:.command,time:11,allowed:hintFlags)
+            try expect(!hintHold.ready(at:12),"Typing a Command chord suppresses hints until modifiers are released")
+            _=hintHold.consume(.flagsChanged,flags:[],time:12,allowed:hintFlags)
+            _=hintHold.consume(.flagsChanged,flags:[.control,.option],time:13,allowed:hintFlags)
+            try expect(hintHold.ready(at:13.5),"Workspace hints follow the configured modifier combination")
+            _=hintHold.consume(.flagsChanged,flags:.control,time:14,allowed:hintFlags)
+            try expect(!hintHold.ready(at:15),"Releasing part of a shortcut combination hides workspace hints")
+            _=hintHold.consume(.flagsChanged,flags:[],time:16,allowed:hintFlags)
+            _=hintHold.consume(.flagsChanged,flags:[.command,.shift],time:17,allowed:hintFlags)
+            try expect(!hintHold.ready(at:18),"Unconfigured modifier combinations do not show misleading hints")
+            _=hintHold.consume(.flagsChanged,flags:.command,time:19,allowed:hintFlags)
+            _=hintHold.consume(.scrollWheel,flags:.command,time:19.2,allowed:hintFlags)
+            try expect(!hintHold.ready(at:20),"Scrolling cancels a pending workspace hint without consuming the event")
+            let capturedSource=PageReference(workspaceID:UUID(),pageID:UUID())
+            var menuSelections:[(String,PageReference)]=[]
+            let creationMenu=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
+            let menu=creationMenu.menu
+            let creationItems=menu.items.filter{$0.representedObject is String}
+            try expect(creationItems.map{$0.keyEquivalent} == ["1","2","3"] && creationItems.allSatisfy{$0.keyEquivalentModifierMask.isEmpty},"Creation menu offers plain digit shortcuts for its actions")
+            let chatIndex=menu.items.firstIndex{($0.representedObject as? String) == "notionChat"}!
+            menu.performActionForItem(at:chatIndex);menu.performActionForItem(at:chatIndex)
+            try await wait {!menuSelections.isEmpty}
+            try expect(menuSelections.count == 1 && menuSelections[0].0 == "notionChat" && menuSelections[0].1 == capturedSource,"Creation menu dispatches once to the captured source after menu tracking")
             let previews=PagePreviewCache(directory:root)
             let previewProfile=UUID(),previewPage=UUID(),previewURL="https://example.test/page"
             let previewBitmap=NSBitmapImageRep(bitmapDataPlanes:nil,pixelsWide:32,pixelsHigh:32,bitsPerSample:8,samplesPerPixel:3,hasAlpha:false,isPlanar:false,colorSpaceName:.deviceRGB,bytesPerRow:0,bitsPerPixel:0)!
@@ -348,6 +376,7 @@ import WorkspaceCore
                 NSEvent.keyEvent(with:type,location:.zero,modifierFlags:flags,timestamp:0,windowNumber:0,context:nil,characters:key,charactersIgnoringModifiers:key,isARepeat:false,keyCode:code)!
             }
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"C",8),preferences:prefs)?.id == "copyURL","Local chord resolves on first keydown before WebKit")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"N",45),preferences:prefs)?.id == "notionCreateMenu","Command-Shift-N opens the creation menu before WebKit handles the key")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.option],"˚",40),preferences:prefs)?.id == "notionSearch","Local chord uses physical key despite Option-generated characters")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[],"c",8),preferences:prefs) == nil,"Normal text input is never intercepted as an app shortcut")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.control,.option],"1",18),preferences:prefs) == nil,"Carbon global chords are not dispatched twice locally")

@@ -37,7 +37,12 @@ struct PageReference: Codable, Equatable, Identifiable {
     @Published var error: String?
     @Published var notice: String?
     var noticeIsError=false
+    var notionCreationMenu:NotionCreationMenu?
     @Published var newTabRequest:PageReference?
+    @Published var workspaceHintsVisible=false
+    var workspaceHintHold=WorkspaceShortcutHold()
+    var workspaceHintTask:Task<Void,Never>?
+    var workspaceHintsSuspended=false
     @Published var focusedPage: PageReference?
     private var noticeID=UUID()
     var commandPage: PageReference? {
@@ -388,7 +393,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         notify("「\(workspace(target)?.name ?? "")」で開きました")
         return true
     }
-    func shutdown() { stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll();previewCache.flush() }
+    func shutdown() { resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll();previewCache.flush() }
     func restoreTabBackup(_ backup:BrowserBackup)throws {
         var restored=try backup.session.validated()
         let iconDir=directory.appendingPathComponent("Icons")

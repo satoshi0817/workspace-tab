@@ -1,6 +1,21 @@
 import SwiftUI
 import AppKit
 
+// Shared dimensions for the browser shell. Keep inset and control spacing on a 4pt grid.
+enum BrowserLayout {
+    static let small:CGFloat = 4
+    static let gap:CGFloat = 8
+    static let inset:CGFloat = 8
+    static let control:CGFloat = 32
+    static let appTab:CGFloat = 40
+    static let tabBar:CGFloat = 48
+    static let iconSidebar:CGFloat = appTab + inset * 2
+    static let sidebar:CGFloat = 220
+    static let tabRadius:CGFloat = 8
+    static let appRadius:CGFloat = 12
+    static let pageRadius:CGFloat = 16
+}
+
 enum AppTheme: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: String { rawValue }

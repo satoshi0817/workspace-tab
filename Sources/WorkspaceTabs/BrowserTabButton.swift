@@ -15,13 +15,13 @@ struct BrowserTabButton: View {
         store.focusedPage=PageReference(workspaceID:workspace.id,pageID:page.id)
     }
     var body:some View {
-        HStack(spacing:6) {
-                HStack(spacing:6) {
+        HStack(spacing:BrowserLayout.gap) {
+                HStack(spacing:BrowserLayout.gap) {
                     if let file=page.tabIconFile,let image=store.iconCache.image(directory:store.directory,name:file) {Image(nsImage:image).resizable().scaledToFit().frame(width:18,height:18)}
                     else if let emoji=page.tabEmoji,!emoji.isEmpty {Text(emoji).font(.system(size:16))}
                     else {BrowserFavicon(cache:store.faviconCache,profile:workspace.profileID,pageURL:page.url)}
                     if !page.iconOnly {Text(page.displayTitle).lineLimit(1).frame(maxWidth:180)}
-                }.frame(minWidth:page.iconOnly ? 24:0,minHeight:32).contentShape(Rectangle())
+                }.frame(minWidth:page.iconOnly ? 24:0,minHeight:BrowserLayout.control).contentShape(Rectangle())
                     .overlay(TabDragHandle(payload:TabDragPayload(workspaceID:workspace.id,pageID:page.id),title:page.displayTitle,drop:{payload,after in if let id=payload.pageID,payload.workspaceID == workspace.id {_ = store.movePage(id,in:workspace.id,relativeTo:page.id,after:after)}},click:{select()}))
                 .accessibilityElement(children:.ignore)
                 .accessibilityAddTraits(.isButton)
@@ -32,9 +32,9 @@ struct BrowserTabButton: View {
                 Button {store.closePage(page.id,in:workspace.id)} label:{Image(systemName:"xmark").font(.system(size:9))}.buttonStyle(.plain).help("ブラウザタブを閉じる")
             }
         }.font(.system(size:12,weight:selected ? .semibold:.regular))
-            .padding(.horizontal,8).foregroundStyle(ink)
-            .background(selected ? (ink == .white ? Color.black:Color.white).opacity(0.16):Color.clear,in:RoundedRectangle(cornerRadius:6))
-            .overlay(alignment:.bottom) {if selected {Capsule().fill(ink).frame(height:2).padding(.horizontal,5)}}
+            .padding(.horizontal,BrowserLayout.gap).foregroundStyle(ink)
+            .background(selected ? (ink == .white ? Color.black:Color.white).opacity(0.16):Color.clear,in:RoundedRectangle(cornerRadius:BrowserLayout.tabRadius,style:.continuous))
+            .overlay(alignment:.bottom) {if selected {Capsule().fill(ink).frame(height:2).padding(.horizontal,BrowserLayout.gap)}}
             .help(page.displayTitle + "\n" + page.url)
             .contextMenu {
                 Button(page.pinned == true ? "ピン留めを解除":"タブをピン留め") {var copy=page;copy.pinned=page.pinned != true;store.updateBrowserTab(copy,in:workspace.id)}

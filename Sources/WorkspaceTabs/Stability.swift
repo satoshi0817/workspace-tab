@@ -97,7 +97,7 @@ extension BrowserStore {
         }
     }
     var anyPanelPresented:Bool {
-        newTabRequest != nil || onboardingPresented || favoritesPresented || favoriteDraft != nil || editingBrowserTab != nil || editingWorkspace != nil ||
+        notionCreationMenu != nil || newTabRequest != nil || onboardingPresented || favoritesPresented || favoriteDraft != nil || editingBrowserTab != nil || editingWorkspace != nil ||
         pendingExternalURL != nil || helpPresented || showSettings || searchPresented || commandsPresented
     }
     func selectionChanged() {

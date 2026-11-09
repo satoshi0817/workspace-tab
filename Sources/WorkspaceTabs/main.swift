@@ -23,6 +23,7 @@ import WorkspaceCore
         clickMonitor=NSEvent.addLocalMonitorForEvents(matching:[.leftMouseDown,.rightMouseDown,.leftMouseDragged,.scrollWheel,.keyDown,.flagsChanged]) { [weak self] event in
             guard let self else{return event}
             self.store.noteInteraction()
+            self.store.handleWorkspaceHintEvent(event)
             if self.store.handleRecentEvent(event) {return nil}
             if event.type == .leftMouseDown || event.type == .rightMouseDown {self.store.trackClick(event)}
             return event
@@ -36,8 +37,8 @@ import WorkspaceCore
             else if (11...19).contains(code),self.store.session.workspaces.indices.contains(Int(code-11)){self.show();self.store.selectWorkspace(self.store.session.workspaces[Int(code-11)].id)}
         }
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {self?.refreshShortcuts()} })
-        shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in MainActor.assumeIsolated {if note.object as? Bool == true {self?.hotkeys.unregister()} else {self?.refreshShortcuts()}} })
-        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in self?.sequences.resetInput()}
+        shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in MainActor.assumeIsolated {self?.store.workspaceHintsSuspended=note.object as? Bool == true;self?.store.resetWorkspaceHints();if note.object as? Bool == true {self?.hotkeys.unregister()} else {self?.refreshShortcuts()}} })
+        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in self?.sequences.resetInput();self?.store.notionCreationMenu?.menu.cancelTracking()}
         sequences.canHandleLocal={
             guard let key=NSApp.keyWindow as? BrowserWindow else{return false}
             return key.attachedSheet == nil
@@ -101,6 +102,7 @@ import WorkspaceCore
         }
     }
     func refreshShortcuts(){
+        store.resetWorkspaceHints()
         if let menu=NSApp.mainMenu {applyShortcutMenu(menu)}
         let failures=uiCheckDirectory == nil ? hotkeys.register():[];if !failures.isEmpty {store.error=failures.joined(separator:"\n")}
     }
@@ -134,8 +136,10 @@ import WorkspaceCore
     func applicationWillTerminate(_ notification:Notification){store.shutdown()}
     func windowDidEnterFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("entered-fullscreen")}
     func windowDidExitFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("exited-fullscreen")}
+    func applicationDidResignActive(_ notification:Notification){store.resetWorkspaceHints()}
+    func windowDidResignKey(_ notification:Notification){store.resetWorkspaceHints()}
     func windowDidBecomeKey(_ notification:Notification){store.focusedPage=nil}
-    func windowWillClose(_ notification:Notification){store.saveBeforeExit()}
+    func windowWillClose(_ notification:Notification){store.resetWorkspaceHints();store.saveBeforeExit()}
     func windowDidResize(_ notification:Notification){store.snapshot();store.changed()}
     func windowDidMove(_ notification:Notification){store.snapshot();store.changed()}
 }
