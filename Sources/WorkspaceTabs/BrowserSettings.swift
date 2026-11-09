@@ -108,6 +108,7 @@ struct BrowserSettings:View {
                     } else if section == "作業" {
                         WorkflowSettings(store:store)
                     } else if section == "診断" {
+                        MicrophoneSettings()
                         TimingSettings(log:store.timings,export:store.exportTimings)
                     } else {
                         HistorySettings(store:store)

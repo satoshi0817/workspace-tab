@@ -27,9 +27,9 @@ if [ "${WORKSPACE_TABS_RELEASE:-0}" = 1 ]; then
         "Developer ID Application:"*) ;;
         *) echo "Release signing requires a Developer ID Application identity" >&2; exit 1 ;;
     esac
-    codesign --force --options runtime --timestamp --sign "$task_sign" --identifier com.ssuzuki.WorkspaceTabs "$task_app"
+    codesign --force --options runtime --timestamp --entitlements Resources/WorkspaceTabs.entitlements --sign "$task_sign" --identifier com.ssuzuki.WorkspaceTabs "$task_app"
 else
-    codesign --force --sign "$task_sign" --identifier com.ssuzuki.WorkspaceTabs "$task_app"
+    codesign --force --entitlements Resources/WorkspaceTabs.entitlements --sign "$task_sign" --identifier com.ssuzuki.WorkspaceTabs "$task_app"
 fi
 codesign --verify --deep --strict "$task_app"
 sh -c 'printf "Built: %s\n" "$1"' _ "$task_app"

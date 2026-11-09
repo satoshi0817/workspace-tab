@@ -167,6 +167,10 @@ MainActor.assumeIsolated {
         };app.run()
     } else if CommandLine.arguments.contains("--notion-checks") {
         Task { do {try await NotionSetupChecks.run();try await NotionCloudChecks.run();exit(0)}catch{print("FAIL",error);exit(1)} };app.run()
+    } else if CommandLine.arguments.contains("--media-checks") {
+        app.setActivationPolicy(.regular)
+        Task {let result=await MediaChecks.run();exit(result)}
+        app.run()
     } else if CommandLine.arguments.contains("--startup-checks") {
         app.setActivationPolicy(.accessory)
         Task {let result=await StartupChecks.run();exit(result)}

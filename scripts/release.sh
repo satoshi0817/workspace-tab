@@ -16,7 +16,8 @@ xcrun stapler staple "$task_app"
 xcrun stapler validate "$task_app"
 
 bash scripts/package.sh
-task_dmg="$PWD/build/release/Workspace-Tabs-1.0.0-universal.dmg"
+task_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$task_app/Contents/Info.plist")"
+task_dmg="$PWD/build/release/Workspace-Tabs-$task_version-universal.dmg"
 xcrun notarytool submit "$task_dmg" --keychain-profile "$WORKSPACE_TABS_NOTARY_PROFILE" --wait
 xcrun stapler staple "$task_dmg"
 xcrun stapler validate "$task_dmg"
