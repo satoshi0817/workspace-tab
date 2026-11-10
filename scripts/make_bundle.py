@@ -19,6 +19,7 @@ info = {
     "LSMinimumSystemVersion": "14.0",
     "NSHighResolutionCapable": True,
     "NSMicrophoneUsageDescription": "NotionのAIミーティングノートなど、ページ上で開始した音声入力にマイクを使用します。",
+    "NSCameraUsageDescription": "ページ上で開始したビデオ通話などにカメラを使用します。",
     "NSPrincipalClass": "NSApplication",
     "NSHumanReadableCopyright": "Copyright © 2026 Satoshi Suzuki. MIT License.",
 }
@@ -41,3 +42,10 @@ for language, description in {
     folder = bundle / "Contents" / "Resources" / (language + ".lproj")
     folder.mkdir(exist_ok=True)
     (folder / "InfoPlist.strings").write_text('"NSMicrophoneUsageDescription" = "' + description + '";\n')
+    camera = {
+        "ja": "ページ上で開始したビデオ通話などにカメラを使用します。",
+        "en": "The camera is used for video calls and other camera input you start on a page.",
+        "ko": "페이지에서 직접 시작한 영상 통화 등 카메라 입력에 카메라를 사용합니다.",
+    }[language]
+    with (folder / "InfoPlist.strings").open("a") as output:
+        output.write('"NSCameraUsageDescription" = "' + camera + '";\n')

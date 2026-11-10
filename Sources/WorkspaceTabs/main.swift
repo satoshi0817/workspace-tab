@@ -11,9 +11,17 @@ import WorkspaceCore
     private let sequences=ShortcutSequenceMonitor()
     private var clickMonitor:Any?
     private var shortcutObservers:[NSObjectProtocol]=[]
+    private var backgroundServicesStarted=false
+    private func startBackgroundServices() {
+        guard uiCheckDirectory == nil,!store.safeMode,!backgroundServicesStarted else{return}
+        backgroundServicesStarted=true;store.importLinkViewerOnce();store.notion.start()
+    }
     func applicationDidFinishLaunching(_ notification:Notification){
-        _ = AppLocalization.shared
-        store=BrowserStore(directory:uiCheckDirectory.map{URL(fileURLWithPath:$0)})
+        let localization=AppLocalization.shared
+        let safe=CommandLine.arguments.contains("--safe-mode") || localization.safeModeNextLaunch || NSEvent.modifierFlags.contains(.option)
+        localization.safeModeNextLaunch=false
+        store=BrowserStore(directory:uiCheckDirectory.map{URL(fileURLWithPath:$0)},safeMode:safe,trackStartup:true)
+        store.onResumeFromSafeMode={[weak self] in self?.startBackgroundServices()}
         // Deterministic, isolated visual QA of the initial loading view; never used for normal sessions.
         if uiCheckDirectory != nil,ProcessInfo.processInfo.environment["WORKSPACE_TABS_UI_CHECK_PAUSE_LOADING"] == "1",
            let workspace=store.selected,let page=store.selectedPage {
@@ -28,18 +36,20 @@ import WorkspaceCore
         }else{window.center()}
         clickMonitor=NSEvent.addLocalMonitorForEvents(matching:[.leftMouseDown,.rightMouseDown,.leftMouseDragged,.scrollWheel,.keyDown,.flagsChanged]) { [weak self] event in
             guard let self else{return event}
-            self.store.handleWorkspaceHintEvent(event)
             if self.store.handleRecentEvent(event) {return nil}
             if event.type == .leftMouseDown || event.type == .rightMouseDown {self.store.trackClick(event)}
             return event
         }
         store.startRuntimeMonitoring()
         store.exportLauncherIndex()
-        createMenu();window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
+        createMenu()
+        if uiCheckDirectory == nil || ProcessInfo.processInfo.environment["WORKSPACE_TABS_UI_CHECK_FOREGROUND"] == "1" {
+            window.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)
+        } else {window.orderBack(nil)}
         hotkeys.action={[weak self] code in
             guard let self else{return}
             if code==3 {self.show();self.store.searchForSplit=false;self.store.searchPresented=true}
-            else if (11...19).contains(code),self.store.session.workspaces.indices.contains(Int(code-11)){self.show();self.store.selectWorkspace(self.store.session.workspaces[Int(code-11)].id)}
+            else if (11...19).contains(code),self.store.session.workspaces.indices.contains(Int(code-11)){self.show();self.store.selectWorkspace(self.store.session.workspaces[Int(code-11)].id);self.store.preserveWorkspaceHintsAfterSwitch()}
         }
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:AppLocalization.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {
             self?.createMenu();self?.store.exportLauncherIndex()
@@ -51,12 +61,15 @@ import WorkspaceCore
             if self?.store.downloadsPresented == true {self?.store.downloadsPresented=false;return true}
             return false
         }
-        sequences.canHandleLocal={
+        (NSApp as? BrowserApplication)?.panelKeyAction={[weak self] in self?.store.handleDownloadKey($0) ?? false}
+        (NSApp as? BrowserApplication)?.inputObserver={[weak self] in self?.store.handleWorkspaceHintEvent($0)}
+        sequences.canHandleLocal={[weak self] in
             guard let key=NSApp.keyWindow as? BrowserWindow else{return false}
-            return key.attachedSheet == nil
+            return key.attachedSheet == nil && self?.store.anyPanelPresented != true
         }
-        sequences.action={[weak self] action in self?.performShortcut(action)};sequences.start()
-        if uiCheckDirectory == nil {store.importLinkViewerOnce();store.notion.start()}
+        sequences.action={[weak self] action in self?.performShortcut(action)};sequences.start(monitorGlobal:uiCheckDirectory == nil)
+        startBackgroundServices()
+        DispatchQueue.main.asyncAfter(deadline:.now()+1){[weak self] in self?.store.startupRecovery?.mark("ready")}
         let failures=uiCheckDirectory == nil ? hotkeys.register():[];if !failures.isEmpty{store.error=failures.joined(separator:"\n")}
         if store.firstLaunch,(uiCheckDirectory == nil || ProcessInfo.processInfo.environment["WORKSPACE_TABS_UI_CHECK_FIRST_LAUNCH"] == "1") {DispatchQueue.main.async { [weak self] in self?.store.onboardingPresented=true}}
         let pending=pendingLauncherURLs;pendingLauncherURLs=[];pending.forEach(handleLauncherURL)
@@ -134,18 +147,19 @@ import WorkspaceCore
     @objc func closeTab(){if let ref=store.commandPage{store.closePage(ref.pageID,in:ref.workspaceID)}}
     @objc func reopenTab(){store.reopenPage()}
     @objc func location(){store.addressFocus=UUID()}
-    @objc func reload(){if let ref=store.commandPage{store.engine(ref.workspaceID,ref.pageID)?.webView.reload()}}
+    @objc func reload(){if let ref=store.commandPage{if store.isPageSuspended(ref.pageID){store.resumePage(ref)}else{store.engine(ref.workspaceID,ref.pageID)?.webView.reload()}}}
     func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows flag:Bool)->Bool{show();return true}
     func applicationShouldTerminateAfterLastWindowClosed(_ sender:NSApplication)->Bool{false}
     func applicationShouldTerminate(_ sender:NSApplication)->NSApplication.TerminateReply{
         let alert=NSAlert();alert.messageText=L("Workspace Tabsを終了しますか？");alert.informativeText=L("タブとログイン環境は保存されます。ページ内の未送信の入力内容は保存されません。");alert.addButton(withTitle:L("キャンセル"));alert.addButton(withTitle:L("終了"))
         guard alert.runModal() == .alertSecondButtonReturn else {return .terminateCancel}
+        if store.safeMode && !store.canPersist {return .terminateNow}
         guard store.saveBeforeExit() else {
             let failure=NSAlert();failure.messageText=L("設定を保存できないため終了を中止しました");failure.informativeText=store.error ?? "";failure.runModal();return .terminateCancel
         }
         return .terminateNow
     }
-    func applicationWillTerminate(_ notification:Notification){store.shutdown()}
+    func applicationWillTerminate(_ notification:Notification){sequences.stop();hotkeys.unregister();store.shutdown()}
     func windowDidEnterFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("entered-fullscreen")}
     func windowDidExitFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("exited-fullscreen")}
     func applicationDidResignActive(_ notification:Notification){store.resetWorkspaceHints()}

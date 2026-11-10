@@ -36,7 +36,7 @@ struct AllTabsPicker:View {
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
             HStack {
-                Text(store.searchForSplit ? L("右側に表示するタブ"):L("すべてのタブ")).font(.title2.bold())
+                Text(store.searchForSplit ? L("並べて表示するタブ"):L("すべてのタブ")).font(.title2.bold())
                 Text("\(rows.count)").foregroundStyle(.secondary)
                 Spacer()
                 Button(L("検索")) {searchFocused=true}.keyboardShortcut("f",modifiers:.command)
@@ -60,7 +60,7 @@ struct AllTabsPicker:View {
                             if row.ref == store.commandPage {Image(systemName:"checkmark").foregroundStyle(.secondary)}
                         }.padding(.vertical,5).contentShape(Rectangle()).tag(row.id)
                             .onTapGesture(count:2){open(row)}
-                            .contextMenu {Button(L("このタブへ移動")){open(row)};Button(L("右側に並べて表示")){store.searchPresented=false;store.setSplit(row.ref)}}
+                            .contextMenu {Button(L("このタブへ移動")){open(row)};Button(L("分割して表示")){store.searchPresented=false;store.setSplit(row.ref)}}
                     }
                 }.listStyle(.inset).focused($listFocused)
                     .onKeyPress(.return){if let row=rows.first(where:{$0.id == selection}) {open(row)};return .handled}
@@ -68,7 +68,7 @@ struct AllTabsPicker:View {
             HStack {
                 Text(L("↑↓で選択 · Enterで移動 · ⌘Fで検索")).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button(store.searchForSplit ? L("右側に表示"):L("このタブへ移動")) {if let row=rows.first(where:{$0.id == selection}) {open(row)}}.disabled(selection == nil)
+                Button(store.searchForSplit ? L("分割して表示"):L("このタブへ移動")) {if let row=rows.first(where:{$0.id == selection}) {open(row)}}.disabled(selection == nil)
             }
         }.padding(20).frame(width:680,height:500)
             .onAppear{selection=rows.first(where:{$0.ref == store.commandPage})?.id ?? rows.first?.id;listFocused=true}

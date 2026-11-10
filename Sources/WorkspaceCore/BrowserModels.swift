@@ -83,10 +83,13 @@ public struct FavoriteLink: Codable, Identifiable, Equatable {
     }
 }
 public struct BrowserSession: Codable, Equatable {
+    public var linkRules:[BrowserLinkRule]?
     public var favorites: [FavoriteLink]?
     public var splitWorkspaceID: UUID?
     public var splitPageID: UUID?
     public var splitStateRecorded: Bool?
+    public var splitOrientation:String?
+    public var splitFraction:Double?
     public var version = 1
     public var profiles: [LoginProfile] = []
     public var workspaces: [BrowserWorkspace] = []
@@ -99,6 +102,8 @@ public struct BrowserSession: Codable, Equatable {
     public init() {}
     public func validated() throws -> BrowserSession {
         guard version == 1 else { throw BrowserSessionError.invalid }
+        guard splitOrientation == nil || ["horizontal","vertical"].contains(splitOrientation!),
+              splitFraction == nil || (splitFraction!.isFinite && (0.15...0.85).contains(splitFraction!)) else {throw BrowserSessionError.invalid}
         let profileIDs = Set(profiles.map(\.id)), workspaceIDs = Set(workspaces.map(\.id))
         let pageIDs = workspaces.flatMap { $0.pages.map(\.id) }
         guard profileIDs.count == profiles.count, workspaceIDs.count == workspaces.count,

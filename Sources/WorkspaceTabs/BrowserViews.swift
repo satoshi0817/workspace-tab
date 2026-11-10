@@ -10,6 +10,8 @@ struct BrowserRoot: View {
     @ObservedObject private var shortcuts=ShortcutPreferences.shared
     var body: some View {
         Group {
+          VStack(spacing:0) {
+            if store.safeMode {SafeModeBanner(store:store)}
             if store.session.sidebarPosition == "top" {
                 VStack(spacing: 0) { appTabs(horizontal: true); content }
             } else {
@@ -28,6 +30,7 @@ struct BrowserRoot: View {
                     }
                 }
             }
+          }
         }.environment(\.locale,localization.locale).background(activeColor).frame(minWidth: 800, minHeight: 520)
             .overlay {RecentTabsOverlay(store:store)}
             .overlay(alignment:.topTrailing) {if store.networkOffline {Label(L("オフライン"),systemImage:"wifi.slash").font(.caption).padding(8).background(.regularMaterial,in:Capsule()).padding(8).allowsHitTesting(false)}}
@@ -44,6 +47,8 @@ struct BrowserRoot: View {
                 }
             }
             .sheet(isPresented: $store.favoritesPresented,onDismiss:store.restorePanelFocus) { FavoritesLauncher(store: store) }
+            .sheet(item:$store.previewFile,onDismiss:store.restorePanelFocus) {FilePreviewSheet(file:$0)}
+            .sheet(item:$store.siteSettingsPage,onDismiss:store.restorePanelFocus) {SiteSettingsSheet(store:store,sites:store.sites,ref:$0)}
             .sheet(item: $store.favoriteDraft,onDismiss:store.restorePanelFocus) { draft in FavoriteEditor(store: store, draft: draft) }
             .sheet(item:$store.editingBrowserTab,onDismiss:store.restorePanelFocus) {ref in
                 if let page=store.page(ref) {BrowserTabEditor(store:store,workspaceID:ref.workspaceID,draft:page)}
@@ -55,8 +60,10 @@ struct BrowserRoot: View {
             .sheet(item: Binding(get: { store.editingWorkspace.flatMap { store.workspace($0) } }, set: { if $0 == nil { store.editingWorkspace = nil } }),onDismiss:store.restorePanelFocus) { workspace in
                 WorkspaceEditor(store: store, draft: workspace)
             }
-            .sheet(isPresented: $store.searchPresented,onDismiss:store.restorePanelFocus) { AllTabsPicker(store:store) }
-            .sheet(isPresented: $store.commandsPresented,onDismiss:store.restorePanelFocus) { CommandPicker(store:store) }
+            .sheet(isPresented: $store.searchPresented,onDismiss:store.restorePanelFocus) {
+                if store.searchForSplit {AllTabsPicker(store:store)} else {UniversalSearch(store:store,downloads:store.downloads)}
+            }
+            .sheet(isPresented: $store.commandsPresented,onDismiss:store.restorePanelFocus) {UniversalSearch(store:store,downloads:store.downloads,scope:.commands)}
             .alert("Workspace Tabs",isPresented:Binding(get:{store.error != nil},set:{if !$0 {store.error=nil}})) {
                 Button(L("閉じる")) {store.error=nil}
             } message: {Text(store.error ?? "")}
@@ -79,10 +86,7 @@ struct BrowserRoot: View {
                     }
                 }.frame(maxWidth:.infinity,maxHeight:.infinity)
             } else if let split = store.split, store.page(split) != nil, split.pageID != page.id {
-                HSplitView {
-                    BrowserPane(store:store,workspaceID:workspace.id,pageID:page.id,isRight:false).frame(minWidth:320)
-                    BrowserPane(store:store,workspaceID:split.workspaceID,pageID:split.pageID,isRight:true).frame(minWidth:320)
-                }
+                BrowserSplit(store:store,left:PageReference(workspaceID:workspace.id,pageID:page.id),right:split)
             } else { BrowserPane(store:store,workspaceID:workspace.id,pageID:page.id,isRight:false) }
         } else {
             VStack(spacing:16) { Text(L("アプリタブを追加")).font(.title2); Button(L("Notionを追加")) {store.addWorkspace(name:"Notion")} }.frame(maxWidth:.infinity,maxHeight:.infinity)
@@ -111,7 +115,7 @@ struct BrowserRoot: View {
                                     if store.detachedWorkspaceIDs.contains(workspace.id) {store.reattachWorkspace(workspace.id)} else {store.detachWorkspace(workspace.id)}
                                 }
                                 Button(L("名前・色・ログイン環境…")) {store.editingWorkspace=workspace.id}
-                                if let pageID=workspace.selectedPageID { Button(L("右側に並べて表示")) {store.setSplit(PageReference(workspaceID:workspace.id,pageID:pageID))}.disabled(pageID == store.selectedPage?.id) }
+                                if let pageID=workspace.selectedPageID { Button(L("分割して表示")) {store.setSplit(PageReference(workspaceID:workspace.id,pageID:pageID))}.disabled(pageID == store.selectedPage?.id) }
                                 Button(workspace.pinned ? L("固定を解除"):L("タブを固定")) {var w=workspace;w.pinned.toggle();store.updateWorkspace(w)}
                                 Divider(); Button(L("アプリタブを閉じる…"),role:.destructive) {store.removeWorkspace(workspace.id)}.disabled(workspace.pinned)
                             }
@@ -126,7 +130,7 @@ struct BrowserRoot: View {
                 if horizontal {DownloadsButton(store:store,downloads:store.downloads,compact:true)}
                 Button {let id=store.addWorkspace();store.editingWorkspace=id} label:{Image(systemName:"plus").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("アプリタブを追加"))
                 Button {store.favoritesPresented=true} label:{Image(systemName:"star").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("お気に入りランチャー")).accessibilityLabel(L("お気に入り"))
-                Button {store.searchForSplit=false;store.searchPresented=true} label:{Image(systemName:"magnifyingglass").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("タブを検索"))
+                Button {store.searchForSplit=false;store.searchPresented=true} label:{Image(systemName:"magnifyingglass").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("タブ・お気に入り・操作を検索"))
                 Button {store.helpPresented=true} label:{Image(systemName:"questionmark.circle").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("使い方とショートカット")).accessibilityLabel(L("使い方とショートカット"))
                 if !icons && !horizontal {Spacer()}
                 if horizontal {appMenu} else {Button {store.showSettings=true} label:{Image(systemName:"gearshape").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("設定"))}
@@ -175,10 +179,11 @@ struct BrowserPane: View {
     private var pageInsets:EdgeInsets {
         // Adjacent chrome already supplies 8pt. Do not double it at shared edges.
         let splitPane = !detached && store.split != nil && store.split?.pageID != store.selectedPage?.id
-        let leading:CGFloat = isRight ? BrowserLayout.small :
+        let vertical=splitPane && store.session.splitOrientation == "vertical"
+        let leading:CGFloat = isRight && !vertical ? BrowserLayout.small :
             (detached || store.session.sidebarPosition == "top" ? BrowserLayout.inset:0)
         return EdgeInsets(top:0,leading:leading,bottom:BrowserLayout.inset,
-                          trailing:splitPane && !isRight ? BrowserLayout.small:BrowserLayout.inset)
+                          trailing:splitPane && !isRight && !vertical ? BrowserLayout.small:BrowserLayout.inset)
     }
     var body:some View {
         if let engine=store.engine(workspaceID,pageID),let workspace=store.workspace(workspaceID) {
@@ -197,10 +202,11 @@ struct BrowserPane: View {
                         }.padding(.vertical,BrowserLayout.gap)
                     }.frame(maxWidth:.infinity).layoutPriority(-1)
                     WorkspaceIdentityBadge(engine:engine)
+                    Button {store.siteSettingsPage=PageReference(workspaceID:workspaceID,pageID:pageID)} label:{Image(systemName:"slider.horizontal.3").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.buttonStyle(.plain).help(L("サイト設定")).accessibilityLabel(L("サイト設定"))
                     Button {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID);store.addressFocus=UUID()} label:{Image(systemName:"link").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("URLを表示")).accessibilityLabel(L("URLを表示"))
                     if detached {Button(L("元に戻す")) {store.reattachWorkspace(workspaceID)}.help(L("アプリタブを元のウインドウに戻す"))}
                     else if isRight {
-                        Button {store.swapSplit()} label:{Image(systemName:"arrow.left.arrow.right").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("左右を入れ替え"))
+                        Button {store.swapSplit()} label:{Image(systemName:"arrow.left.arrow.right").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("表示位置を入れ替え"))
                         Button {store.setSplit(nil)} label:{Image(systemName:"rectangle").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("Split Viewを解除"))
                     } else {SplitPicker(store:store)}
                 }.frame(height:BrowserLayout.tabBar)
@@ -210,7 +216,13 @@ struct BrowserPane: View {
                     .foregroundStyle(Palette.ink(workspace.color)).background(Palette.color(workspace.color))
                 VStack(spacing:0) {
                     BrowserNavigation(store:store,engine:engine,isRight:isRight)
-                    if workspace.pages.first(where:{$0.id == pageID})?.isStartPage == true {
+                    if store.isPageSuspended(pageID) {
+                        VStack(spacing:16) {
+                            Image(systemName:"pause.circle").font(.largeTitle).foregroundStyle(.secondary)
+                            Text(L("ページの読み込みを停止しています"))
+                            Button(L("このタブを読み込む")){store.resumePage(PageReference(workspaceID:workspaceID,pageID:pageID))}
+                        }.frame(maxWidth:.infinity,maxHeight:.infinity)
+                    } else if workspace.pages.first(where:{$0.id == pageID})?.isStartPage == true {
                         NewBrowserTab(store:store,engine:engine).id(pageID)
                     } else {
                         BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
@@ -280,8 +292,14 @@ struct SplitPicker:View {
                     }
                 }
             }
-            if store.split != nil {Divider();Button(L("左右を入れ替え")) {store.swapSplit()};Button(L("Split Viewを解除")) {store.setSplit(nil)}}
-        } label:{Image(systemName:"rectangle.split.2x1").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L("別の環境のページを並べて表示"))
+            if store.split != nil {Divider();Button(L("表示位置を入れ替え")) {store.swapSplit()};Button(L("Split Viewを解除")) {store.setSplit(nil)}}
+            if store.split != nil {
+                Divider()
+                Button(L("左右に分割")){store.session.splitOrientation="horizontal";store.changed()}
+                Button(L("上下に分割")){store.session.splitOrientation="vertical";store.changed()}
+                Button(L("均等に戻す")){store.session.splitFraction=0.5;store.changed()}
+            }
+        } label:{Image(systemName:store.session.splitOrientation == "vertical" ? "rectangle.split.1x2":"rectangle.split.2x1").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L("別の環境のページを並べて表示"))
     }
 }
 struct WorkspaceIcon:View {

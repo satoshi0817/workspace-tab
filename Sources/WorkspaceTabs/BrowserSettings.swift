@@ -99,6 +99,7 @@ struct BrowserSettings:View {
                         }
                     } else if section == "リンクの受け取り" {
                         NotionLinkRoutingSettings(routing:store.linkRouting)
+                        LinkRuleSettings(store:store)
                     } else if section == "ログイン環境" {
                         Section {
                             ForEach(store.session.profiles){profile in
@@ -112,6 +113,7 @@ struct BrowserSettings:View {
                     } else if section == "作業" {
                         WorkflowSettings(store:store)
                     } else if section == "診断" {
+                        SafeStartupSettings(store:store)
                         MicrophoneSettings()
                         TimingSettings(log:store.timings,export:store.exportTimings)
                     } else {
@@ -196,6 +198,14 @@ extension BrowserStore {
             guard saveBeforeExit(forceBackup:true) else{throw LVError(L("現在の状態を保存できないため読み込みを中止しました"))}
             session.favorites = favorites + importedFavorites
             session.profiles.append(contentsOf:importedProfiles);session.workspaces.append(contentsOf:importedWorkspaces)
+            let rules=(backup.session.linkRules ?? []).compactMap {rule->BrowserLinkRule? in
+                guard let wid=workspaceMap[rule.workspaceID] else{return nil}
+                var copy=rule;copy.id=UUID();copy.workspaceID=wid
+                if rule.groupID == rule.workspaceID {copy.groupID=wid}
+                // Imported rules stay off until the user reviews the destination.
+                copy.enabled=false;return copy
+            }
+            if !rules.isEmpty {session.linkRules=(session.linkRules ?? [])+rules}
             if session.selectedWorkspaceID == nil {session.selectedWorkspaceID=session.workspaces.first?.id};changed()
         }catch{self.error=error.localizedDescription}
     }

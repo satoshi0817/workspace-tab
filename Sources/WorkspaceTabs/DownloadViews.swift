@@ -37,6 +37,8 @@ struct DownloadsPanel:View {
     @ObservedObject var store:BrowserStore
     @ObservedObject var downloads:BrowserDownloads
     @State private var fileRevision=0
+    @FocusState private var listFocused:Bool
+    private func selectedFile()->DownloadRecord? {downloads.records.first{$0.id == downloads.selection}}
     var body:some View {
         VStack(spacing:12) {
             HStack {
@@ -55,20 +57,31 @@ struct DownloadsPanel:View {
                     Text(L("保存したファイルがここに表示されます。")).font(.caption).foregroundStyle(.secondary)
                 }.frame(maxWidth:.infinity).frame(height:150)
             } else {
-                ScrollView {
-                    LazyVStack(spacing:6) {
+                List(selection:$downloads.selection) {
                         ForEach(downloads.records) {record in
                             DownloadRow(record:record,downloads:downloads,fileRevision:fileRevision) {
                                 store.downloadsPresented=false
-                            }
+                            } preview:{store.previewDownload(record)}
+                                .tag(record.id).listRowSeparator(.hidden)
                         }
+                }.listStyle(.plain).scrollContentBackground(.hidden).frame(height: min(340,CGFloat(downloads.records.count)*80))
+                    .focused($listFocused)
+                    .onKeyPress(.return,phases:.down) {press in
+                        guard let record=selectedFile(),downloads.file(for:record) != nil else{return .handled}
+                        store.downloadsPresented=false
+                        if press.modifiers.contains(.command) {downloads.reveal(record)} else {downloads.open(record)}
+                        return .handled
                     }
-                }.frame(maxHeight:340)
+                    .onKeyPress(.space) {if let record=selectedFile(){store.previewDownload(record)};return .handled}
+                Text(L("↑↓ 選択 · Space プレビュー · Enter 開く · ⌘Enter Finder"))
+                    .font(.caption2).foregroundStyle(.secondary)
                 Text(L("履歴を消してもファイルは削除されません。"))
                     .font(.caption2).foregroundStyle(.secondary).frame(maxWidth:.infinity,alignment:.leading)
             }
         }.padding(16).frame(width:376).foregroundStyle(Color.primary)
             .onExitCommand {store.downloadsPresented=false}
+            .onAppear {downloads.selection=downloads.records.first?.id;DispatchQueue.main.async{listFocused=true}}
+            .onChange(of:downloads.records.map(\.id)) {_,ids in if downloads.selection == nil || !ids.contains(downloads.selection!) {downloads.selection=ids.first}}
             .onReceive(NotificationCenter.default.publisher(for:NSApplication.didBecomeActiveNotification)) {_ in fileRevision += 1}
     }
 }
@@ -78,6 +91,7 @@ private struct DownloadRow:View {
     @ObservedObject var downloads:BrowserDownloads
     let fileRevision:Int
     let dismiss:()->Void
+    let preview:()->Void
     private var available:URL? {downloads.file(for:record)}
     private var name:String {record.name.isEmpty ? L("ファイル"):record.name}
     private var status:String {
@@ -118,14 +132,23 @@ private struct DownloadRow:View {
                 Button {dismiss();downloads.reveal(record)} label:{Image(systemName:"folder").frame(width:28,height:28)}
                     .buttonStyle(.borderless).help(L("Finderで表示")).accessibilityLabel(L("Finderで表示：\(name)"))
             }
-        }.padding(10).background(.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:12))
+        }.padding(8).background(.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:12))
+            .modifier(DownloadFileDrag(url:available))
             .contextMenu {
                 if available != nil {
+                    Button(L("プレビュー"),action:preview)
                     Button(L("開く")){dismiss();downloads.open(record)}
                     Button(L("Finderで表示")){dismiss();downloads.reveal(record)}
                     Divider()
                 }
                 if !record.isActive {Button(L("履歴から削除")){downloads.removeFromHistory(record.id)}}
             }
+    }
+}
+
+private struct DownloadFileDrag:ViewModifier {
+    let url:URL?
+    @ViewBuilder func body(content:Content)->some View {
+        if let url {content.onDrag{NSItemProvider(object:url as NSURL)}} else {content}
     }
 }

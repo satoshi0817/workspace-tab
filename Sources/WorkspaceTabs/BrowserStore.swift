@@ -11,6 +11,12 @@ struct PageReference: Codable, Equatable, Identifiable {
 }
 @MainActor final class BrowserStore: ObservableObject {
     @Published var session = BrowserSession()
+    @Published var safeMode=false
+    var safeLoadedPages=Set<UUID>()
+    var suspendedPages=Set<UUID>()
+    var onResumeFromSafeMode:(()->Void)?
+    let startupRecovery:StartupRecovery?
+    var canPersist:Bool {writable}
     @Published var networkOffline=false
     @Published var recentCandidates:[PageReference]=[]
     @Published var recentIndex=0
@@ -30,6 +36,7 @@ struct PageReference: Codable, Equatable, Identifiable {
     func pageID(for webView:WKWebView)->UUID? {engines.first{$0.value.webView === webView}?.key}
 
     lazy var downloads=BrowserDownloads(store:self)
+    lazy var sites=SitePreferences(directory:directory)
     // Injectable destination selection for isolated local WebKit checks.
     var downloadDestinationChooser:((String,@escaping(URL?)->Void)->Void)?
     lazy var notion=NotionLibrary(store:self)
@@ -43,8 +50,10 @@ struct PageReference: Codable, Equatable, Identifiable {
     var notionCreationMenu:NotionCreationMenu?
     @Published var newTabRequest:PageReference?
     @Published var workspaceHintsVisible=false
-    var workspaceHintHold=WorkspaceShortcutHold()
-    var workspaceHintTask:Task<Void,Never>?
+    lazy var workspaceShortcutHints=WorkspaceShortcutHintsController(
+        canShow:{[weak self] in self?.canShowWorkspaceHints == true},
+        modifiers:{NSEvent.modifierFlags},
+        publish:{[weak self] visible in self?.workspaceHintsVisible=visible})
     var workspaceHintsSuspended=false
     @Published var focusedPage: PageReference?
     private var noticeID=UUID()
@@ -82,6 +91,8 @@ struct PageReference: Codable, Equatable, Identifiable {
     @Published var showSettings = false {willSet {if newValue && !showSettings {capturePanelFocus()}}}
     @Published var helpPresented = false {willSet {if newValue && !helpPresented {capturePanelFocus()}}}
     @Published var downloadsPresented = false {willSet {if newValue && !downloadsPresented {capturePanelFocus()}}}
+    @Published var previewFile:FilePreview? {willSet {if newValue != nil && previewFile == nil {capturePanelFocus()}}}
+    @Published var siteSettingsPage:PageReference? {willSet {if newValue != nil && siteSettingsPage == nil {capturePanelFocus()}}}
     @Published var editingBrowserTab: PageReference? {willSet {if newValue != nil && editingBrowserTab == nil {capturePanelFocus()}}}
     @Published var editingWorkspace: UUID? {willSet {if newValue != nil && editingWorkspace == nil {capturePanelFocus()}}}
     @Published var addressFocus = UUID()
@@ -110,12 +121,15 @@ struct PageReference: Codable, Equatable, Identifiable {
     private var timer: Timer?
     private var engines: [UUID: BrowserEngine] = [:]
     private var dataStores: [UUID: WKWebsiteDataStore] = [:]
-    private var closedPages: [(UUID, BrowserPage)] = []
+    var closedPages: [(UUID, BrowserPage)] = []
     var window: NSWindow?
     var selected: BrowserWorkspace? { session.workspaces.first { $0.id == session.selectedWorkspaceID } }
     var selectedPage: BrowserPage? { selected.flatMap { w in w.pages.first { $0.id == w.selectedPageID } } }
-    init(directory: URL? = nil) {
+    init(directory: URL? = nil,safeMode:Bool=false,trackStartup:Bool=false) {
         self.directory = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("WorkspaceTabs")
+        startupRecovery=trackStartup ? StartupRecovery(directory:self.directory):nil
+        self.safeMode=safeMode || startupRecovery?.interruptedStartup == true
+        startupRecovery?.mark("starting")
         do {
             try FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
             if let loaded=try SessionRecovery.load(directory:self.directory) {
@@ -141,6 +155,7 @@ struct PageReference: Codable, Equatable, Identifiable {
                let ref = try? JSONDecoder().decode(PageReference.self, from: data), page(ref) != nil { split = ref }
         } catch {
             writable = false
+            self.safeMode=true
             self.error = L("設定を読み込めませんでした。元ファイルは保持しています。\n\(error.localizedDescription)")
         }
         try? LegacyPagePreviewCleanup.remove(in:self.directory)
@@ -159,11 +174,17 @@ struct PageReference: Codable, Equatable, Identifiable {
         let store = WKWebsiteDataStore(forIdentifier: id); dataStores[id] = store; return store
     }
     func engine(_ workspaceID: UUID, _ pageID: UUID, configuration: WKWebViewConfiguration? = nil, load: Bool = true) -> BrowserEngine? {
-        if let engine = engines[pageID],engine.workspaceID == workspaceID { return engine }
+        if let engine = engines[pageID],engine.workspaceID == workspaceID {
+            if load,suspendedPages.contains(pageID),!isPageSuspended(pageID) {resumePage(PageReference(workspaceID:workspaceID,pageID:pageID))}
+            return engine
+        }
         guard let workspace = workspace(workspaceID), let page = workspace.pages.first(where: { $0.id == pageID }) else { return nil }
         let engine = BrowserEngine(store: self, workspace: workspace, page: page, configuration: configuration)
         engines[pageID] = engine
-        if load, page.isStartPage != true, let url = BrowserAddress.url(page.url) { engine.webView.load(URLRequest(url: url)) }
+        if load,page.isStartPage != true {
+            if isPageSuspended(pageID) {suspendedPages.insert(pageID)}
+            else if let url=BrowserAddress.url(page.url) {engine.webView.load(URLRequest(url:url))}
+        }
         return engine
     }
     func selectWorkspace(_ id: UUID) {
@@ -329,6 +350,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         defer {selectionChanged()}
         guard let right = split, let leftW = selected, let leftP = selectedPage else { return }
         session.selectedWorkspaceID = right.workspaceID
+        session.splitFraction=1-(session.splitFraction ?? 0.5)
         if let i = session.workspaces.firstIndex(where: { $0.id == right.workspaceID }) { session.workspaces[i].selectedPageID = right.pageID }
         split = PageReference(workspaceID: leftW.id, pageID: leftP.id); changed()
     }
@@ -402,7 +424,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         notify(L("「\(workspace(target)?.name ?? "")」で開きました"))
         return true
     }
-    func shutdown() { downloads.shutdown();resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll() }
+    func shutdown() { downloads.shutdown();resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll();startupRecovery?.mark("clean") }
     func restoreTabBackup(_ backup:BrowserBackup)throws {
         var restored=try backup.session.validated()
         let iconDir=directory.appendingPathComponent("Icons")

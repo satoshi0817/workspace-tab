@@ -9,6 +9,8 @@ struct Workset:Codable,Identifiable,Equatable {
     var workspaces:[BrowserWorkspace]
     var selectedWorkspaceID:UUID?
     var split:PageReference?
+    var splitOrientation:String?
+    var splitFraction:Double?
 }
 struct TimingEntry:Identifiable {
     let id=UUID()
@@ -90,7 +92,7 @@ extension BrowserStore {
         let name=name.trimmingCharacters(in:.whitespacesAndNewlines)
         guard !name.isEmpty else{return}
         snapshot()
-        let value=Workset(name:name,workspaces:session.workspaces,selectedWorkspaceID:session.selectedWorkspaceID,split:split)
+        let value=Workset(name:name,workspaces:session.workspaces,selectedWorkspaceID:session.selectedWorkspaceID,split:split,splitOrientation:session.splitOrientation,splitFraction:session.splitFraction)
         if persistWorksets(worksets+[value]) {notify(L("作業セットを保存しました"))}
     }
     @discardableResult func restoreWorkset(_ id:UUID)->Bool {
@@ -114,6 +116,8 @@ extension BrowserStore {
         }
         session.selectedWorkspaceID=value.selectedWorkspaceID
         if let selected=session.selectedWorkspaceID,detachedWorkspaceIDs.contains(selected) {reattachWorkspace(selected,activate:false)}
+        session.splitOrientation=value.splitOrientation == "vertical" ? "vertical":"horizontal"
+        session.splitFraction=value.splitFraction.flatMap{$0.isFinite && (0.15...0.85).contains($0) ? $0:nil} ?? 0.5
         setSplit(value.split.flatMap {ref in mapping[ref.pageID].map{PageReference(workspaceID:ref.workspaceID,pageID:$0)}})
         focusedPage=nil;changed();notify(L("作業セットを開きました"))
         return true

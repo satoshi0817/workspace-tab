@@ -3262,5 +3262,261 @@
   "履歴はこのMacに最大100件保存します。履歴を消してもファイルは削除されません。": {
     "en": "Up to 100 recent downloads are kept on this Mac. Clearing history does not delete files.",
     "ko": "최근 다운로드 기록을 이 Mac에 최대 100개까지 저장합니다. 기록을 지워도 파일은 삭제되지 않습니다."
+  },
+  "リンクの振り分け先を特定できません。設定の自動振り分けを確認してください。": {
+    "en": "Cannot determine the link destination. Check routing rules in Settings.",
+    "ko": "링크 대상을 확인할 수 없습니다. 설정의 자동 분류 규칙을 확인하세요."
+  },
+  "リンクの自動振り分け": {
+    "en": "Link routing rules",
+    "ko": "링크 자동 분류"
+  },
+  "指定したドメインのリンクを、アプリタブとグループへ振り分けます。NotionはWorkspace IDによる判定を優先します。": {
+    "en": "Route links from specified domains to an app tab and group. Notion uses Workspace ID routing first.",
+    "ko": "지정한 도메인의 링크를 앱 탭과 그룹으로 분류합니다. Notion은 Workspace ID 판정을 우선합니다."
+  },
+  "移動先がありません": {
+    "en": "Destination not found",
+    "ko": "대상을 찾을 수 없습니다"
+  },
+  "ルールを追加…": {
+    "en": "Add Rule…",
+    "ko": "규칙 추가…"
+  },
+  "リンクのルール": {
+    "en": "Link Rule",
+    "ko": "링크 규칙"
+  },
+  "ドメイン（例：github.com）": {
+    "en": "Domain (e.g. github.com)",
+    "ko": "도메인(예: github.com)"
+  },
+  "サブドメインも含める": {
+    "en": "Include subdomains",
+    "ko": "하위 도메인 포함"
+  },
+  "同じドメインのルールがすでにあります。": {
+    "en": "A rule for this domain already exists.",
+    "ko": "이 도메인의 규칙이 이미 있습니다."
+  },
+  "Notionの振り分けはアプリタブのWorkspace IDで設定してください。": {
+    "en": "Configure Notion routing using the app tab’s Workspace ID.",
+    "ko": "Notion 분류는 앱 탭의 Workspace ID로 설정하세요."
+  },
+  "↑↓ 選択 · Space プレビュー · Enter 開く · ⌘Enter Finder": {
+    "en": "↑↓ Select · Space Preview · Enter Open · ⌘Enter Finder",
+    "ko": "↑↓ 선택 · Space 미리보기 · Enter 열기 · ⌘Enter Finder"
+  },
+  "閉じたタブ": {
+    "en": "Closed Tabs",
+    "ko": "닫은 탭"
+  },
+  "保存済み": {
+    "en": "Saved",
+    "ko": "저장됨"
+  },
+  "未完了": {
+    "en": "Incomplete",
+    "ko": "미완료"
+  },
+  "ダウンロードを表示": {
+    "en": "Show Downloads",
+    "ko": "다운로드 보기"
+  },
+  "タブ・お気に入り・ファイル・操作を検索": {
+    "en": "Search tabs, favorites, files and actions",
+    "ko": "탭, 즐겨찾기, 파일, 작업 검색"
+  },
+  "表示する項目": {
+    "en": "Show",
+    "ko": "표시 항목"
+  },
+  "↑↓ 選択 · Enter 実行 · ←→ 分類 · ⌘F 検索": {
+    "en": "↑↓ Select · Enter Run · ←→ Category · ⌘F Search",
+    "ko": "↑↓ 선택 · Enter 실행 · ←→ 분류 · ⌘F 검색"
+  },
+  "左右に分割": {
+    "en": "Split Side by Side",
+    "ko": "좌우로 분할"
+  },
+  "上下に分割": {
+    "en": "Split Top and Bottom",
+    "ko": "상하로 분할"
+  },
+  "均等に戻す": {
+    "en": "Reset to Equal Sizes",
+    "ko": "균등한 크기로 재설정"
+  },
+  "サイト設定を保存できませんでした。": {
+    "en": "Could not save site settings.",
+    "ko": "사이트 설정을 저장하지 못했습니다."
+  },
+  "サイト設定": {
+    "en": "Site Settings",
+    "ko": "사이트 설정"
+  },
+  "アカウントの表示は確認用のメモです。サイトのログイン状態を保証するものではありません。": {
+    "en": "Account details are a reference note and do not confirm the site’s login state.",
+    "ko": "계정 표시는 확인용 메모이며 사이트의 로그인 상태를 보장하지 않습니다."
+  },
+  "このサイトの表示・権限": {
+    "en": "Display and Permissions for This Site",
+    "ko": "이 사이트의 표시 및 권한"
+  },
+  "ズーム": {
+    "en": "Zoom",
+    "ko": "확대/축소"
+  },
+  "マイク": {
+    "en": "Microphone",
+    "ko": "마이크"
+  },
+  "カメラ": {
+    "en": "Camera",
+    "ko": "카메라"
+  },
+  "許可の確認はWebKitとmacOSが行います。ブロックすると、この環境の同じサイトで進行中の入力も停止します。": {
+    "en": "WebKit and macOS handle permission prompts. Blocking also stops active capture for this site in this login profile.",
+    "ko": "권한 확인은 WebKit과 macOS가 처리합니다. 차단하면 이 로그인 환경의 동일한 사이트에서 진행 중인 입력도 중지됩니다."
+  },
+  "このサイトの設定をリセット": {
+    "en": "Reset Settings for This Site",
+    "ko": "이 사이트의 설정 재설정"
+  },
+  "サイドバーの色": {
+    "en": "Sidebar Color",
+    "ko": "사이드바 색상"
+  },
+  "着色設定は同じアプリタブのNotionページで共有します。": {
+    "en": "Color settings apply to Notion pages in the same app tab.",
+    "ko": "색상 설정은 같은 앱 탭의 Notion 페이지에 적용됩니다."
+  },
+  "httpまたはhttpsのページを開いてください。": {
+    "en": "Open an http or https page.",
+    "ko": "http 또는 https 페이지를 여세요."
+  },
+  "確認する": {
+    "en": "Ask",
+    "ko": "확인"
+  },
+  "ブロック": {
+    "en": "Block",
+    "ko": "차단"
+  },
+  "通常の読み込みを再開しました": {
+    "en": "Normal loading resumed",
+    "ko": "일반 페이지 로드를 재개했습니다"
+  },
+  "セーフモード：ページの自動読み込みを停止しています": {
+    "en": "Safe Mode: automatic page loading is paused",
+    "ko": "안전 모드: 자동 페이지 로드가 일시 중지되었습니다"
+  },
+  "通常の読み込みを再開": {
+    "en": "Resume Normal Loading",
+    "ko": "일반 페이지 로드 재개"
+  },
+  "セーフモード": {
+    "en": "Safe Mode",
+    "ko": "안전 모드"
+  },
+  "次回はページを読み込まずに起動": {
+    "en": "Pause page loading on the next launch",
+    "ko": "다음 실행 시 페이지 로드 일시 중지"
+  },
+  "入力内容を保存してからアプリを終了し、再度起動してください。タブやログイン情報は保持し、選んだページだけ読み込みを再開できます。": {
+    "en": "Save your input, quit and reopen the app. Tabs and login data are preserved; you can resume individual pages.",
+    "ko": "입력 내용을 저장한 뒤 앱을 종료하고 다시 실행하세요. 탭과 로그인 정보는 유지되며 선택한 페이지만 다시 로드할 수 있습니다."
+  },
+  "起動直後に異常終了した場合も、次回はセーフモードになります。Webサイトの読み込みエラーだけでは切り替わりません。": {
+    "en": "An interrupted initial startup also enables Safe Mode on the next launch. Website loading errors alone do not enable it.",
+    "ko": "앱 시작 직후 비정상 종료된 경우에도 다음 실행 시 안전 모드가 켜집니다. 웹사이트 로드 오류만으로는 전환되지 않습니다."
+  },
+  "ページの読み込みを停止しています": {
+    "en": "Page loading is paused",
+    "ko": "페이지 로드가 일시 중지되었습니다"
+  },
+  "このタブを読み込む": {
+    "en": "Load This Tab",
+    "ko": "이 탭 로드"
+  },
+  "並べて表示するタブ": {
+    "en": "Choose a Tab for Split View",
+    "ko": "분할 화면에 표시할 탭"
+  },
+  "分割して表示": {
+    "en": "Show in Split View",
+    "ko": "분할 화면으로 보기"
+  },
+  "タブ・お気に入り・操作を検索": {
+    "en": "Search tabs, favorites and actions",
+    "ko": "탭, 즐겨찾기, 작업 검색"
+  },
+  "表示位置を入れ替え": {
+    "en": "Swap Panes",
+    "ko": "화면 위치 바꾸기"
+  },
+  "まとめて検索する": {
+    "en": "Search Everything",
+    "ko": "통합 검색"
+  },
+  "サイドバーの検索、または全タブ検索のキーから統合検索を開きます。コマンドのキーは操作分類で開きます。": {
+    "en": "Open unified search from the sidebar or the all-tabs shortcut. The command shortcut opens the Actions category.",
+    "ko": "사이드바의 검색 또는 전체 탭 검색 단축키로 통합 검색을 엽니다. 명령 단축키는 작업 분류를 엽니다."
+  },
+  "分類をクリック、またはリストで左右キーを押して切り替えます。上下キーで選択し、Enterで実行します。⌘Fで入力欄へ戻ります。": {
+    "en": "Click a category or use Left/Right in the list. Select with Up/Down and run with Enter. ⌘F returns to the search field.",
+    "ko": "분류를 클릭하거나 목록에서 좌우 키로 전환합니다. 상하 키로 선택하고 Enter로 실행합니다. ⌘F로 검색 입력란으로 돌아갑니다."
+  },
+  "閉じたタブはこの起動中の直近20件が対象です。お気に入り専用の画面も引き続き使えます。": {
+    "en": "Closed Tabs includes the last 20 tabs closed during this session. The dedicated Favorites view is still available.",
+    "ko": "닫은 탭에는 이번 실행 중 최근에 닫은 탭 20개가 표시됩니다. 즐겨찾기 전용 화면도 계속 사용할 수 있습니다."
+  },
+  "ドメインごとに開く環境とグループを指定。": {
+    "en": "Choose a destination profile and group by domain.",
+    "ko": "도메인별로 대상 환경과 그룹을 지정합니다."
+  },
+  "設定 → リンクの受け取りから、ドメインと移動先のアプリタブ・グループを登録します。": {
+    "en": "In Settings → Link Handling, add a domain and its destination app tab and group.",
+    "ko": "설정 → 링크 수신에서 도메인과 대상 앱 탭 및 그룹을 등록합니다."
+  },
+  "NotionはWorkspace IDの判定を優先します。候補が重複する場合や移動先がない場合は通知し、別のログイン環境で開きません。": {
+    "en": "Notion prioritizes Workspace ID routing. Ambiguous or missing destinations show a notification without opening a different login profile.",
+    "ko": "Notion은 Workspace ID 판정을 우선합니다. 대상이 중복되거나 없으면 알림을 표시하고 다른 로그인 환경에서 열지 않습니다."
+  },
+  "ズーム・マイク・ログイン環境を確認。": {
+    "en": "Check zoom, microphone and login profile.",
+    "ko": "확대/축소, 마이크, 로그인 환경을 확인합니다."
+  },
+  "タブ列の調整アイコンから開きます。ズームとマイク・カメラのブロック設定はサイトとログイン環境ごとに保存します。": {
+    "en": "Open the adjustments icon in the tab bar. Zoom and microphone/camera blocks are saved per site and login profile.",
+    "ko": "탭 표시줄의 조정 아이콘으로 엽니다. 확대/축소와 마이크·카메라 차단 설정은 사이트와 로그인 환경별로 저장됩니다."
+  },
+  "表示の変更はページを再読み込みしません。Notionの着色設定は同じアプリタブで共有します。": {
+    "en": "Display changes do not reload the page. Notion color settings are shared within the app tab.",
+    "ko": "표시 설정을 변경해도 페이지를 다시 로드하지 않습니다. Notion 색상 설정은 같은 앱 탭에서 공유합니다."
+  },
+  "ページを読み込まずに起動し、原因を確認。": {
+    "en": "Start without loading pages to investigate a problem.",
+    "ko": "페이지를 로드하지 않고 시작하여 문제를 확인합니다."
+  },
+  "設定 → 診断で次回のセーフモードを予約できます。起動時にOptionキーを押す方法もあります。": {
+    "en": "Schedule Safe Mode for the next launch in Settings → Diagnostics, or hold Option while launching.",
+    "ko": "설정 → 진단에서 다음 실행의 안전 모드를 예약하거나 실행할 때 Option 키를 누릅니다."
+  },
+  "保存済みのタブは残り、「このタブを読み込む」で個別に再開できます。通常の読み込みを再開するとバックグラウンド同期も再開します。": {
+    "en": "Saved tabs remain available. Resume individually with Load This Tab. Resuming normal loading also resumes background sync.",
+    "ko": "저장된 탭은 유지되며 이 탭 로드로 개별 재개할 수 있습니다. 일반 페이지 로드를 재개하면 백그라운드 동기화도 재개합니다."
+  },
+  "一覧は↑↓で選択し、SpaceでQuick Look、Enterで開く、⌘EnterでFinderに表示します。保存済みファイルは外へドラッグできます。": {
+    "en": "Select with Up/Down, preview with Space, open with Enter, or show in Finder with ⌘Enter. Drag saved files to other apps.",
+    "ko": "상하 키로 선택하고 Space로 Quick Look, Enter로 열기, ⌘Enter로 Finder에 표시합니다. 저장된 파일은 다른 앱으로 드래그할 수 있습니다."
+  },
+  "分割メニューで左右・上下を切り替え、境界をドラッグして比率を調整できます。方向と比率は次回起動と作業セットに引き継ぎます。": {
+    "en": "Choose side-by-side or top-and-bottom in the split menu and drag the divider to adjust the ratio. Orientation and ratio are saved for relaunch and worksets.",
+    "ko": "분할 메뉴에서 좌우 또는 상하를 선택하고 경계를 드래그하여 비율을 조정합니다. 방향과 비율은 다음 실행 및 작업 세트에 저장됩니다."
+  },
+  "境界をドラッグして調整し、2つ目のペインのボタンで表示位置の入れ替えや解除ができます。": {
+    "en": "Drag the divider to adjust the layout. Buttons in the second pane swap the panes or exit Split View.",
+    "ko": "경계를 드래그하여 배치를 조정합니다. 두 번째 화면의 버튼으로 위치를 바꾸거나 분할을 해제합니다."
   }
 }

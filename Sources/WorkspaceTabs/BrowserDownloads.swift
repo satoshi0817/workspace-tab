@@ -8,6 +8,7 @@ import Combine
 @MainActor final class BrowserDownloads:NSObject,ObservableObject,WKDownloadDelegate {
     private weak var store:BrowserStore?
     @Published private(set) var records:[DownloadRecord]=[]
+    @Published var selection:UUID?
     private let historyURL:URL
     @MainActor private final class Job {
         let recordID=UUID()

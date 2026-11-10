@@ -101,6 +101,20 @@ import WorkspaceCore
         store.closePage(engine.pageID,in:id)
         try await settled()
         try expect(try Data(contentsOf:destination!) == expected,"Download continues after its source tab closes")
+        let application=NSApp as! BrowserApplication,oldAction=application.panelKeyAction
+        defer {application.panelKeyAction=oldAction}
+        func key(_ code:UInt16,_ text:String)->NSEvent {NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:ProcessInfo.processInfo.systemUptime,windowNumber:0,context:nil,characters:text,charactersIgnoringModifiers:text,isARepeat:false,keyCode:code)!}
+        store.downloadsPresented=true;store.downloads.selection=store.downloads.records.first?.id
+        try expect(store.handleDownloadKey(key(125,"")) && store.downloads.selection == store.downloads.records[1].id,"Download Down key selects the next file without forwarding to WebKit")
+        try expect(store.handleDownloadKey(key(126,"")) && store.downloads.selection == store.downloads.records.first?.id,"Download Up key selects the previous file")
+        try expect(!store.handleDownloadKey(key(0,"a")),"Download keyboard handling never consumes ordinary text input")
+        var dispatched=0
+        application.panelKeyAction={event in dispatched += 1;return store.handleDownloadKey(event)}
+        let space=key(49," ")
+        application.sendEvent(space);application.sendEvent(space)
+        try await BrowserChecks.wait{store.previewFile != nil}
+        try expect(dispatched == 1 && store.previewFile?.url == destination,"Preview key is consumed once even if the same event is resent")
+        store.previewFile=nil;application.panelKeyAction=oldAction
         let history=root.appendingPathComponent("download-history.json")
         let restored=DownloadHistory.read(history)
         try expect(restored.first?.fileURL == destination && restored.first?.state == .completed,"Completed download history survives restart")

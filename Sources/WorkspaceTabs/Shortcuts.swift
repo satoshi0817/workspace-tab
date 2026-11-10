@@ -166,7 +166,14 @@ final class ShortcutStrokeRecorder {
                 binding.code == event.keyCode && binding.flags == flags
         }
     }
-    func start(){
+    func stop() {
+        if let local {NSEvent.removeMonitor(local)};local=nil
+        if let global {NSEvent.removeMonitor(global)};global=nil
+        if let observer {NotificationCenter.default.removeObserver(observer)};observer=nil
+        resetInput()
+    }
+    func start(monitorGlobal:Bool=true){
+        stop()
         observer=NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in
             MainActor.assumeIsolated {self?.suspended=note.object as? Bool == true;self?.buffer=[];self?.recorder.reset()}
         }
@@ -175,7 +182,7 @@ final class ShortcutStrokeRecorder {
             guard let self else{return event}
             return self.handle(event,global:false) && event.type == .keyDown ? nil:event
         }
-        global=NSEvent.addGlobalMonitorForEvents(matching:mask){[weak self] event in _=self?.handle(event,global:true)}
+        if monitorGlobal {global=NSEvent.addGlobalMonitorForEvents(matching:mask){[weak self] event in _=self?.handle(event,global:true)}}
     }
     func resetInput(){buffer=[];recorder.reset()}
     func handle(_ event:NSEvent,global:Bool)->Bool {

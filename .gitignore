@@ -13,6 +13,8 @@ dist/
 browser-session.json
 browser-split.json
 download-history.json
+site-preferences.json
+startup-state.json
 __pycache__/
 raycast-index.json
 launcher-token

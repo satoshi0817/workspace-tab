@@ -53,7 +53,7 @@ import WorkspaceCore
         !disposed && (navigation == nil || currentNavigation == nil || navigation === currentNavigation)
     }
     func retryAfterConnectionReturns() {
-        guard store?.networkOffline != true,!disposed,!hasCommittedDocument,!webView.isLoading,
+        guard store?.isPageSuspended(pageID) != true,store?.networkOffline != true,!disposed,!hasCommittedDocument,!webView.isLoading,
               let url=connectionRetryURL else{return}
         connectionRetryURL=nil;failure=nil
         // Only a failed initial GET is retried. Never resubmit a form or repeat a creation command.
@@ -84,6 +84,7 @@ import WorkspaceCore
         nativeLoadingPlaceholderVisible=false;loadingState = .none
     }
     func prepareForDisplay() {
+        guard store?.isPageSuspended(pageID) != true else{return}
         retryAfterConnectionReturns()
         guard store?.networkOffline != true,!disposed,needsRestore,!webView.isLoading,Date().timeIntervalSince(lastAutomaticRecovery)>30 else{return}
         lastAutomaticRecovery=Date();needsRestore=false;failure=nil
@@ -100,6 +101,13 @@ import WorkspaceCore
         else {navigate(address)}
     }
     func stopLoading() {webView.stopLoading();clearLoadingPlaceholder()}
+    func resumeStoredPage(_ text:String) {
+        // Restoration preserves the saved login environment; link rules only
+        // apply to explicit link navigation, not restoring an existing tab.
+        guard !disposed,webView.url == nil,!webView.isLoading,let url=BrowserAddress.url(text) else{return}
+        failure=nil;needsRestore=false;beginLoadingPlaceholder()
+        currentNavigation=webView.load(URLRequest(url:url))
+    }
     private func settleLoadingPlaceholder() {
         guard loadingState == .loading,loadingTask == nil else{return}
         let generation=loadingGeneration
@@ -284,7 +292,9 @@ import WorkspaceCore
         clearLoadingPlaceholder();needsRestore=false
         clearPendingNotionAction()
         guard let url = BrowserAddress.url(text) else { failure = L("http / httpsのURLを入力してください。"); return }
+        if notionAction == nil,store?.routeLink(url,from:PageReference(workspaceID:workspaceID,pageID:pageID)) == true {return}
         if store?.routeNotion(url,from:PageReference(workspaceID:workspaceID,pageID:pageID)) == true {return}
+        store?.allowPageLoad(pageID)
         if let action=notionAction,NotionActions.creationIDs.contains(action) {
             pendingNotionAction=action;notionReadyToken=UUID().uuidString
             webView.configuration.userContentController.add(NotionReadyHandler(self),contentWorld:.defaultClient,name:"workspaceNotionReady")
@@ -311,6 +321,7 @@ import WorkspaceCore
     func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
         guard acceptsNavigation(navigation) else{return}
         hasCommittedDocument=true;connectionRetryURL=nil
+        if let store,let url=webView.url,let value=store.sites.preference(profileID:profileID,url:url) {webView.pageZoom=value.zoom}
         settleLoadingPlaceholder()
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -376,6 +387,8 @@ import WorkspaceCore
             expectingDownloadInterruption=false
             mainGET=navigationAction.request.httpMethod == "GET" && ["http","https"].contains(url.scheme ?? "") ? url:nil
         }
+        if navigationAction.navigationType == .linkActivated,navigationAction.targetFrame != nil,
+           navigationAction.request.httpMethod == "GET",store?.routeLink(url,from:PageReference(workspaceID:workspaceID,pageID:pageID),newTab:navigationAction.modifierFlags.contains(.command)) == true {decisionHandler(.cancel);return}
         if navigationAction.navigationType == .linkActivated,
            navigationAction.modifierFlags.contains(.command),
            navigationAction.targetFrame != nil,
@@ -418,6 +431,8 @@ import WorkspaceCore
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         // Keep the opener's exact persistent data store, including across app-tab switches.
         guard let store, navigationAction.targetFrame == nil else { return nil }
+        if navigationAction.navigationType == .linkActivated,navigationAction.request.httpMethod == "GET",let url=navigationAction.request.url,
+           !navigationAction.shouldPerformDownload,store.routeLink(url,from:PageReference(workspaceID:workspaceID,pageID:pageID),newTab:true) {return nil}
         let child = store.addPage(to: workspaceID, url: "about:blank", configuration: configuration,groupID:store.workspace(workspaceID).flatMap{w in w.pages.first(where:{$0.id == pageID}).map{w.groupID(for:$0)}})
         child?.downloadOpener=PageReference(workspaceID:workspaceID,pageID:pageID)
         if store.split?.pageID == pageID, let child {
@@ -426,6 +441,11 @@ import WorkspaceCore
         return child?.webView
     }
     func webViewDidClose(_ webView: WKWebView) { store?.closePage(pageID, in: workspaceID) }
+    func webView(_ webView:WKWebView,requestMediaCapturePermissionFor origin:WKSecurityOrigin,initiatedByFrame frame:WKFrameInfo,type:WKMediaCaptureType,decisionHandler:@escaping(WKPermissionDecision)->Void) {
+        var parts=URLComponents();parts.scheme=origin.protocol;parts.host=origin.host;parts.port=origin.port == 0 ? nil:origin.port
+        guard let url=parts.url,let store else{decisionHandler(.prompt);return}
+        decisionHandler(store.sites.decision(profileID:profileID,url:url,type:type))
+    }
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         let alert = NSAlert(); alert.messageText = frame.securityOrigin.host; alert.informativeText = message; alert.runModal(); completionHandler()
     }

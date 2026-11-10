@@ -39,6 +39,7 @@ import WorkspaceCore
             _=hintHold.consume(.flagsChanged,flags:.command,time:19,allowed:hintFlags)
             _=hintHold.consume(.scrollWheel,flags:.command,time:19.2,allowed:hintFlags)
             try expect(!hintHold.ready(at:20),"Scrolling cancels a pending workspace hint without consuming the event")
+            try await WorkspaceShortcutHintChecks.run()
             let capturedSource=PageReference(workspaceID:UUID(),pageID:UUID())
             var menuSelections:[(String,PageReference)]=[]
             let creationMenu=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
@@ -653,6 +654,7 @@ import WorkspaceCore
             try await StabilityChecks.run(root:root)
             try await StartupSafetyChecks.run(root:root)
             try await TabGroupChecks.run(root:root)
+            try await ProductivityChecks.run(root:root)
             reordered.shutdown()
             exited.shutdown();loaded.shutdown();store.shutdown()
             for id in profiles { try? await WKWebsiteDataStore.remove(forIdentifier:id) }

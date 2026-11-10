@@ -16,6 +16,10 @@ import WorkspaceCore
     }
     var resolved: AppLanguage { AppLanguage.resolve(preference) }
     var locale: Locale { Locale(identifier: resolved.rawValue) }
+    var safeModeNextLaunch:Bool {
+        get {defaults.bool(forKey:"safeModeNextLaunch")}
+        set {defaults.set(newValue,forKey:"safeModeNextLaunch")}
+    }
     init(defaults: UserDefaults? = nil) {
         let environment = ProcessInfo.processInfo.environment
         if let defaults { self.defaults = defaults }

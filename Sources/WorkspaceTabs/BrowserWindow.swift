@@ -5,7 +5,10 @@ import os
 /// Local NSEvent monitors are insufficient for this second dispatch.
 @MainActor final class BrowserApplication: NSApplication {
     var escapeAction:(()->Bool)?
+    var panelKeyAction:((NSEvent)->Bool)?
+    var inputObserver:((NSEvent)->Void)?
     private var consumedEscape:NSEvent?
+    private var consumedPanelEvent:NSEvent?
     @discardableResult func routeEscape(_ event:NSEvent)->Bool {
         guard BrowserWindow.isEscape(event),let window=(event.window ?? keyWindow) as? BrowserWindow,window.attachedSheet == nil else{return false}
         if consumedEscape === event {return true}
@@ -14,6 +17,9 @@ import os
         return true
     }
     override func sendEvent(_ event:NSEvent) {
+        inputObserver?(event)
+        if consumedPanelEvent === event {return}
+        if panelKeyAction?(event) == true {consumedPanelEvent=event;return}
         if routeEscape(event) {return}
         super.sendEvent(event)
     }

@@ -84,6 +84,10 @@ extension AppDelegate {
             show();store.openExternalNotion(external);return
         }
         if ["http","https"].contains(url.scheme ?? "") {
+            if !BrowserLinkRule.candidates(for:url,rules:store.session.linkRules ?? []).isEmpty {
+                guard !store.anyPanelPresented else{store.notify(L("ダイアログを閉じてからリンクを開いてください"),isError:true);return}
+                if store.routeLink(url) {show();return}
+            }
             store.linkRouting.openInBrowser(url) { [weak store] message in store?.notify(message,isError:true) };return
         }
         guard let request=LauncherRequest.parse(url,token:store.launcherToken) else{return}
