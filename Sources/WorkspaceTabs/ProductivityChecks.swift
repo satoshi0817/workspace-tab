@@ -99,10 +99,14 @@ import WorkspaceCore
         try expect(store.restoreWorkset(store.worksets.last!.id) && store.session.splitOrientation == "vertical" && store.session.splitFraction == 0.35,"Worksets restore split orientation and ratio")
         let splitView=PersistentSplitView(frame:NSRect(x:0,y:0,width:1000,height:800))
         splitView.addArrangedSubview(NSView());splitView.addArrangedSubview(NSView())
+        let ratioHost=NSWindow(contentRect:NSRect(x:0,y:0,width:1000,height:800),styleMask:[.borderless],backing:.buffered,defer:false)
+        ratioHost.isReleasedWhenClosed=false;ratioHost.contentView=splitView
+        defer {ratioHost.contentView=nil;ratioHost.close()}
+        splitView.layoutSubtreeIfNeeded()
         splitView.isVertical=true;splitView.fraction=0.35;splitView.applyFraction()
-        try expect(abs(splitView.arrangedSubviews[0].frame.width/(1000-splitView.dividerThickness)-0.35)<0.01,"Native split divider restores a saved horizontal ratio")
+        try expect(abs(splitView.arrangedSubviews[0].frame.width/(splitView.axisLength-splitView.dividerThickness)-0.35)<0.01,"Native split divider restores a saved horizontal ratio")
         splitView.isVertical=false;splitView.applyFraction()
-        try expect(abs(splitView.arrangedSubviews[0].frame.height/(800-splitView.dividerThickness)-0.35)<0.01,"Native split divider restores a saved vertical ratio")
+        try expect(abs(splitView.arrangedSubviews[0].frame.height/(splitView.axisLength-splitView.dividerThickness)-0.35)<0.01,"Native split divider restores a saved vertical ratio")
         let host=NSWindow(contentRect:NSRect(x:0,y:0,width:1200,height:800),styleMask:[.titled,.resizable],backing:.buffered,defer:false)
         host.isReleasedWhenClosed=false
         host.contentView=NSHostingView(rootView:BrowserSplit(store:store,left:PageReference(workspaceID:a,pageID:first),right:PageReference(workspaceID:b,pageID:routed.id)))

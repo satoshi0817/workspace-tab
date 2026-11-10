@@ -1,5 +1,7 @@
 # Workspace Tabs for Raycast
 
+[English](README.en.md)
+
 Workspace Tabsのローカル一覧を検索し、URLスキームで実行します。NotionトークンやCookieは読み取りません。
 
 ## インストール
