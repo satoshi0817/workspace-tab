@@ -9,7 +9,8 @@ public struct LoginProfile: Codable, Identifiable, Equatable {
 public struct BrowserPage: Codable, Identifiable, Equatable {
     public var id: UUID = UUID()
     public var url: String
-    public var title: String = "新しいタブ"
+    // An empty title is an app placeholder, not a site-provided or user-defined name.
+    public var title: String = ""
     public var isStartPage: Bool?
     public var pinned: Bool?
     public var pinnedDisplay: String?
@@ -17,7 +18,7 @@ public struct BrowserPage: Codable, Identifiable, Equatable {
     public var tabEmoji: String?
     public var tabIconFile: String?
     public var groupID: UUID?
-    public var displayTitle: String {tabName?.isEmpty == false ? tabName! : title}
+    public var displayTitle: String {tabName?.isEmpty == false ? tabName! : (title.isEmpty ? L("新しいタブ") : title)}
     public var iconOnly: Bool {pinned == true && pinnedDisplay != "name"}
     public init(url: String) { self.url = url }
 }
@@ -47,7 +48,7 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var visibleTabGroupID: UUID?
     public var resolvedTabGroups: [BrowserTabGroup] {
         let groups=tabGroups ?? []
-        return groups.contains(where:{$0.id == id}) ? groups:[BrowserTabGroup(id:id,name:"メイン")]+groups
+        return groups.contains(where:{$0.id == id}) ? groups:[BrowserTabGroup(id:id,name:L("メイン"))]+groups
     }
     public func groupID(for page:BrowserPage)->UUID {
         guard let group=page.groupID,resolvedTabGroups.contains(where:{$0.id == group}) else{return id}
@@ -125,7 +126,7 @@ public struct BrowserSession: Codable, Equatable {
         var session = BrowserSession(); session.migratedFromNative = true
         for group in native.groups {
             for tab in group.tabs {
-                let baseName = tab.name + " のログイン環境"
+                let baseName = tab.name + L(" のログイン環境")
                 let count = session.profiles.filter { $0.name == baseName || $0.name.hasPrefix(baseName + " (") }.count
                 let profile = LoginProfile(name: count == 0 ? baseName : baseName + " (\(count + 1))")
                 session.profiles.append(profile)

@@ -1,3 +1,4 @@
+import WorkspaceCore
 import Foundation
 
 typealias JSONObject = [String: Any]
@@ -29,11 +30,11 @@ struct NotionPagination {
     mutating func consume(_ response:JSONObject)throws->[JSONObject] {
         try Task.checkCancellation()
         guard let rows=response["results"] as? [JSONObject],let more=response["has_more"] as? Bool else {
-            throw LVError("Notion APIの一覧応答が不完全なため同期を中止しました")
+            throw LVError(L("Notion APIの一覧応答が不完全なため同期を中止しました"))
         }
         if more {
             guard let next=response["next_cursor"] as? String,!next.isEmpty,seen.insert(next).inserted else {
-                throw LVError("Notion APIのページ送りが進まないため同期を中止しました")
+                throw LVError(L("Notion APIのページ送りが進まないため同期を中止しました"))
             }
             cursor=next
         } else {cursor=nil}
@@ -55,7 +56,7 @@ actor NotionClient: NotionRequesting {
             let now=ProcessInfo.processInfo.systemUptime
             let start=max(now,nextRequestTime);nextRequestTime=start+0.35
             if start>now {try await Task.sleep(for:.seconds(start-now))}
-            guard let url=URL(string:"https://api.notion.com/v1"+endpoint) else {throw LVError("Notion APIのURLが無効です")}
+            guard let url=URL(string:"https://api.notion.com/v1"+endpoint) else {throw LVError(L("Notion APIのURLが無効です"))}
             var request = URLRequest(url:url)
             request.httpMethod = method; request.timeoutInterval = 20
             request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
@@ -63,14 +64,14 @@ actor NotionClient: NotionRequesting {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else { throw LVError("Notion から応答がありません") }
+            guard let http = response as? HTTPURLResponse else { throw LVError(L("Notion から応答がありません")) }
             if http.statusCode == 429 && attempt < 3 {
                 let delay=Self.retryDelay(http.value(forHTTPHeaderField:"Retry-After"))
                 try await Task.sleep(for:.seconds(delay));continue
             }
             return try Self.decodeResponse(data,http:http,token:token)
         }
-        throw LVError("Notion のアクセス制限に達しました。少し待って再試行してください")
+        throw LVError(L("Notion のアクセス制限に達しました。少し待って再試行してください"))
     }
     nonisolated static func retryDelay(_ value:String?)->Double {
         guard let delay=Double(value ?? ""),delay.isFinite else{return 1}
@@ -81,13 +82,13 @@ actor NotionClient: NotionRequesting {
         // Proxies often return HTML for 5xx and 429. Preserve the status, and
         // never display a proxy response body which may contain private details.
         guard (200..<300).contains(http.statusCode) else {
-            let message=(json?["message"] as? String ?? "接続先から正常な応答を取得できませんでした")
+            let message=(json?["message"] as? String ?? L("接続先から正常な応答を取得できませんでした"))
             throw NotionAPIError(status:http.statusCode,message:message.replacingOccurrences(of:token,with:"[redacted]"))
         }
-        guard let json else{throw LVError("Notion APIからJSON形式ではない応答が返されました")}
+        guard let json else{throw LVError(L("Notion APIからJSON形式ではない応答が返されました"))}
         if json["object"] as? String == "error" {
             throw NotionAPIError(status:json["status"] as? Int ?? http.statusCode,
-                message:(json["message"] as? String ?? "取得できませんでした").replacingOccurrences(of:token,with:"[redacted]"))
+                message:(json["message"] as? String ?? L("取得できませんでした")).replacingOccurrences(of:token,with:"[redacted]"))
         }
         return json
     }
@@ -107,13 +108,13 @@ actor NotionClient: NotionRequesting {
         return object(me, "bot")["workspace_name"] as? String ?? me["name"] as? String ?? "Notion"
     }
     func resolveSource(_ input: String, token: LVToken) async throws -> LVSource {
-        guard let id = extractId(URL(string: input)?.path ?? input) else { throw LVError("Notion のデータベース URL または ID を入力してください") }
+        guard let id = extractId(URL(string: input)?.path ?? input) else { throw LVError(L("Notion のデータベース URL または ID を入力してください")) }
         let database = try? await request(token: token.token, endpoint: "/databases/\(id)")
         let dataSources = database?["data_sources"] as? [JSONObject] ?? []
-        if dataSources.count > 1 { throw LVError("複数のデータソースがあります。追加したいデータソースの ID を入力してください") }
+        if dataSources.count > 1 { throw LVError(L("複数のデータソースがあります。追加したいデータソースの ID を入力してください")) }
         let dsId = dataSources.first?["id"] as? String ?? id
         let ds = try await request(token: token.token, endpoint: "/data_sources/\(dsId)")
-        guard object(object(ds, "properties"), "URL")["type"] as? String == "url" else { throw LVError("URL 型の「URL」プロパティが必要です") }
+        guard object(object(ds, "properties"), "URL")["type"] as? String == "url" else { throw LVError(L("URL 型の「URL」プロパティが必要です")) }
         let dbId = object(ds, "parent")["database_id"] as? String
         let resolvedDb: JSONObject
         if let database { resolvedDb = database }
@@ -127,7 +128,7 @@ actor NotionClient: NotionRequesting {
         var metas: [SourceMeta] = []; var links: [Link] = []
         for source in state.sources {
             do {
-                guard let token = tokens.first(where: { $0.id == source.tokenId }), !token.token.isEmpty else { throw LVError("「\(source.title)」の接続トークンを設定してください") }
+                guard let token = tokens.first(where: { $0.id == source.tokenId }), !token.token.isEmpty else { throw LVError(L("「\(source.title)」の接続トークンを設定してください")) }
                 let ds = try await request(token: token.token, endpoint: "/data_sources/\(source.id)")
                 let rows = try await pages(token: token.token, id: source.id)
                 let props = object(ds, "properties")
@@ -141,12 +142,12 @@ actor NotionClient: NotionRequesting {
                     if categorySource == nil, let dbId = relation["database_id"] as? String {
                         let db = try await request(token: token.token, endpoint: "/databases/\(dbId)")
                         let sources = db["data_sources"] as? [JSONObject] ?? []
-                        guard sources.count == 1 else { throw LVError("カテゴリ DB のデータソースを特定できません") }
+                        guard sources.count == 1 else { throw LVError(L("カテゴリ DB のデータソースを特定できません")) }
                         categorySource = sources.first?["id"] as? String
                     }
-                    guard let categorySource else { throw LVError("カテゴリ DB を取得できません") }
+                    guard let categorySource else { throw LVError(L("カテゴリ DB を取得できません")) }
                     let catDs = try await request(token: token.token, endpoint: "/data_sources/\(categorySource)")
-                    guard object(object(catDs, "properties"), "Order")["type"] as? String == "number" else { throw LVError("カテゴリ DB には数値型の Order が必要です") }
+                    guard object(object(catDs, "properties"), "Order")["type"] as? String == "number" else { throw LVError(L("カテゴリ DB には数値型の Order が必要です")) }
                     let categoryRows = try await pages(token: token.token, id: categorySource)
                     categories = sortedCategories(categoryRows.map { page in
                         let p = object(page, "properties")
@@ -167,9 +168,9 @@ actor NotionClient: NotionRequesting {
                     var category: Category?
                     if categoryProperty["type"] as? String == "relation" {
                         let value = object(p, "Category"); let ids = value["relation"] as? [JSONObject] ?? []
-                        guard ids.count <= 1, value["has_more"] as? Bool != true else { throw LVError("「\(titleOf(p))」のカテゴリは1件にしてください") }
+                        guard ids.count <= 1, value["has_more"] as? Bool != true else { throw LVError(L("「\(titleOf(p))」のカテゴリは1件にしてください")) }
                         if let cid = ids.first?["id"] as? String {
-                            guard let found = categories.first(where: { $0.id == cid }) else { throw LVError("カテゴリ DB のアクセス権を確認してください") }; category = found
+                            guard let found = categories.first(where: { $0.id == cid }) else { throw LVError(L("カテゴリ DB のアクセス権を確認してください")) }; category = found
                         }
                     } else {
                         let value = p["Category"] as? JSONObject ?? p["Category (Legacy)"] as? JSONObject ?? [:]
@@ -190,11 +191,11 @@ actor NotionClient: NotionRequesting {
                         link.emoji = icon["emoji"] as? String
                         if let imageUrl = iconURL(icon) {
                             do { link.iconPath = try await downloadIcon(imageUrl, page: iconPage) }
-                            catch { link.iconPath = existingIcon(old?.iconPath); link.iconError = "画像を取得できません: \(error.localizedDescription)" }
+                            catch { link.iconPath = existingIcon(old?.iconPath); link.iconError = L("画像を取得できません: \(error.localizedDescription)") }
                         }
                     } catch {
                         link.iconPath = existingIcon(old?.iconPath); link.emoji = old?.emoji
-                        link.iconError = "リンク先を取得できません。接続のトークンとページの共有設定を確認してください。\n\(error.localizedDescription)"
+                        link.iconError = L("リンク先を取得できません。接続のトークンとページの共有設定を確認してください。\n\(error.localizedDescription)")
                     }
                     sourceLinks.append(link)
                 }
@@ -214,13 +215,13 @@ actor NotionClient: NotionRequesting {
         let candidates: [LVToken]
         if let connection = link.connection, !connection.isEmpty {
             candidates = tokens.filter { $0.id == connection || $0.label == connection }
-            guard candidates.count == 1 else { throw LVError("Connection「\(connection)」に一致する接続を1件登録してください") }
+            guard candidates.count == 1 else { throw LVError(L("Connection「\(connection)」に一致する接続を1件登録してください")) }
         } else { candidates = [sourceToken] + tokens.filter { $0.id != sourceToken.id } }
-        var lastError: Error = LVError("使用できる接続がありません")
+        var lastError: Error = LVError(L("使用できる接続がありません"))
         for token in candidates {
             do {
                 let page = try await request(token: token.token, endpoint: "/pages/\(id)")
-                guard page["object"] as? String == "page", (page["id"] as? String)?.replacingOccurrences(of: "-", with: "") == id.replacingOccurrences(of: "-", with: "") else { throw LVError("リンク先のページ情報がありません") }
+                guard page["object"] as? String == "page", (page["id"] as? String)?.replacingOccurrences(of: "-", with: "") == id.replacingOccurrences(of: "-", with: "") else { throw LVError(L("リンク先のページ情報がありません")) }
                 return page
             } catch { lastError = error }
         }
@@ -241,7 +242,7 @@ actor NotionClient: NotionRequesting {
         return path
     }
     func downloadIcon(_ url: URL, page: JSONObject, directory:URL = Storage.icons) async throws -> String {
-        guard ["https", "http"].contains(url.scheme ?? "") else { throw LVError("非対応の画像 URL です") }
+        guard ["https", "http"].contains(url.scheme ?? "") else { throw LVError(L("非対応の画像 URL です")) }
         let stamp=(page["last_edited_time"] as? String ?? "").replacingOccurrences(of:":",with:"-")
         let pageID=(page["id"] as? String).flatMap(UUID.init(uuidString:))?.uuidString.lowercased()
         let prefix=pageID.map{"\($0)-\(stamp)"}
@@ -258,7 +259,7 @@ actor NotionClient: NotionRequesting {
         let bytes=(try FileManager.default.attributesOfItem(atPath:temporary.path)[.size] as? NSNumber)?.intValue ?? Int.max
         let types = ["image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg"]
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-              let ext = types[response.mimeType?.lowercased() ?? ""], bytes <= 10_000_000 else { throw LVError("対応する画像を取得できませんでした") }
+              let ext = types[response.mimeType?.lowercased() ?? ""], bytes <= 10_000_000 else { throw LVError(L("対応する画像を取得できませんでした")) }
         let safePrefix = (prefix != nil && !stamp.isEmpty && !stamp.contains("/")) ? prefix! : UUID().uuidString
         let file = directory.appendingPathComponent("\(safePrefix).\(ext)")
         try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)

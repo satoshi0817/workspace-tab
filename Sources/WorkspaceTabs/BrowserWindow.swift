@@ -4,10 +4,12 @@ import os
 /// WebKit re-sends unhandled key events through NSApplication.sendEvent.
 /// Local NSEvent monitors are insufficient for this second dispatch.
 @MainActor final class BrowserApplication: NSApplication {
-    var escapeAction:(()->Void)?
+    var escapeAction:(()->Bool)?
+    private var consumedEscape:NSEvent?
     @discardableResult func routeEscape(_ event:NSEvent)->Bool {
         guard BrowserWindow.isEscape(event),let window=(event.window ?? keyWindow) as? BrowserWindow,window.attachedSheet == nil else{return false}
-        escapeAction?()
+        if consumedEscape === event {return true}
+        if escapeAction?() == true {consumedEscape=event;return true}
         window.sendEvent(event)
         return true
     }

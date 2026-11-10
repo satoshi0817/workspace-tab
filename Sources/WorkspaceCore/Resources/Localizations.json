@@ -1,0 +1,3266 @@
+{
+  "システム": {
+    "en": "System",
+    "ko": "시스템"
+  },
+  "ライト": {
+    "en": "Light",
+    "ko": "라이트"
+  },
+  "ダーク": {
+    "en": "Dark",
+    "ko": "다크"
+  },
+  "プリセット": {
+    "en": "Presets",
+    "ko": "프리셋"
+  },
+  "カラー": {
+    "en": "Color",
+    "ko": "색상"
+  },
+  "カラーコード": {
+    "en": "Color code",
+    "ko": "색상 코드"
+  },
+  "#RGB または #RRGGBBで入力してください。現在の色は保持されます。": {
+    "en": "Enter #RGB or #RRGGBB. Your current color will be kept.",
+    "ko": "#RGB 또는 #RRGGBB로 입력하세요. 현재 색상은 유지됩니다."
+  },
+  "別のワークスペースを表示しています。正しい環境に移動してから作成してください": {
+    "en": "This is a different workspace. Switch to the correct app tab before creating.",
+    "ko": "다른 워크스페이스가 열려 있습니다. 올바른 환경으로 이동한 후 생성하세요."
+  },
+  "新しいタブでNotionを準備しています": {
+    "en": "Preparing Notion in a new tab",
+    "ko": "새 탭에서 Notion을 준비하고 있습니다"
+  },
+  "直前のアプリタブはありません": {
+    "en": "No previous app tab",
+    "ko": "이전 앱 탭이 없습니다"
+  },
+  "Split Viewを開いてください": {
+    "en": "Open Split View first",
+    "ko": "먼저 Split View를 여세요"
+  },
+  "操作するタブがありません": {
+    "en": "No tab available for this action",
+    "ko": "작업할 탭이 없습니다"
+  },
+  "タイトル付きリンクをコピーしました": {
+    "en": "Link with title copied",
+    "ko": "제목이 포함된 링크를 복사했습니다"
+  },
+  "Notionを表示しているタブで実行してください": {
+    "en": "Run this action in a tab displaying Notion",
+    "ko": "Notion이 열린 탭에서 실행하세요"
+  },
+  "Workspace IDが設定と一致しません": {
+    "en": "Workspace ID does not match your settings",
+    "ko": "Workspace ID가 설정과 일치하지 않습니다"
+  },
+  "Workspace IDは設定と一致しています": {
+    "en": "Workspace ID matches your settings",
+    "ko": "Workspace ID가 설정과 일치합니다"
+  },
+  "Workspace IDを確認できていません": {
+    "en": "Workspace ID has not been verified",
+    "ko": "Workspace ID를 확인하지 못했습니다"
+  },
+  "一致する移動先がありません。アプリタブのWorkspace IDと自動振り分け設定を確認してください": {
+    "en": "No matching destination. Check the app tab’s Workspace ID and automatic routing settings.",
+    "ko": "일치하는 대상이 없습니다. 앱 탭의 Workspace ID와 자동 분류 설정을 확인하세요."
+  },
+  "操作対象を見つけられませんでした": {
+    "en": "Could not find the action target",
+    "ko": "작업 대상을 찾지 못했습니다"
+  },
+  "Notionの操作を完了できませんでした。タブを確認してください": {
+    "en": "Could not complete the Notion action. Check the tab.",
+    "ko": "Notion 작업을 완료하지 못했습니다. 탭을 확인하세요."
+  },
+  "http / httpsのURLを入力してください。": {
+    "en": "Enter an http or https URL.",
+    "ko": "http 또는 https URL을 입력하세요."
+  },
+  "新しいタブを読み込めなかったためNotionの操作を中止しました": {
+    "en": "Notion action cancelled because the new tab could not load",
+    "ko": "새 탭을 불러오지 못해 Notion 작업을 취소했습니다"
+  },
+  "ページの処理が終了しました。再読み込みしてください。": {
+    "en": "The page process ended. Reload the page.",
+    "ko": "페이지 프로세스가 종료되었습니다. 새로고침하세요."
+  },
+  "外部アプリで開きますか？": {
+    "en": "Open in an external app?",
+    "ko": "외부 앱에서 여시겠습니까?"
+  },
+  "{0} リンクを対応するアプリへ渡します。": {
+    "en": "This {0} link will be sent to its associated app.",
+    "ko": "{0} 링크를 연결된 앱으로 전달합니다."
+  },
+  "キャンセル": {
+    "en": "Cancel",
+    "ko": "취소"
+  },
+  "開く": {
+    "en": "Open",
+    "ko": "열기"
+  },
+  "接続先のサーバーから応答がありません（HTTP 504）。時間をおいて再試行してください。": {
+    "en": "The server did not respond (HTTP 504). Wait a moment and try again.",
+    "ko": "서버가 응답하지 않습니다(HTTP 504). 잠시 후 다시 시도하세요."
+  },
+  "接続先のサーバーでエラーが発生しました（HTTP {0}）。時間をおいて再試行してください。": {
+    "en": "The server returned an error (HTTP {0}). Wait a moment and try again.",
+    "ko": "서버에 오류가 발생했습니다(HTTP {0}). 잠시 후 다시 시도하세요."
+  },
+  "ダウンロード失敗：": {
+    "en": "Download failed: ",
+    "ko": "다운로드 실패: "
+  },
+  "ログイン環境を分ける": {
+    "en": "Separate login profiles",
+    "ko": "로그인 환경 분리"
+  },
+  "仕事用・個人用のNotionを分けて開く。": {
+    "en": "Keep work and personal Notion accounts separate.",
+    "ko": "업무용 Notion과 개인용 Notion을 따로 여세요."
+  },
+  "左の＋からアプリタブを追加します。": {
+    "en": "Use + in the sidebar to add an app tab.",
+    "ko": "사이드바의 +로 앱 탭을 추가합니다."
+  },
+  "アプリタブごとにログイン環境を作れます。同じ環境を選んだアプリタブはログイン状態を共有します。": {
+    "en": "Each app tab can have its own login profile. App tabs using the same profile share their login state.",
+    "ko": "앱 탭마다 로그인 환경을 만들 수 있습니다. 같은 환경을 선택한 앱 탭은 로그인 상태를 공유합니다."
+  },
+  "名前・色・ホームURLはアプリタブを右クリックして編集できます。": {
+    "en": "Right-click an app tab to edit its name, color and Home URL.",
+    "ko": "앱 탭을 오른쪽 클릭하여 이름, 색상, 홈 URL을 편집합니다."
+  },
+  "タブグループ": {
+    "en": "Tab groups",
+    "ko": "탭 그룹"
+  },
+  "Notionと外部ツールをまとめて整理。": {
+    "en": "Organize Notion and other tools into groups.",
+    "ko": "Notion과 외부 도구를 그룹으로 정리하세요."
+  },
+  "ブラウザタブ列の左端にあるグループ名の選択欄 →「新しいグループ…」で作成します。": {
+    "en": "Open the group menu at the left of the browser tab bar and choose “New group…”.",
+    "ko": "브라우저 탭 막대 왼쪽의 그룹 메뉴에서 ‘새 그룹…’을 선택합니다."
+  },
+  "タブを右クリック →「グループへ移動」で所属を変更します。＋は表示中のグループへ追加します。": {
+    "en": "Right-click a tab and choose “Move to group”. The + button adds a tab to the visible group.",
+    "ko": "탭을 오른쪽 클릭하고 ‘그룹으로 이동’을 선택합니다. + 버튼은 표시 중인 그룹에 탭을 추가합니다."
+  },
+  "グループ選択欄のメニュー、またはブラウザタブ列の上下スクロールで切り替えます。ページ内やサイドバーのスクロールは対象外です。": {
+    "en": "Switch groups from the group menu or by scrolling vertically within the browser tab bar. Scrolling in the page or sidebar does not switch groups.",
+    "ko": "그룹 메뉴나 브라우저 탭 막대 안에서의 세로 스크롤로 그룹을 전환합니다. 페이지나 사이드바에서 스크롤하면 그룹은 바뀌지 않습니다."
+  },
+  "グループを選んだだけではページは変わりません。タブをクリックすると切り替わります。左右スクロールは長いタブ列の移動に使います。": {
+    "en": "Choosing a group does not change the page until you click a tab. Scroll horizontally to move along a long tab bar.",
+    "ko": "그룹을 선택해도 페이지는 바뀌지 않습니다. 탭을 클릭하면 전환됩니다. 가로 스크롤로 긴 탭 막대를 이동할 수 있습니다."
+  },
+  "「グループを編集…」から名前とアイコンを変えられます。画像またはNotionのプリセットを選べます。グループ削除時はタブを閉じず、先頭グループに戻します。": {
+    "en": "Use “Edit group…” to change its name and icon. Choose an image or a Notion preset. Deleting a group moves its tabs to the first group without closing them.",
+    "ko": "‘그룹 편집…’에서 이름과 아이콘을 변경합니다. 이미지나 Notion 프리셋을 선택할 수 있습니다. 그룹을 삭제하면 탭을 닫지 않고 첫 번째 그룹으로 옮깁니다."
+  },
+  "タブを並べ替える": {
+    "en": "Reorder tabs",
+    "ko": "탭 순서 변경"
+  },
+  "名前やアイコンをドラッグして移動。": {
+    "en": "Drag a name or icon to move a tab.",
+    "ko": "이름이나 아이콘을 드래그하여 이동하세요."
+  },
+  "移動したいタブの名前・アイコンをドラッグします。": {
+    "en": "Drag the name or icon of the tab you want to move.",
+    "ko": "이동할 탭의 이름이나 아이콘을 드래그합니다."
+  },
+  "相手の左半分に落とすと前へ、右半分なら後ろへ移動します。": {
+    "en": "Drop on the left half of another tab to place it before that tab, or on the right half to place it after.",
+    "ko": "다른 탭의 왼쪽 절반에 놓으면 앞에, 오른쪽 절반에 놓으면 뒤에 배치됩니다."
+  },
+  "ブラウザタブは同じグループ内で並べ替えます。ピン留めタブと通常タブはそれぞれの中で移動します。サイドバーのアプリタブも並べ替えできます。": {
+    "en": "Browser tabs reorder within their group. Pinned and unpinned tabs stay in their own sections. You can also reorder app tabs in the sidebar.",
+    "ko": "브라우저 탭은 같은 그룹 안에서 순서를 바꿉니다. 고정 탭과 일반 탭은 각각의 영역 안에서 이동합니다. 사이드바의 앱 탭도 정렬할 수 있습니다."
+  },
+  "順番は自動保存されます。": {
+    "en": "The order is saved automatically.",
+    "ko": "순서는 자동으로 저장됩니다."
+  },
+  "名前・アイコン・ピン留め": {
+    "en": "Names, icons and pins",
+    "ko": "이름, 아이콘, 고정"
+  },
+  "プリセット・画像・絵文字を設定できます。": {
+    "en": "Choose presets, images or emoji.",
+    "ko": "프리셋, 이미지, 이모지를 설정할 수 있습니다."
+  },
+  "ブラウザタブは右クリック →「表示名・アイコンを編集…」を開きます。アプリタブ・グループ・お気に入りも、それぞれの編集画面から同じアイコン選択を使えます。": {
+    "en": "Right-click a browser tab and choose “Edit name and icon…”. The same icon picker is available in the editors for app tabs, groups and favorites.",
+    "ko": "브라우저 탭을 오른쪽 클릭하고 ‘표시 이름 및 아이콘 편집…’을 선택합니다. 앱 탭, 그룹, 즐겨찾기 편집 화면에서도 같은 아이콘 선택기를 사용합니다."
+  },
+  "「プリセット…」で885個のNotionアイコンを検索・カテゴリから選べます。プリセットは文字と同じ色で表示します。「画像…」ではPNG・JPEG・HEICを設定できます。アプリ内へコピーするので元ファイルを移動しても残ります。": {
+    "en": "“Presets…” offers 885 Notion icons by search or category, tinted to match the text. “Image…” supports PNG, JPEG and HEIC. Images are copied into the app, so moving the original file will not remove them.",
+    "ko": "‘프리셋…’에서 885개의 Notion 아이콘을 검색하거나 카테고리별로 선택할 수 있습니다. 프리셋은 글자색으로 표시됩니다. ‘이미지…’는 PNG, JPEG, HEIC를 지원하며 앱 안에 복사하므로 원본을 옮겨도 유지됩니다."
+  },
+  "画像・プリセット → 絵文字 → サイトのfaviconの順で表示します。「解除」で元に戻せます。": {
+    "en": "Images and presets take priority over emoji, then the site favicon. Choose “Clear” to restore the default.",
+    "ko": "이미지·프리셋, 이모지, 사이트 파비콘 순으로 우선 표시합니다. ‘해제’로 기본값으로 돌아갑니다."
+  },
+  "ピン留めはグループの左端に表示します。初期値はアイコンのみで、名前付きにも変更できます。閉じるときはピン留めを解除してください。": {
+    "en": "Pinned tabs appear at the left of the group, showing only the icon by default. You can also show the name. Unpin a tab before closing it.",
+    "ko": "고정 탭은 그룹 왼쪽에 표시되며 기본적으로 아이콘만 보입니다. 이름도 표시할 수 있습니다. 닫으려면 먼저 고정을 해제하세요."
+  },
+  "すべてのタブを探す": {
+    "en": "Find any tab",
+    "ko": "모든 탭 찾기"
+  },
+  "アプリタブをまたいで検索・移動。": {
+    "en": "Search and navigate across app tabs.",
+    "ko": "앱 탭을 넘나들며 검색하고 이동하세요."
+  },
+  "サイドバーの検索ボタンから全タブを開きます。": {
+    "en": "Open all tabs with the search button in the sidebar.",
+    "ko": "사이드바의 검색 버튼으로 모든 탭을 엽니다."
+  },
+  "↑↓で選び、Enterで移動。⌘Fで名前・URLを検索します。": {
+    "en": "Select with ↑↓ and press Enter to switch. Use ⌘F to search names and URLs.",
+    "ko": "↑↓로 선택하고 Enter로 이동합니다. ⌘F로 이름과 URL을 검색합니다."
+  },
+  "右クリックからSplit Viewにも開けます。": {
+    "en": "Right-click to open a tab in Split View.",
+    "ko": "오른쪽 클릭으로 Split View에서도 열 수 있습니다."
+  },
+  "2つのページを並べる": {
+    "en": "View two pages side by side",
+    "ko": "두 페이지 나란히 보기"
+  },
+  "別のアプリタブ同士でもSplit View。": {
+    "en": "Use Split View even across different app tabs.",
+    "ko": "서로 다른 앱 탭도 Split View로 볼 수 있습니다."
+  },
+  "ブラウザタブ列の分割ボタンから並べたいタブを選びます。": {
+    "en": "Use the split button in the browser tab bar to choose a second tab.",
+    "ko": "브라우저 탭 막대의 분할 버튼으로 함께 볼 탭을 선택합니다."
+  },
+  "境界をドラッグして幅を調整できます。右側のボタンで左右を入れ替えたり解除できます。": {
+    "en": "Drag the divider to adjust the width. Use the buttons on the right to swap sides or end Split View.",
+    "ko": "경계를 드래그하여 너비를 조절합니다. 오른쪽 버튼으로 좌우를 바꾸거나 분할을 해제할 수 있습니다."
+  },
+  "URLコピー・再読み込みなどの操作は、最後に操作した側が対象です。": {
+    "en": "Actions such as Copy URL and Reload apply to the side you last used.",
+    "ko": "URL 복사와 새로고침 등은 마지막으로 사용한 쪽에 적용됩니다."
+  },
+  "別ウインドウに切り離す": {
+    "en": "Detach into a separate window",
+    "ko": "별도 윈도우로 분리"
+  },
+  "アプリタブを一時的に独立させる。": {
+    "en": "Temporarily give an app tab its own window.",
+    "ko": "앱 탭을 일시적으로 독립된 윈도우에서 사용하세요."
+  },
+  "アプリタブを右クリック →「別ウインドウに切り離す」を選びます。": {
+    "en": "Right-click an app tab and choose “Detach into a separate window”.",
+    "ko": "앱 탭을 오른쪽 클릭하고 ‘별도 윈도우로 분리’를 선택합니다."
+  },
+  "「元に戻す」またはウインドウを閉じると戻ります。ログインやページの状態は保持します。": {
+    "en": "Choose “Reattach” or close the window to bring it back. Login and page state are preserved.",
+    "ko": "‘다시 합치기’를 선택하거나 윈도우를 닫으면 돌아옵니다. 로그인과 페이지 상태는 유지됩니다."
+  },
+  "再起動時には元のウインドウへ戻します。": {
+    "en": "Detached tabs return to the main window after a restart.",
+    "ko": "재시작하면 원래 윈도우로 돌아옵니다."
+  },
+  "新しいタブで検索": {
+    "en": "Search in a new tab",
+    "ko": "새 탭에서 검색"
+  },
+  "Notion、URL、Google検索を選べます。": {
+    "en": "Choose Notion, a URL or a Google search.",
+    "ko": "Notion, URL, Google 검색 중에서 선택하세요."
+  },
+  "⌘Tまたはタブ列の＋で選択画面を開きます。←でNotion、→でURL・検索のタブをすぐに作成します。各カードのクリックでも開けます。Escでキャンセルできます。": {
+    "en": "Press ⌘T or + in the tab bar to open the chooser. Press ← for Notion or → for URL/search to create a tab immediately. You can also click a card. Press Esc to cancel.",
+    "ko": "⌘T 또는 탭 막대의 +로 선택 화면을 엽니다. ←는 Notion, →는 URL·검색 탭을 바로 만듭니다. 카드를 클릭해도 됩니다. Esc로 취소합니다."
+  },
+  "Notionを選ぶと、この環境のHome URLを開けます。": {
+    "en": "Choosing Notion opens the Home URL for this profile.",
+    "ko": "Notion을 선택하면 이 환경의 홈 URL을 엽니다."
+  },
+  "URL・Google検索ではURLを入力すると直接開き、キーワードならGoogle検索します。Enterで開きます。": {
+    "en": "For URL/search, enter a URL to open it directly or keywords to search Google. Press Enter to open.",
+    "ko": "URL·검색에서 URL을 입력하면 바로 열고, 키워드를 입력하면 Google로 검색합니다. Enter로 엽니다."
+  },
+  "Notionの新規ページ・AI": {
+    "en": "Create Notion pages and AI chats",
+    "ko": "Notion 페이지 및 AI 채팅 만들기"
+  },
+  "ページ・AI・会議・データベースを新しいタブで。": {
+    "en": "Open pages, AI chats, meetings and databases in new tabs.",
+    "ko": "페이지, AI 채팅, 회의록, 데이터베이스를 새 탭에서 여세요."
+  },
+  "Notionを表示中に⌘⇧Nで、マウスカーソル付近に作成メニューを開きます。↑↓＋Enter、数字の1〜5、またはクリックで選べます。Escで閉じます。": {
+    "en": "While viewing Notion, press ⌘⇧N to open a creation menu near the pointer. Select with ↑↓ and Enter, digits 1–5, or a click. Esc closes it.",
+    "ko": "Notion을 보는 중 ⌘⇧N을 누르면 포인터 근처에 생성 메뉴가 열립니다. ↑↓와 Enter, 숫자 1~5 또는 클릭으로 선택하고 Esc로 닫습니다."
+  },
+  "新規ページ・AIチャット・ミーティングノート・データベース・カスタムページは新しいブラウザタブで開きます。データベースとカスタムページはNotionに作成ボタンがある場合に利用できます。録音は自動開始しません。": {
+    "en": "New pages, AI chats, meeting notes, databases and custom pages open in new browser tabs. Database and custom page actions require a corresponding Notion button. Recording never starts automatically.",
+    "ko": "새 페이지, AI 채팅, 회의록, 데이터베이스, 사용자 지정 페이지는 새 브라우저 탭에서 열립니다. 데이터베이스와 사용자 지정 페이지는 Notion에 생성 버튼이 있을 때 사용할 수 있습니다. 녹음은 자동으로 시작되지 않습니다."
+  },
+  "Notion内の検索と設定は現在のタブで開きます。": {
+    "en": "Notion search and settings open in the current tab.",
+    "ko": "Notion 검색과 설정은 현재 탭에서 엽니다."
+  },
+  "Notionの画面や権限によって操作できない場合は通知します。メニューのキーは設定 → ショートカットで変更できます。": {
+    "en": "A notification appears if the current Notion screen or permissions prevent an action. Change the menu shortcut in Settings → Shortcuts.",
+    "ko": "Notion 화면이나 권한 때문에 작업할 수 없으면 알림이 표시됩니다. 메뉴 단축키는 설정 → 단축키에서 변경합니다."
+  },
+  "ミーティングノートのマイク": {
+    "en": "Microphone for meeting notes",
+    "ko": "회의록 마이크"
+  },
+  "文字起こしが始まらない場合の確認。": {
+    "en": "What to check if transcription will not start.",
+    "ko": "음성 텍스트 변환이 시작되지 않을 때 확인하세요."
+  },
+  "Notion上で文字起こしを開始し、macOSとサイトのマイク確認を許可します。起動時に自動で録音することはありません。": {
+    "en": "Start transcription in Notion and allow microphone access in both macOS and the site prompt. The app never starts recording on launch.",
+    "ko": "Notion에서 음성 텍스트 변환을 시작하고 macOS와 사이트의 마이크 접근을 허용합니다. 앱 실행 시 자동으로 녹음하지 않습니다."
+  },
+  "設定 → 診断でマイク権限を確認できます。「macOSのマイク設定を開く」からWorkspace Tabsを許可してください。管理端末で制限されている場合は管理者へ確認します。": {
+    "en": "Check microphone access in Settings → Diagnostics. Open macOS microphone settings and allow Workspace Tabs. If a managed Mac restricts access, contact your administrator.",
+    "ko": "설정 → 진단에서 마이크 권한을 확인합니다. macOS 마이크 설정을 열어 Workspace Tabs를 허용하세요. 관리되는 Mac에서 제한된 경우 관리자에게 문의하세요."
+  },
+  "権限を変更したらページを再読み込みしてください。反映されない場合は入力内容を保存してアプリを再起動します。": {
+    "en": "Reload the page after changing permission. If necessary, save your input and restart the app.",
+    "ko": "권한을 변경한 뒤 페이지를 새로고침하세요. 반영되지 않으면 입력 내용을 저장하고 앱을 재시작합니다."
+  },
+  "Web版のマイク入力を利用します。Zoomなど別アプリのシステム音声を直接取り込む機能はありません。ヘッドホンで聞いている相手の声は通常マイクに入りません。": {
+    "en": "This uses the web version’s microphone input. It cannot directly capture system audio from Zoom or other apps. Voices heard through headphones usually do not reach the microphone.",
+    "ko": "웹 버전의 마이크 입력을 사용합니다. Zoom 등 다른 앱의 시스템 오디오를 직접 녹음하지 않습니다. 헤드폰으로 듣는 상대방의 목소리는 보통 마이크에 들어가지 않습니다."
+  },
+  "許可済みでも失敗する場合は、Notion側のAI利用条件・ページ権限・選択したマイク・ネットワーク接続も確認します。": {
+    "en": "If access is already allowed, also check Notion AI availability, page permissions, the selected microphone and network connection.",
+    "ko": "허용한 뒤에도 실패하면 Notion AI 이용 조건, 페이지 권한, 선택한 마이크, 네트워크 연결도 확인하세요."
+  },
+  "Notionのワークスペース判定": {
+    "en": "Identify a Notion workspace",
+    "ko": "Notion 워크스페이스 확인"
+  },
+  "Workspace IDとホームURLを設定。": {
+    "en": "Set the Workspace ID and Home URL.",
+    "ko": "Workspace ID와 홈 URL을 설정하세요."
+  },
+  "アプリタブを右クリック → 編集 →「現在のNotionページから設定」を使います。": {
+    "en": "Right-click an app tab → Edit → “Use current Notion page”.",
+    "ko": "앱 탭을 오른쪽 클릭 → 편집 → ‘현재 Notion 페이지에서 설정’을 선택합니다."
+  },
+  "Home URLには対象ワークスペースの通常ページを指定するのがおすすめです。": {
+    "en": "Use the URL of a regular page in the intended workspace as the Home URL.",
+    "ko": "홈 URL은 원하는 워크스페이스에 있는 일반 페이지의 URL로 설정하는 것을 권장합니다."
+  },
+  "IDが一致する環境へ自動で振り分けます。判定できない場合や候補が複数の場合は勝手に切り替えません。": {
+    "en": "Pages are routed to a matching workspace ID. The app will not switch if the workspace cannot be identified or several destinations match.",
+    "ko": "ID가 일치하는 환경으로 자동 분류합니다. 확인할 수 없거나 후보가 여러 개면 임의로 전환하지 않습니다."
+  },
+  "ページ作成直前にも照合します。不一致や判定不能の場合は作成を止めます。": {
+    "en": "The workspace is checked again before creating a page. Creation stops if it cannot be verified or does not match.",
+    "ko": "페이지 생성 직전에도 확인합니다. 불일치하거나 확인할 수 없으면 생성을 중지합니다."
+  },
+  "お気に入りを開く": {
+    "en": "Open favorites",
+    "ko": "즐겨찾기 열기"
+  },
+  "カテゴリを選んで、↑↓とEnterですぐ開く。": {
+    "en": "Choose a category, then open with ↑↓ and Enter.",
+    "ko": "카테고리를 선택하고 ↑↓와 Enter로 바로 여세요."
+  },
+  "サイドバーの星から開きます。最初からリストを選択しているので、↑↓とEnterで操作できます。": {
+    "en": "Open favorites with the star in the sidebar. The list is focused immediately, so ↑↓ and Enter work right away.",
+    "ko": "사이드바의 별 아이콘으로 엽니다. 목록에 바로 포커스가 맞춰져 ↑↓와 Enter로 조작할 수 있습니다."
+  },
+  "←→でカテゴリを切り替えます。検索は検索欄をクリック、または⌘Fで開始します。": {
+    "en": "Use ←→ to switch categories. Click the search field or press ⌘F to search.",
+    "ko": "←→로 카테고리를 전환합니다. 검색창을 클릭하거나 ⌘F로 검색합니다."
+  },
+  "同じアプリタブに同じURLがあれば再利用します。右クリックから別タブにも開けます。": {
+    "en": "An existing tab with the same URL in the same app tab is reused. Right-click to open in a new tab instead.",
+    "ko": "같은 앱 탭에 동일한 URL이 있으면 재사용합니다. 오른쪽 클릭으로 새 탭에서도 열 수 있습니다."
+  },
+  "お気に入りを登録する": {
+    "en": "Add favorites",
+    "ko": "즐겨찾기 추가"
+  },
+  "URL・アイコン・開く環境をまとめて保存。": {
+    "en": "Save a URL, icon and destination together.",
+    "ko": "URL, 아이콘, 열 환경을 함께 저장하세요."
+  },
+  "お気に入りの「追加…」、またはURLバーの星から登録します。": {
+    "en": "Use “Add…” in Favorites or the star in the URL bar.",
+    "ko": "즐겨찾기의 ‘추가…’ 또는 URL 막대의 별 아이콘으로 등록합니다."
+  },
+  "名前・URL・カテゴリ・アイコン・開くアプリタブを設定します。": {
+    "en": "Set the name, URL, category, icon and destination app tab.",
+    "ko": "이름, URL, 카테고리, 아이콘, 열 앱 탭을 설정합니다."
+  },
+  "カテゴリ内はピン留め、Order、名前の順に並びます。": {
+    "en": "Within a category, links are sorted by pin status, Order, then name.",
+    "ko": "카테고리 안에서는 고정 여부, Order, 이름 순으로 정렬합니다."
+  },
+  "Notionでお気に入りを管理": {
+    "en": "Manage favorites in Notion",
+    "ko": "Notion에서 즐겨찾기 관리"
+  },
+  "内蔵保存が標準。Notion接続は任意です。": {
+    "en": "Local storage is the default. Connecting Notion is optional.",
+    "ko": "기본값은 로컬 저장입니다. Notion 연결은 선택 사항입니다."
+  },
+  "設定 → Notion保存 → 接続を管理でPATとデータベースURLを登録します。PATはキーチェーンに保存します。": {
+    "en": "In Settings → Notion storage → Manage connections, enter a PAT and database URL. The PAT is stored in Keychain.",
+    "ko": "설정 → Notion 저장 → 연결 관리에서 PAT와 데이터베이스 URL을 등록합니다. PAT는 키체인에 저장합니다."
+  },
+  "新規セットアップでは作成先を確認してから必要なデータベースを作ります。同期は約1時間ごとです。": {
+    "en": "For a new setup, confirm the destination before creating databases. Sync runs about once an hour.",
+    "ko": "새로 설정할 때는 생성 위치를 확인한 뒤 데이터베이스를 만듭니다. 동기화는 약 1시간마다 실행됩니다."
+  },
+  "Categoriesのテキスト型Workspace IDと、アプリタブのNotion Workspace IDで照合します。IDが空ならCategory名で照合します。": {
+    "en": "The text Workspace ID in Categories is matched against the app tab’s Notion Workspace ID. If empty, the Category name is used.",
+    "ko": "Categories의 텍스트형 Workspace ID와 앱 탭의 Notion Workspace ID를 비교합니다. ID가 비어 있으면 Category 이름을 사용합니다."
+  },
+  "IDが不正・一致なし・複数一致なら開きません。名前も複数一致なら停止します。一致なしの場合は登録済みの開く先を使います。": {
+    "en": "An invalid, unmatched or ambiguous ID stops opening. Ambiguous names also stop opening. If no name matches, the saved destination is used.",
+    "ko": "ID가 잘못되었거나 일치하지 않거나 여러 개와 일치하면 열지 않습니다. 이름이 여러 개와 일치해도 중지합니다. 이름이 일치하지 않으면 저장된 대상을 사용합니다."
+  },
+  "競合は設定 → Notion保存の「送信待ち・競合」で確認します。Notion保存のリンクを削除すると、元のページもゴミ箱へ移ります。": {
+    "en": "Review conflicts in Settings → Notion storage → Pending changes and conflicts. Deleting a Notion-stored link also moves its source page to the trash.",
+    "ko": "설정 → Notion 저장 → 전송 대기 및 충돌에서 확인합니다. Notion에 저장된 링크를 삭제하면 원본 페이지도 휴지통으로 이동합니다."
+  },
+  "見た目とサイドバーの色": {
+    "en": "Appearance and sidebar color",
+    "ko": "모양과 사이드바 색상"
+  },
+  "ライト・ダーク・システムに対応。": {
+    "en": "Choose Light, Dark or System.",
+    "ko": "라이트, 다크, 시스템 모드를 지원합니다."
+  },
+  "新しい環境の初期色はグレーです。色プリセットはグレー・青・紫・ローズ・アンバー・緑の順です。設定 → 表示でテーマとサイドバーの位置・表示方法を選びます。": {
+    "en": "New profiles start gray. Color presets are ordered gray, blue, purple, rose, amber and green. Choose the theme and sidebar layout in Settings → Appearance.",
+    "ko": "새 환경의 기본 색은 회색입니다. 프리셋은 회색, 파랑, 보라, 로즈, 앰버, 초록 순입니다. 설정 → 표시에서 테마와 사이드바 위치 및 표시 방식을 선택합니다."
+  },
+  "アプリタブの編集で色や文字色を変更できます。Notionのサイドバー着色はトグルで切り替えます。": {
+    "en": "Edit an app tab to change its background and text colors. Use the toggle to tint Notion’s sidebar.",
+    "ko": "앱 탭 편집에서 배경색과 글자색을 변경합니다. 토글로 Notion 사이드바 착색을 켜고 끕니다."
+  },
+  "濃さはスライダーまたは数値入力で調整します。組織コンソールの左列も同じ設定で着色します。": {
+    "en": "Adjust tint strength with the slider or a number. The organization console’s left sidebar uses the same setting.",
+    "ko": "슬라이더나 숫자 입력으로 농도를 조절합니다. 조직 콘솔의 왼쪽 사이드바에도 같은 설정을 적용합니다."
+  },
+  "保存・復元・バックアップ": {
+    "en": "Save, restore and back up",
+    "ko": "저장, 복원 및 백업"
+  },
+  "タブやグループは自動保存します。": {
+    "en": "Tabs and groups are saved automatically.",
+    "ko": "탭과 그룹은 자동으로 저장됩니다."
+  },
+  "開いているタブ・グループ・アイコン・ログイン環境・Split Viewを保存し、次回起動時に戻します。": {
+    "en": "Open tabs, groups, icons, login profiles and Split View are saved and restored at the next launch.",
+    "ko": "열린 탭, 그룹, 아이콘, 로그인 환경, Split View를 저장하고 다음 실행 시 복원합니다."
+  },
+  "未送信の入力内容とSplitの幅は復元対象外です。": {
+    "en": "Unsent input and the split width are not restored.",
+    "ko": "미전송 입력과 분할 너비는 복원하지 않습니다."
+  },
+  "現在状態は変更時に自動保存します。復元履歴は通常5分間隔で、設定の読み込み・復元前にも残します。同じ状態の履歴は重複させません。設定 → バックアップから直近20件を復元できます。": {
+    "en": "Changes are saved automatically. Recovery history is usually recorded every five minutes and before import or restore, without duplicate snapshots. Restore the latest 20 entries in Settings → Backups.",
+    "ko": "변경 시 현재 상태를 자동 저장합니다. 복원 기록은 보통 5분 간격과 가져오기·복원 전에 남기며 중복 상태는 저장하지 않습니다. 설정 → 백업에서 최근 20개 기록을 복원할 수 있습니다."
+  },
+  "Notionへのタブバックアップは任意です。Cookie・PAT・アカウントのメモは含まれず、別のMacでは再ログインが必要です。": {
+    "en": "Notion tab backups are optional. They exclude cookies, PATs and account notes. Sign in again when using another Mac.",
+    "ko": "Notion 탭 백업은 선택 사항입니다. 쿠키, PAT, 계정 메모는 포함하지 않으므로 다른 Mac에서는 다시 로그인해야 합니다."
+  },
+  "設定ファイルが壊れた場合は正常なバックアップから復旧し、元ファイルをRecoveryフォルダへ保管します。": {
+    "en": "If the settings file is damaged, a valid backup is restored and the original file is kept in the Recovery folder.",
+    "ko": "설정 파일이 손상되면 정상 백업에서 복구하고 원본은 Recovery 폴더에 보관합니다."
+  },
+  "読み込み中の表示": {
+    "en": "Loading indicators",
+    "ko": "로딩 표시"
+  },
+  "再読み込み中はシマーと案内を表示。": {
+    "en": "A shimmer and status message appear while reloading.",
+    "ko": "다시 불러오는 동안 시머와 안내를 표시합니다."
+  },
+  "再起動・ページの再読み込み・Webページ処理の復旧中は、標準の読み込み画面が描画されるまではシマーを表示し、その後はサイト側の表示を使います。": {
+    "en": "During restart, reload or page-process recovery, a shimmer appears until the site draws its own loading screen. The site’s screen is then shown.",
+    "ko": "재시작, 새로고침, 페이지 프로세스 복구 중에는 사이트의 로딩 화면이 그려질 때까지 시머를 표시한 뒤 사이트 화면을 사용합니다."
+  },
+  "下部の「読み込み直しています」が消えたら、実際のページを操作できます。読み込みに失敗したら「再試行」で開き直せます。HTTP 504は接続先の応答待ち、503などは接続先のサーバーエラーとして案内します。時間をおいて再試行してください。": {
+    "en": "When “Reloading…” disappears, the page is ready to use. Choose “Retry” after a failure. HTTP 504 means the server did not respond in time; 503 and similar codes indicate a server error. Try again later.",
+    "ko": "하단의 ‘다시 불러오는 중’이 사라지면 페이지를 사용할 수 있습니다. 실패하면 ‘다시 시도’를 누르세요. HTTP 504는 서버 응답 대기 시간 초과, 503 등은 서버 오류입니다. 잠시 후 다시 시도하세요."
+  },
+  "ページのスクリーンショットは撮影・保存しません。旧バージョンが保存したページの画像だけを起動時に削除します。タブのURLやログイン環境は引き続き保存します。": {
+    "en": "Page screenshots are not taken or stored. Only old page images from earlier versions are removed on launch. Tab URLs and login profiles are still saved.",
+    "ko": "페이지 스크린샷은 촬영하거나 저장하지 않습니다. 이전 버전에서 저장한 페이지 이미지만 실행 시 삭제합니다. 탭 URL과 로그인 환경은 계속 저장합니다."
+  },
+  "通常のタブ切り替えではページを保持し、自動タブ破棄は行いません。": {
+    "en": "Normal tab switching keeps pages alive. Tabs are not discarded automatically.",
+    "ko": "일반적인 탭 전환에서는 페이지를 유지하며 자동으로 폐기하지 않습니다."
+  },
+  "作業セットと診断": {
+    "en": "Worksets and diagnostics",
+    "ko": "작업 세트 및 진단"
+  },
+  "よく使う組み合わせを保存。": {
+    "en": "Save combinations you use often.",
+    "ko": "자주 쓰는 조합을 저장하세요."
+  },
+  "設定 → 作業で作業セットを保存・復元できます。現在のタブを残したまま開きます。": {
+    "en": "Save and restore worksets in Settings → Work. They open without removing your current tabs.",
+    "ko": "설정 → 작업에서 작업 세트를 저장하고 복원합니다. 현재 탭을 유지한 채 엽니다."
+  },
+  "同じ画面で重複タブを確認できます。": {
+    "en": "The same screen also lists duplicate tabs.",
+    "ko": "같은 화면에서 중복 탭도 확인할 수 있습니다."
+  },
+  "設定 → 診断では直近200件の処理時間を確認・CSV出力できます。": {
+    "en": "Settings → Diagnostics shows the latest 200 timing records and can export them as CSV.",
+    "ko": "설정 → 진단에서 최근 200건의 처리 시간을 확인하고 CSV로 내보낼 수 있습니다."
+  },
+  "Raycastから操作": {
+    "en": "Control from Raycast",
+    "ko": "Raycast에서 조작"
+  },
+  "お気に入り・タブ検索・Notion操作を呼び出す。": {
+    "en": "Access favorites, tab search and Notion actions.",
+    "ko": "즐겨찾기, 탭 검색, Notion 작업을 실행하세요."
+  },
+  "Workspace Tabs拡張のSearch Favorites、Search All Tabs、Switch App Tabから検索します。": {
+    "en": "Use Search Favorites, Search All Tabs and Switch App Tab in the Workspace Tabs extension.",
+    "ko": "Workspace Tabs 확장의 Search Favorites, Search All Tabs, Switch App Tab에서 검색합니다."
+  },
+  "Run Commandでは実行するアプリタブを選べます。作業セットも呼び出せます。": {
+    "en": "Run Command lets you select a target app tab. You can also open worksets.",
+    "ko": "Run Command에서 실행할 앱 탭을 선택합니다. 작업 세트도 열 수 있습니다."
+  },
+  "Raycast側でホットキーやAliasを設定できます。ログイン情報やPATは渡しません。": {
+    "en": "Set hotkeys or aliases in Raycast. Login details and PATs are never passed to the extension.",
+    "ko": "Raycast에서 단축키나 별칭을 설정할 수 있습니다. 로그인 정보나 PAT는 전달하지 않습니다."
+  },
+  "アプリタブの切り替えキーを見る": {
+    "en": "Show app tab number shortcuts",
+    "ko": "앱 탭 전환 키 보기"
+  },
+  "修飾キーの長押しで切り替え先を表示。": {
+    "en": "Hold the modifier keys to reveal destinations.",
+    "ko": "보조 키를 길게 눌러 전환 대상을 표시하세요."
+  },
+  "⌘、または設定したアプリタブ切り替え用の修飾キーを約0.5秒長押しします。": {
+    "en": "Hold ⌘ or your configured app tab modifier keys for about half a second.",
+    "ko": "⌘ 또는 설정한 앱 탭 전환용 보조 키를 약 0.5초간 누릅니다."
+  },
+  "先頭9個のアプリタブにキーを表示します。数字との組み合わせは設定 → ショートカットの指定に従います。⌘を押すだけで割り当ては変わりません。": {
+    "en": "Hints appear on the first nine app tabs. The number combinations follow Settings → Shortcuts. Holding ⌘ alone does not change your bindings.",
+    "ko": "처음 9개의 앱 탭에 키를 표시합니다. 숫자 조합은 설정 → 단축키를 따릅니다. ⌘를 누르는 것만으로 할당이 바뀌지는 않습니다."
+  },
+  "キーを離すと消えます。通常のキー操作・クリック・スクロール中や設定画面では表示しません。自動収納のサイドバーは表示中だけ展開します。": {
+    "en": "Release the keys to hide the hints. They stay hidden during typing, clicking, scrolling and in settings. A hover sidebar expands only while hints are visible.",
+    "ko": "키를 놓으면 힌트가 사라집니다. 입력, 클릭, 스크롤 중이나 설정 화면에서는 표시하지 않습니다. 자동 숨김 사이드바는 힌트가 보이는 동안만 펼쳐집니다."
+  },
+  "ショートカットを変更": {
+    "en": "Customize shortcuts",
+    "ko": "단축키 변경"
+  },
+  "同時押し・連続入力を記録して登録。": {
+    "en": "Record key combinations and sequences.",
+    "ko": "동시 입력과 연속 입력을 기록하여 등록하세요."
+  },
+  "設定 → ショートカットの「記録」を押して入力します。": {
+    "en": "In Settings → Shortcuts, click “Record” and press your keys.",
+    "ko": "설정 → 단축키에서 ‘기록’을 누르고 키를 입력합니다."
+  },
+  "同時押しと最大4回の連続入力に対応します。連続入力は各1.2秒以内に続けます。": {
+    "en": "Key combinations and sequences of up to four strokes are supported. Continue each sequence within 1.2 seconds.",
+    "ko": "동시 입력과 최대 4번의 연속 입력을 지원합니다. 각 입력은 1.2초 이내에 이어서 누르세요."
+  },
+  "各行のリセットで、その操作だけ初期値に戻せます。数字キーとの組み合わせも設定できます。": {
+    "en": "Reset an individual action with its row’s reset button. You can also choose modifiers for number shortcuts.",
+    "ko": "각 행의 초기화 버튼으로 해당 작업만 기본값으로 되돌립니다. 숫자 키와 조합할 키도 설정할 수 있습니다."
+  },
+  "アプリタブの番号切替と検索は他アプリ使用中にも有効です。グローバルな連続入力は修飾キーのみで、アクセシビリティ許可が必要です。": {
+    "en": "Numbered app tab switching and tab search work while other apps are active. Global sequences support modifier-only strokes and require Accessibility access.",
+    "ko": "번호로 앱 탭 전환과 탭 검색은 다른 앱을 사용하는 중에도 작동합니다. 전역 연속 입력은 보조 키만 지원하며 손쉬운 사용 권한이 필요합니다."
+  },
+  "Notionリンクを受け取る": {
+    "en": "Receive Notion links",
+    "ko": "Notion 링크 받기"
+  },
+  "OSで開いたNotionリンクをこのアプリへ。": {
+    "en": "Open Notion links from macOS in this app.",
+    "ko": "macOS에서 연 Notion 링크를 이 앱으로 연결하세요."
+  },
+  "設定 → リンクの受け取りを開きます。初期状態ではOSの設定を変更しません。": {
+    "en": "Open Settings → Link routing. OS settings are unchanged by default.",
+    "ko": "설정 → 링크 수신을 엽니다. 기본적으로 OS 설정을 변경하지 않습니다."
+  },
+  "オンにするとWorkspace TabsがこのMacの既定のブラウザになります。app.notion.com・app.dev.notion.com・notion.so・www.notion.soのHTTPSリンクはこのアプリで開き、それ以外のWebリンクは元のブラウザへ渡します。": {
+    "en": "Turning this on makes Workspace Tabs the default browser on this Mac. HTTPS links to app.notion.com, app.dev.notion.com, notion.so and www.notion.so open here. Other web links go to your previous browser.",
+    "ko": "켜면 Workspace Tabs가 이 Mac의 기본 브라우저가 됩니다. app.notion.com, app.dev.notion.com, notion.so, www.notion.so의 HTTPS 링크는 이 앱에서 열고 나머지는 이전 브라우저로 전달합니다."
+  },
+  "オフにすると元のブラウザへ戻します。別のブラウザを自分で既定にした場合は、その選択を上書きしません。": {
+    "en": "Turning this off restores your previous browser. If you manually chose another default browser, that choice is preserved.",
+    "ko": "끄면 이전 브라우저로 복원합니다. 직접 다른 기본 브라우저를 선택했다면 해당 선택을 유지합니다."
+  },
+  "Notionリンクの開き先を一意に決められない場合は、アプリタブを選びます。サイト側が専用アプリを直接指定したリンクには対応できない場合があります。": {
+    "en": "If a Notion link cannot be routed uniquely, choose an app tab. Links that explicitly target another native app may not be supported.",
+    "ko": "Notion 링크의 대상을 하나로 정할 수 없으면 앱 탭을 선택합니다. 특정 앱을 직접 지정하는 링크는 지원하지 못할 수 있습니다."
+  },
+  "URLを表示・コピー": {
+    "en": "Show and copy URLs",
+    "ko": "URL 표시 및 복사"
+  },
+  "URLバーは必要なときだけ表示。": {
+    "en": "The URL bar appears only when needed.",
+    "ko": "URL 막대는 필요할 때만 표시됩니다."
+  },
+  "リンクボタンまたはURL表示ショートカットで開きます。Escで閉じます。": {
+    "en": "Use the link button or URL shortcut to open it. Press Esc to close.",
+    "ko": "링크 버튼이나 URL 표시 단축키로 열고 Esc로 닫습니다."
+  },
+  "URLコピーの初期値は⌘⇧Cです。完了すると小さな通知を表示します。": {
+    "en": "The default Copy URL shortcut is ⌘⇧C. A small notification confirms completion.",
+    "ko": "URL 복사의 기본 단축키는 ⌘⇧C입니다. 완료하면 작은 알림이 표시됩니다."
+  },
+  "ページ内リンクの⌘クリックで、同じ環境・グループの新しいタブへ開きます。": {
+    "en": "⌘-click a page link to open it in a new tab in the same profile and group.",
+    "ko": "페이지 링크를 ⌘-클릭하면 같은 환경과 그룹의 새 탭에서 엽니다."
+  },
+  "最近使ったタブへ": {
+    "en": "Return to recent tabs",
+    "ko": "최근 탭으로 이동"
+  },
+  "アプリタブをまたいで素早く戻る。": {
+    "en": "Jump back across app tabs.",
+    "ko": "앱 탭을 넘나들며 빠르게 돌아가세요."
+  },
+  "初期値は⌃Tabです。修飾キーを押したままTabで次、Shift+Tabで前へ進みます。": {
+    "en": "The default is ⌃Tab. Keep the modifier held and press Tab for next or Shift+Tab for previous.",
+    "ko": "기본값은 ⌃Tab입니다. 보조 키를 누른 채 Tab으로 다음, Shift+Tab으로 이전 항목으로 이동합니다."
+  },
+  "修飾キーを離すかEnterで決定、Escでキャンセルします。": {
+    "en": "Release the modifier or press Enter to confirm. Press Esc to cancel.",
+    "ko": "보조 키를 놓거나 Enter로 확정하고 Esc로 취소합니다."
+  },
+  "終了はアプリメニューから。確認後にタブを保存して終了します。": {
+    "en": "Quit from the app menu. After confirmation, tabs are saved before quitting.",
+    "ko": "앱 메뉴에서 종료합니다. 확인 후 탭을 저장하고 종료합니다."
+  },
+  "ヘルプ": {
+    "en": "Help",
+    "ko": "도움말"
+  },
+  "知りたい操作を検索": {
+    "en": "Find what you want to do",
+    "ko": "원하는 작업을 검색하세요"
+  },
+  "はじめに": {
+    "en": "Getting started",
+    "ko": "시작하기"
+  },
+  "閉じる": {
+    "en": "Close",
+    "ko": "닫기"
+  },
+  "タブ、画像、Notion、ショートカット…": {
+    "en": "Tabs, images, Notion, shortcuts…",
+    "ko": "탭, 이미지, Notion, 단축키…"
+  },
+  "ヘルプを検索": {
+    "en": "Search help",
+    "ko": "도움말 검색"
+  },
+  "検索をクリア": {
+    "en": "Clear search",
+    "ko": "검색 지우기"
+  },
+  "カテゴリ": {
+    "en": "Category",
+    "ko": "카테고리"
+  },
+  "見つかりませんでした": {
+    "en": "No results",
+    "ko": "검색 결과가 없습니다"
+  },
+  "別の言葉で検索するか、カテゴリを「すべて」にしてください。": {
+    "en": "Try another search or select the All category.",
+    "ko": "다른 검색어를 입력하거나 ‘전체’ 카테고리를 선택하세요."
+  },
+  "⌘Fで検索 · Escで閉じる": {
+    "en": "⌘F to search · Esc to close",
+    "ko": "⌘F 검색 · Esc 닫기"
+  },
+  "現在のショートカット": {
+    "en": "Current shortcuts",
+    "ko": "현재 단축키"
+  },
+  "戻る": {
+    "en": "Back",
+    "ko": "뒤로"
+  },
+  "使う環境を決める": {
+    "en": "Choose your profile",
+    "ko": "사용할 환경 선택"
+  },
+  "見た目を選ぶ": {
+    "en": "Choose your appearance",
+    "ko": "모양 선택"
+  },
+  "タブの使い方": {
+    "en": "Using tabs",
+    "ko": "탭 사용 방법"
+  },
+  "Workspace Tabsをはじめる": {
+    "en": "Get started with Workspace Tabs",
+    "ko": "Workspace Tabs 시작하기"
+  },
+  "あとで設定": {
+    "en": "Set up later",
+    "ko": "나중에 설정"
+  },
+  "はじめる": {
+    "en": "Get started",
+    "ko": "시작하기"
+  },
+  "完了": {
+    "en": "Done",
+    "ko": "완료"
+  },
+  "次へ": {
+    "en": "Next",
+    "ko": "다음"
+  },
+  "アプリタブごとにログイン環境を分けられます。仕事用と個人用のNotionも、同時に開けます。": {
+    "en": "Each app tab can use a separate login profile. Open work and personal Notion accounts at the same time.",
+    "ko": "앱 탭마다 로그인 환경을 분리할 수 있습니다. 업무용과 개인용 Notion을 동시에 열어 보세요."
+  },
+  "アプリタブの名前": {
+    "en": "App tab name",
+    "ko": "앱 탭 이름"
+  },
+  "ホームURL": {
+    "en": "Home URL",
+    "ko": "홈 URL"
+  },
+  "特定のワークスペースを使う場合は、その中の通常ページのURLがおすすめです。": {
+    "en": "For a specific workspace, use the URL of a regular page within it.",
+    "ko": "특정 워크스페이스를 사용한다면 그 안에 있는 일반 페이지의 URL을 권장합니다."
+  },
+  "名前と有効なURLを入力してください。": {
+    "en": "Enter a name and a valid URL.",
+    "ko": "이름과 올바른 URL을 입력하세요."
+  },
+  "サイドバーの＋で環境を追加": {
+    "en": "Add a profile with + in the sidebar",
+    "ko": "사이드바의 +로 환경 추가"
+  },
+  "各環境でNotionにログイン": {
+    "en": "Sign in to Notion in each profile",
+    "ko": "각 환경에서 Notion에 로그인"
+  },
+  "編集画面でHome URLとWorkspace IDを設定": {
+    "en": "Set Home URL and Workspace ID in the editor",
+    "ko": "편집 화면에서 홈 URL과 Workspace ID 설정"
+  },
+  "ログインはセットアップ後、ページ上で行います。パスワードやPATの入力はここでは不要です。": {
+    "en": "Sign in on the page after setup. No password or PAT is needed here.",
+    "ko": "설정을 마친 후 페이지에서 로그인하세요. 여기서는 비밀번호나 PAT가 필요하지 않습니다."
+  },
+  "色とサイドバーを選ぶと、開いている環境を見分けやすくなります。": {
+    "en": "Choose colors and a sidebar layout to tell your profiles apart.",
+    "ko": "색상과 사이드바를 선택하면 열린 환경을 쉽게 구분할 수 있습니다."
+  },
+  "サイドバー": {
+    "en": "Sidebar",
+    "ko": "사이드바"
+  },
+  "アイコン": {
+    "en": "Icon",
+    "ko": "아이콘"
+  },
+  "名前付き": {
+    "en": "With names",
+    "ko": "이름 포함"
+  },
+  "ホバー": {
+    "en": "On hover",
+    "ko": "호버 시 표시"
+  },
+  "テーマ": {
+    "en": "Theme",
+    "ko": "테마"
+  },
+  "この設定は「はじめる」を押すと保存されます。あとから設定画面でも変更できます。": {
+    "en": "These settings are saved when you click “Get started”. You can change them later in Settings.",
+    "ko": "‘시작하기’를 누르면 저장됩니다. 나중에 설정에서 변경할 수 있습니다."
+  },
+  "ここはプレビューです。実際の変更は「設定 → 表示」とアプリタブの編集から行えます。": {
+    "en": "This is a preview. Make changes in Settings → Appearance or by editing an app tab.",
+    "ko": "미리보기입니다. 실제 변경은 설정 → 표시 또는 앱 탭 편집에서 할 수 있습니다."
+  },
+  "グループとページの切り替えは別の操作です。右のプレビューで試せます。": {
+    "en": "Switching a group and switching a page are separate actions. Try them in the preview on the right.",
+    "ko": "그룹 전환과 페이지 전환은 별개의 작업입니다. 오른쪽 미리보기에서 사용해 보세요."
+  },
+  "グループ名で表示するタブ列を選ぶ": {
+    "en": "Choose the tab row from the group menu",
+    "ko": "그룹 이름으로 표시할 탭 목록 선택"
+  },
+  "タブをクリックするとページが切り替わる": {
+    "en": "Click a tab to switch pages",
+    "ko": "탭을 클릭하여 페이지 전환"
+  },
+  "タブをドラッグして並べ替え": {
+    "en": "Drag tabs to reorder them",
+    "ko": "탭을 드래그하여 순서 변경"
+  },
+  "全タブ検索で環境をまたいで移動": {
+    "en": "Search all tabs to move across profiles",
+    "ko": "모든 탭 검색으로 환경 간 이동"
+  },
+  "グループ切り替えの上下スクロールは、ブラウザタブ列の内側だけ。ページ内は通常どおりスクロールできます。": {
+    "en": "Vertical scrolling switches groups only inside the browser tab bar. Pages scroll normally.",
+    "ko": "그룹 전환용 세로 스크롤은 브라우저 탭 막대 안에서만 작동합니다. 페이지는 정상적으로 스크롤됩니다."
+  },
+  "プレビュー": {
+    "en": "Preview",
+    "ko": "미리보기"
+  },
+  "外部ツール": {
+    "en": "External tools",
+    "ko": "외부 도구"
+  },
+  "プレビューのグループを切り替える": {
+    "en": "Switch preview group",
+    "ko": "미리보기 그룹 전환"
+  },
+  "ページ": {
+    "en": "Page",
+    "ko": "페이지"
+  },
+  "ツール": {
+    "en": "Tools",
+    "ko": "도구"
+  },
+  "プレビューのタブを開く": {
+    "en": "Open preview tab",
+    "ko": "미리보기 탭 열기"
+  },
+  "Notionのページ": {
+    "en": "Notion page",
+    "ko": "Notion 페이지"
+  },
+  "アプリタブを編集": {
+    "en": "Edit app tab",
+    "ko": "앱 탭 편집"
+  },
+  "名前": {
+    "en": "Name",
+    "ko": "이름"
+  },
+  "NotionワークスペースID（任意）": {
+    "en": "Notion Workspace ID (optional)",
+    "ko": "Notion 워크스페이스 ID(선택 사항)"
+  },
+  "このワークスペースのリンクを自動で振り分ける": {
+    "en": "Automatically route links for this workspace",
+    "ko": "이 워크스페이스의 링크 자동 분류"
+  },
+  "現在のNotionページから設定": {
+    "en": "Use current Notion page",
+    "ko": "현재 Notion 페이지에서 설정"
+  },
+  "確認中…": {
+    "en": "Checking…",
+    "ko": "확인 중…"
+  },
+  "現在のページに一致するワークスペースIDを取得できませんでした。Notionのページを開いて再試行するか、IDを手入力してください。": {
+    "en": "Could not get a Workspace ID matching this page. Open a Notion page and try again, or enter the ID manually.",
+    "ko": "현재 페이지와 일치하는 워크스페이스 ID를 가져오지 못했습니다. Notion 페이지를 열고 다시 시도하거나 ID를 직접 입력하세요."
+  },
+  "ワークスペースIDとホームURLを設定しました。保存で適用します。": {
+    "en": "Workspace ID and Home URL are ready. Save to apply.",
+    "ko": "워크스페이스 ID와 홈 URL을 설정했습니다. 저장하면 적용됩니다."
+  },
+  "IDとホームURLの環境（本番／開発）を照合します。判定不能・複数候補では切り替えません。Notionの内部仕様変更で自動取得できなくなる場合があります。": {
+    "en": "The ID and Home URL environment (production/development) are checked. Unverified or ambiguous matches will not switch tabs. Notion changes may affect automatic detection.",
+    "ko": "ID와 홈 URL의 환경(프로덕션/개발)을 확인합니다. 확인 불가 또는 여러 후보가 있으면 전환하지 않습니다. Notion 변경으로 자동 감지가 작동하지 않을 수 있습니다."
+  },
+  "絵文字・文字": {
+    "en": "Emoji or text",
+    "ko": "이모지 또는 문자"
+  },
+  "文字色": {
+    "en": "Text color",
+    "ko": "글자색"
+  },
+  "自動": {
+    "en": "Automatic",
+    "ko": "자동"
+  },
+  "白": {
+    "en": "White",
+    "ko": "흰색"
+  },
+  "黒": {
+    "en": "Black",
+    "ko": "검정"
+  },
+  "ログイン環境": {
+    "en": "Login profiles",
+    "ko": "로그인 환경"
+  },
+  "同じ環境を選んだアプリタブはログイン状態を共有します。": {
+    "en": "App tabs with the same profile share their login state.",
+    "ko": "같은 환경을 선택한 앱 탭은 로그인 상태를 공유합니다."
+  },
+  "新しい環境": {
+    "en": "New profile",
+    "ko": "새 환경"
+  },
+  " の新しい環境": {
+    "en": " — new profile",
+    "ko": "의 새 환경"
+  },
+  "Notionのサイドバーを着色": {
+    "en": "Tint Notion’s sidebar",
+    "ko": "Notion 사이드바 착색"
+  },
+  "濃さ": {
+    "en": "Strength",
+    "ko": "농도"
+  },
+  "濃さ（0〜100パーセント）": {
+    "en": "Strength (0–100 percent)",
+    "ko": "농도(0~100퍼센트)"
+  },
+  "0〜100を入力。スライダーと連動します": {
+    "en": "Enter 0–100. Updates the slider too.",
+    "ko": "0~100을 입력하세요. 슬라이더에도 반영됩니다."
+  },
+  "指定したNotionドメインだけに適用します。ページ本文や画像の透明度は変更しません。Notionの更新で着色が効かなくなる場合はオフにできます。": {
+    "en": "Applies only to supported Notion domains, without changing page content or image opacity. Turn it off if a Notion update affects tinting.",
+    "ko": "지원하는 Notion 도메인에만 적용하며 본문이나 이미지 투명도는 바꾸지 않습니다. Notion 업데이트로 작동하지 않으면 끌 수 있습니다."
+  },
+  "タブを固定": {
+    "en": "Pin tab",
+    "ko": "탭 고정"
+  },
+  "保存": {
+    "en": "Save",
+    "ko": "저장"
+  },
+  "ログイン環境を切り替えますか？": {
+    "en": "Switch login profile?",
+    "ko": "로그인 환경을 전환하시겠습니까?"
+  },
+  "このアプリタブのページを新しい環境で読み直します。元の環境のログイン情報は残します。入力途中の内容は保存されません。": {
+    "en": "Pages in this app tab will reload in the new profile. The old profile’s login data is kept. Unsent input will not be saved.",
+    "ko": "이 앱 탭의 페이지를 새 환경에서 다시 불러옵니다. 이전 환경의 로그인 정보는 유지됩니다. 작성 중인 내용은 저장되지 않습니다."
+  },
+  "切り替える": {
+    "en": "Switch",
+    "ko": "전환"
+  },
+  "設定": {
+    "en": "Settings",
+    "ko": "설정"
+  },
+  "外観": {
+    "en": "Appearance",
+    "ko": "모양"
+  },
+  "アプリタブの位置": {
+    "en": "App tab position",
+    "ko": "앱 탭 위치"
+  },
+  "左側": {
+    "en": "Left",
+    "ko": "왼쪽"
+  },
+  "上部": {
+    "en": "Top",
+    "ko": "위쪽"
+  },
+  "通常": {
+    "en": "Full",
+    "ko": "전체"
+  },
+  "アイコンのみ": {
+    "en": "Icons only",
+    "ko": "아이콘만"
+  },
+  "左端で展開": {
+    "en": "Expand at left edge",
+    "ko": "왼쪽 가장자리에서 펼치기"
+  },
+  "アカウントのメモなし": {
+    "en": "No account note",
+    "ko": "계정 메모 없음"
+  },
+  "編集…": {
+    "en": "Edit…",
+    "ko": "편집…"
+  },
+  "同じ環境を選んだアプリタブはログイン状態を共有します。アカウント名は確認用のメモです。": {
+    "en": "App tabs with the same profile share their login state. The account name is just a note for your reference.",
+    "ko": "같은 환경의 앱 탭은 로그인 상태를 공유합니다. 계정 이름은 확인용 메모입니다."
+  },
+  "このMacのデータ": {
+    "en": "Data on this Mac",
+    "ko": "이 Mac의 데이터"
+  },
+  "タブの状態は自動保存されます。ファイルへの書き出し・読み込みはこちらから。": {
+    "en": "Tab state is saved automatically. Export or import a settings file here.",
+    "ko": "탭 상태는 자동 저장됩니다. 여기에서 설정 파일을 내보내거나 가져올 수 있습니다."
+  },
+  "保存フォルダを開く": {
+    "en": "Open storage folder",
+    "ko": "저장 폴더 열기"
+  },
+  "設定を書き出す…": {
+    "en": "Export settings…",
+    "ko": "설정 내보내기…"
+  },
+  "設定を読み込む…": {
+    "en": "Import settings…",
+    "ko": "설정 가져오기…"
+  },
+  "環境の名前": {
+    "en": "Profile name",
+    "ko": "환경 이름"
+  },
+  "アカウントのメモ（例：仕事用・name@example.com）": {
+    "en": "Account note (e.g. Work · name@example.com)",
+    "ko": "계정 메모(예: 업무용 · name@example.com)"
+  },
+  "保存データがあるサイト": {
+    "en": "Sites with stored data",
+    "ko": "저장된 데이터가 있는 사이트"
+  },
+  "まだ保存データはありません。": {
+    "en": "No stored data yet.",
+    "ko": "아직 저장된 데이터가 없습니다."
+  },
+  "この一覧はサイトデータの存在を示します。現在ログイン中であることや、ログインしているユーザー名を示すものではありません。": {
+    "en": "This list shows the presence of site data, not whether you are signed in or which account is in use.",
+    "ko": "이 목록은 사이트 데이터가 있음을 나타내며 현재 로그인 여부나 사용자 이름을 나타내지는 않습니다."
+  },
+  "更新": {
+    "en": "Refresh",
+    "ko": "새로고침"
+  },
+  "現在の状態を保存できないため読み込みを中止しました": {
+    "en": "Import cancelled because the current state could not be saved",
+    "ko": "현재 상태를 저장하지 못해 가져오기를 취소했습니다"
+  },
+  "URLをコピーしました": {
+    "en": "URL copied",
+    "ko": "URL을 복사했습니다"
+  },
+  "設定ファイルを直近の正常なバックアップから復元しました。元のファイルはRecoveryフォルダに保管しています。": {
+    "en": "Settings were restored from the latest valid backup. The original file is in the Recovery folder.",
+    "ko": "최근 정상 백업에서 설정을 복원했습니다. 원본 파일은 Recovery 폴더에 있습니다."
+  },
+  "設定を読み込めませんでした。元ファイルは保持しています。\n{0}": {
+    "en": "Could not load settings. The original file has been kept.\n{0}",
+    "ko": "설정을 불러오지 못했습니다. 원본 파일은 유지됩니다.\n{0}"
+  },
+  "新しいアプリ": {
+    "en": "New app",
+    "ko": "새 앱"
+  },
+  " のログイン環境": {
+    "en": " — login profile",
+    "ko": "의 로그인 환경"
+  },
+  "ピン留めを解除してから閉じてください": {
+    "en": "Unpin this tab before closing it",
+    "ko": "닫기 전에 탭 고정을 해제하세요"
+  },
+  "「{0}」を閉じますか？": {
+    "en": "Close “{0}”?",
+    "ko": "‘{0}’을(를) 닫으시겠습니까?"
+  },
+  "アプリタブとページ一覧を削除します。ログイン環境のCookieや保存データは残します。": {
+    "en": "The app tab and its page list will be removed. Cookies and stored data for its login profile will be kept.",
+    "ko": "앱 탭과 페이지 목록을 삭제합니다. 로그인 환경의 쿠키와 저장 데이터는 유지됩니다."
+  },
+  "保存できませんでした：{0}": {
+    "en": "Could not save: {0}",
+    "ko": "저장하지 못했습니다: {0}"
+  },
+  "復元履歴を保存できません。現在のタブは通常どおり保存します。": {
+    "en": "Could not save recovery history. Current tabs will still be saved normally.",
+    "ko": "복원 기록을 저장하지 못했습니다. 현재 탭은 정상적으로 저장합니다."
+  },
+  "「{0}」で開きました": {
+    "en": "Opened in “{0}”",
+    "ko": "‘{0}’에서 열었습니다"
+  },
+  "現在の状態を保存できないため復元を中止しました": {
+    "en": "Restore cancelled because the current state could not be saved",
+    "ko": "현재 상태를 저장하지 못해 복원을 취소했습니다"
+  },
+  "（ピン留め）": {
+    "en": " (pinned)",
+    "ko": "(고정됨)"
+  },
+  "ブラウザタブを閉じる": {
+    "en": "Close browser tab",
+    "ko": "브라우저 탭 닫기"
+  },
+  "ピン留めを解除": {
+    "en": "Unpin",
+    "ko": "고정 해제"
+  },
+  "タブをピン留め": {
+    "en": "Pin tab",
+    "ko": "탭 고정"
+  },
+  "ピン留めタブの表示": {
+    "en": "Pinned tab display",
+    "ko": "고정 탭 표시"
+  },
+  "アイコンと名前": {
+    "en": "Icon and name",
+    "ko": "아이콘과 이름"
+  },
+  "グループへ移動": {
+    "en": "Move to group",
+    "ko": "그룹으로 이동"
+  },
+  "表示名・アイコンを編集…": {
+    "en": "Edit name and icon…",
+    "ko": "표시 이름 및 아이콘 편집…"
+  },
+  "右側に並べて表示": {
+    "en": "Show side by side",
+    "ko": "오른쪽에 나란히 표시"
+  },
+  "タブを閉じる": {
+    "en": "Close tab",
+    "ko": "탭 닫기"
+  },
+  "タブの表示": {
+    "en": "Tab appearance",
+    "ko": "탭 표시"
+  },
+  "表示名（空欄でページ名）": {
+    "en": "Display name (leave blank for page title)",
+    "ko": "표시 이름(비워 두면 페이지 이름)"
+  },
+  "アイコン（絵文字・文字、空欄でサイトのfavicon）": {
+    "en": "Icon (emoji or text; leave blank for site favicon)",
+    "ko": "아이콘(이모지·문자, 비워 두면 사이트 파비콘)"
+  },
+  "グループ": {
+    "en": "Group",
+    "ko": "그룹"
+  },
+  "ピン留め": {
+    "en": "Pinned",
+    "ko": "고정"
+  },
+  "表示": {
+    "en": "Appearance",
+    "ko": "표시"
+  },
+  "タブの表示を保存しました": {
+    "en": "Tab appearance saved",
+    "ko": "탭 표시 설정을 저장했습니다"
+  },
+  "同じ名前のグループがあります": {
+    "en": "A group with this name already exists",
+    "ko": "같은 이름의 그룹이 있습니다"
+  },
+  "新しいグループ…": {
+    "en": "New group…",
+    "ko": "새 그룹…"
+  },
+  "グループを編集…": {
+    "en": "Edit group…",
+    "ko": "그룹 편집…"
+  },
+  "グループを削除…": {
+    "en": "Delete group…",
+    "ko": "그룹 삭제…"
+  },
+  "タブグループ: ": {
+    "en": "Tab group: ",
+    "ko": "탭 그룹: "
+  },
+  "表示するタブグループ。上下スクロールでも切り替えられます。ページはタブをクリックするまで変わりません。": {
+    "en": "Choose the visible tab group, or scroll vertically here. The page stays the same until you click a tab.",
+    "ko": "표시할 탭 그룹을 선택하세요. 여기에서 세로 스크롤로도 전환할 수 있습니다. 탭을 클릭할 때까지 페이지는 바뀌지 않습니다."
+  },
+  "グループを削除しますか？": {
+    "en": "Delete this group?",
+    "ko": "그룹을 삭제하시겠습니까?"
+  },
+  "削除": {
+    "en": "Delete",
+    "ko": "삭제"
+  },
+  "タブは閉じずに、先頭のグループへ移動します。": {
+    "en": "Tabs will move to the first group without closing.",
+    "ko": "탭을 닫지 않고 첫 번째 그룹으로 이동합니다."
+  },
+  "名前（例：Notion、外部ツール）": {
+    "en": "Name (e.g. Notion, External tools)",
+    "ko": "이름(예: Notion, 외부 도구)"
+  },
+  "オフライン": {
+    "en": "Offline",
+    "ko": "오프라인"
+  },
+  " で切り替え": {
+    "en": " to switch",
+    "ko": " 키로 전환"
+  },
+  "各アプリタブのキーで切り替え": {
+    "en": "Use each app tab’s shortcut to switch",
+    "ko": "각 앱 탭의 키로 전환"
+  },
+  "内蔵ブラウザへ移行しました": {
+    "en": "Moved to the built-in browser",
+    "ko": "내장 브라우저로 전환했습니다"
+  },
+  "タブの名前・アイコン・色を引き継ぎました。ログイン環境はタブごとに新しく作成しています。各サイトでログインしてください。元アプリのCookieやパスワードは取り込みません。旧設定ファイルも残しています。": {
+    "en": "Tab names, icons and colors were preserved. Each tab has a new login profile; sign in to each site. Cookies and passwords from the original apps were not imported. Your old settings file is kept.",
+    "ko": "탭 이름, 아이콘, 색상을 유지했습니다. 각 탭에 새 로그인 환경을 만들었으므로 사이트별로 로그인하세요. 원래 앱의 쿠키나 비밀번호는 가져오지 않았으며 이전 설정 파일도 유지됩니다."
+  },
+  "「{0}」は別ウインドウで開いています": {
+    "en": "“{0}” is open in a separate window",
+    "ko": "‘{0}’이(가) 별도 윈도우에서 열려 있습니다"
+  },
+  "ウインドウを表示": {
+    "en": "Show window",
+    "ko": "윈도우 표시"
+  },
+  "ここに戻す": {
+    "en": "Bring back here",
+    "ko": "여기로 가져오기"
+  },
+  "アプリタブを追加": {
+    "en": "Add app tab",
+    "ko": "앱 탭 추가"
+  },
+  "Notionを追加": {
+    "en": "Add Notion",
+    "ko": "Notion 추가"
+  },
+  "アプリ": {
+    "en": "App",
+    "ko": "앱"
+  },
+  "元のウインドウに戻す": {
+    "en": "Return to main window",
+    "ko": "원래 윈도우로 돌아가기"
+  },
+  "名前・色・ログイン環境…": {
+    "en": "Name, color and login profile…",
+    "ko": "이름, 색상 및 로그인 환경…"
+  },
+  "固定を解除": {
+    "en": "Unpin",
+    "ko": "고정 해제"
+  },
+  "アプリタブを閉じる…": {
+    "en": "Close app tab…",
+    "ko": "앱 탭 닫기…"
+  },
+  "お気に入りランチャー": {
+    "en": "Favorites launcher",
+    "ko": "즐겨찾기 런처"
+  },
+  "お気に入り": {
+    "en": "Favorites",
+    "ko": "즐겨찾기"
+  },
+  "タブを検索": {
+    "en": "Search tabs",
+    "ko": "탭 검색"
+  },
+  "使い方とショートカット": {
+    "en": "Help and shortcuts",
+    "ko": "도움말 및 단축키"
+  },
+  "すべてのタブ…": {
+    "en": "All tabs…",
+    "ko": "모든 탭…"
+  },
+  "コマンド…": {
+    "en": "Commands…",
+    "ko": "명령…"
+  },
+  "お気に入り…": {
+    "en": "Favorites…",
+    "ko": "즐겨찾기…"
+  },
+  "使い方とショートカット…": {
+    "en": "Help and shortcuts…",
+    "ko": "도움말 및 단축키…"
+  },
+  "設定…": {
+    "en": "Settings…",
+    "ko": "설정…"
+  },
+  "ウインドウを全画面表示": {
+    "en": "Enter full screen",
+    "ko": "전체 화면으로 보기"
+  },
+  "Workspace Tabsを終了…": {
+    "en": "Quit Workspace Tabs…",
+    "ko": "Workspace Tabs 종료…"
+  },
+  "アプリのメニュー": {
+    "en": "App menu",
+    "ko": "앱 메뉴"
+  },
+  "この環境にブラウザタブを追加": {
+    "en": "Add browser tab to this profile",
+    "ko": "이 환경에 브라우저 탭 추가"
+  },
+  "ブラウザタブを追加": {
+    "en": "Add browser tab",
+    "ko": "브라우저 탭 추가"
+  },
+  "URLを表示": {
+    "en": "Show URL",
+    "ko": "URL 표시"
+  },
+  "元に戻す": {
+    "en": "Reattach",
+    "ko": "다시 합치기"
+  },
+  "アプリタブを元のウインドウに戻す": {
+    "en": "Return app tab to main window",
+    "ko": "앱 탭을 원래 윈도우로 되돌리기"
+  },
+  "左右を入れ替え": {
+    "en": "Swap sides",
+    "ko": "좌우 바꾸기"
+  },
+  "Split Viewを解除": {
+    "en": "End Split View",
+    "ko": "Split View 해제"
+  },
+  "このページをお気に入りに追加": {
+    "en": "Add this page to favorites",
+    "ko": "이 페이지를 즐겨찾기에 추가"
+  },
+  "色・濃さを調整…": {
+    "en": "Adjust color and strength…",
+    "ko": "색상 및 농도 조절…"
+  },
+  "標準ブラウザで開く": {
+    "en": "Open in default browser",
+    "ko": "기본 브라우저에서 열기"
+  },
+  "ページの色": {
+    "en": "Page color",
+    "ko": "페이지 색상"
+  },
+  "別の環境のページを並べて表示": {
+    "en": "Show a page from another profile alongside",
+    "ko": "다른 환경의 페이지를 나란히 표시"
+  },
+  "再読み込み": {
+    "en": "Reload",
+    "ko": "새로고침"
+  },
+  "設定と異なるワークスペースを表示しています": {
+    "en": "This workspace differs from your settings",
+    "ko": "설정과 다른 워크스페이스가 열려 있습니다"
+  },
+  "一致する環境で開く": {
+    "en": "Open in matching profile",
+    "ko": "일치하는 환경에서 열기"
+  },
+  "読み込み直しています": {
+    "en": "Reloading…",
+    "ko": "다시 불러오는 중"
+  },
+  "読み込めませんでした": {
+    "en": "Could not load",
+    "ko": "불러오지 못했습니다"
+  },
+  "再試行": {
+    "en": "Retry",
+    "ko": "다시 시도"
+  },
+  "Googleで検索、またはURLを入力": {
+    "en": "Search Google or enter a URL",
+    "ko": "Google 검색 또는 URL 입력"
+  },
+  "検索キーワードまたはURL": {
+    "en": "Search keywords or URL",
+    "ko": "검색어 또는 URL"
+  },
+  "新しいタブ": {
+    "en": "New tab",
+    "ko": "새 탭"
+  },
+  "この環境のNotionを開く\n設定したホームページに移動": {
+    "en": "Open Notion in this profile\nGo to your Home URL",
+    "ko": "이 환경에서 Notion 열기\n설정한 홈 페이지로 이동"
+  },
+  "URL・検索": {
+    "en": "URL / Search",
+    "ko": "URL · 검색"
+  },
+  "URLを入力してサイトを開く\nキーワードならGoogleで検索": {
+    "en": "Enter a URL to open a site\nOr keywords to search Google",
+    "ko": "URL을 입력하여 사이트 열기\n키워드로 Google 검색"
+  },
+  "クリック、または矢印キーですぐに開く": {
+    "en": "Click or press an arrow key to open immediately",
+    "ko": "클릭하거나 화살표 키로 바로 열기"
+  },
+  "右側に表示するタブ": {
+    "en": "Choose a tab for the right side",
+    "ko": "오른쪽에 표시할 탭"
+  },
+  "すべてのタブ": {
+    "en": "All tabs",
+    "ko": "모든 탭"
+  },
+  "検索": {
+    "en": "Search",
+    "ko": "검색"
+  },
+  "アプリ名・ページ名・URLを検索": {
+    "en": "Search app names, page names and URLs",
+    "ko": "앱 이름, 페이지 이름, URL 검색"
+  },
+  "一致するタブはありません": {
+    "en": "No matching tabs",
+    "ko": "일치하는 탭이 없습니다"
+  },
+  " · 別ウインドウ": {
+    "en": " · Separate window",
+    "ko": " · 별도 윈도우"
+  },
+  "このタブへ移動": {
+    "en": "Go to this tab",
+    "ko": "이 탭으로 이동"
+  },
+  "↑↓で選択 · Enterで移動 · ⌘Fで検索": {
+    "en": "↑↓ to select · Enter to switch · ⌘F to search",
+    "ko": "↑↓ 선택 · Enter 이동 · ⌘F 검색"
+  },
+  "右側に表示": {
+    "en": "Show on right",
+    "ko": "오른쪽에 표시"
+  },
+  "コマンド": {
+    "en": "Commands",
+    "ko": "명령"
+  },
+  "操作名を検索": {
+    "en": "Search actions",
+    "ko": "작업 이름 검색"
+  },
+  "↑↓で選択 · Enterで実行 · キーは設定で変更できます": {
+    "en": "↑↓ to select · Enter to run · Customize keys in Settings",
+    "ko": "↑↓ 선택 · Enter 실행 · 설정에서 키 변경"
+  },
+  "「{0}」を切り離しました": {
+    "en": "Detached “{0}”",
+    "ko": "‘{0}’을(를) 분리했습니다"
+  },
+  "元のウインドウに戻しました": {
+    "en": "Returned to the main window",
+    "ko": "원래 윈도우로 돌아왔습니다"
+  },
+  "お気に入りを保存しました": {
+    "en": "Favorite saved",
+    "ko": "즐겨찾기를 저장했습니다"
+  },
+  "Notionへの保存を予約しました": {
+    "en": "Queued for saving to Notion",
+    "ko": "Notion 저장을 예약했습니다"
+  },
+  "お気に入りを削除しました": {
+    "en": "Favorite deleted",
+    "ko": "즐겨찾기를 삭제했습니다"
+  },
+  "開く先を一意に特定できません。CategoriesのWorkspace ID、アプリタブのWorkspace ID・名前・HOME URLを確認してください。": {
+    "en": "Could not determine a unique destination. Check the Category Workspace ID and the app tab’s Workspace ID, name and Home URL.",
+    "ko": "대상을 하나로 정할 수 없습니다. Categories의 Workspace ID와 앱 탭의 Workspace ID, 이름, 홈 URL을 확인하세요."
+  },
+  "未分類": {
+    "en": "Uncategorized",
+    "ko": "미분류"
+  },
+  "追加…": {
+    "en": "Add…",
+    "ko": "추가…"
+  },
+  "タイトル・URL・カテゴリ・アプリタブを検索": {
+    "en": "Search titles, URLs, categories and app tabs",
+    "ko": "제목, URL, 카테고리, 앱 탭 검색"
+  },
+  "すべて": {
+    "en": "All",
+    "ko": "전체"
+  },
+  "お気に入りを追加してください": {
+    "en": "Add your first favorite",
+    "ko": "즐겨찾기를 추가하세요"
+  },
+  "一致するお気に入りはありません": {
+    "en": "No matching favorites",
+    "ko": "일치하는 즐겨찾기가 없습니다"
+  },
+  "URL欄の星ボタンから、開いているページも登録できます。": {
+    "en": "Use the star in the URL bar to save the current page too.",
+    "ko": "URL 막대의 별 버튼으로 현재 페이지도 등록할 수 있습니다."
+  },
+  "開く先を設定してください": {
+    "en": "Choose a destination",
+    "ko": "열 대상을 설정하세요"
+  },
+  "お気に入りを編集": {
+    "en": "Edit favorite",
+    "ko": "즐겨찾기 편집"
+  },
+  "編集：": {
+    "en": "Edit: ",
+    "ko": "편집: "
+  },
+  "新しいブラウザタブで開く": {
+    "en": "Open in new browser tab",
+    "ko": "새 브라우저 탭에서 열기"
+  },
+  "URLをコピー": {
+    "en": "Copy URL",
+    "ko": "URL 복사"
+  },
+  "削除…": {
+    "en": "Delete…",
+    "ko": "삭제…"
+  },
+  "← →でカテゴリ切り替え · ↑↓で選択 · Enterで開く": {
+    "en": "← → categories · ↑↓ select · Enter open",
+    "ko": "← → 카테고리 전환 · ↑↓ 선택 · Enter 열기"
+  },
+  "お気に入りを削除しますか？": {
+    "en": "Delete this favorite?",
+    "ko": "즐겨찾기를 삭제하시겠습니까?"
+  },
+  "\nNotionの該当ページもゴミ箱へ移動します。": {
+    "en": "\nThe corresponding Notion page will also move to the trash.",
+    "ko": "\nNotion의 해당 페이지도 휴지통으로 이동합니다."
+  },
+  "保存先": {
+    "en": "Storage",
+    "ko": "저장 위치"
+  },
+  "内蔵（このMac）": {
+    "en": "Built-in (this Mac)",
+    "ko": "내장(이 Mac)"
+  },
+  "Notion保存をオンにすると同期されます。画像アイコンはこのMacに保存し、絵文字はNotionにも保存します。": {
+    "en": "Enable Notion storage to sync. Image icons stay on this Mac; emoji are also saved to Notion.",
+    "ko": "Notion 저장을 켜면 동기화됩니다. 이미지 아이콘은 이 Mac에 저장하고 이모지는 Notion에도 저장합니다."
+  },
+  "タイトル": {
+    "en": "Title",
+    "ko": "제목"
+  },
+  "開くアプリタブ": {
+    "en": "Destination app tab",
+    "ko": "열 앱 탭"
+  },
+  "選択してください": {
+    "en": "Select…",
+    "ko": "선택하세요"
+  },
+  "ログイン環境：": {
+    "en": "Login profile: ",
+    "ko": "로그인 환경: "
+  },
+  "アイコン（絵文字・文字）": {
+    "en": "Icon (emoji or text)",
+    "ko": "아이콘(이모지 또는 문자)"
+  },
+  "Category名とアプリタブ名が一致すると、そちらを優先して開きます。同名のタブが複数ある場合は開けません。": {
+    "en": "A matching Category and app tab name takes priority. Multiple app tabs with the same name prevent opening.",
+    "ko": "Category 이름과 앱 탭 이름이 일치하면 해당 탭을 우선합니다. 같은 이름의 탭이 여러 개면 열 수 없습니다."
+  },
+  "ショートカットのイベントを登録できませんでした。": {
+    "en": "Could not register shortcut events.",
+    "ko": "단축키 이벤트를 등록하지 못했습니다."
+  },
+  "{0} は他のアプリと競合しているため使用できません（{1}）。": {
+    "en": "{0} conflicts with another app and cannot be used ({1}).",
+    "ko": "{0}은(는) 다른 앱과 충돌하여 사용할 수 없습니다({1})."
+  },
+  "人・表情": {
+    "en": "People and expressions",
+    "ko": "사람 및 표정"
+  },
+  "動物・自然": {
+    "en": "Animals and nature",
+    "ko": "동물 및 자연"
+  },
+  "食べ物・飲み物": {
+    "en": "Food and drink",
+    "ko": "음식 및 음료"
+  },
+  "アクティビティ": {
+    "en": "Activities",
+    "ko": "활동"
+  },
+  "旅行・場所": {
+    "en": "Travel and places",
+    "ko": "여행 및 장소"
+  },
+  "もの・仕事": {
+    "en": "Objects and work",
+    "ko": "사물 및 업무"
+  },
+  "矢印・図形": {
+    "en": "Arrows and shapes",
+    "ko": "화살표 및 도형"
+  },
+  "記号・操作": {
+    "en": "Symbols and actions",
+    "ko": "기호 및 작업"
+  },
+  "フォルダー フォルダ": {
+    "en": "folder directory",
+    "ko": "폴더 디렉터리"
+  },
+  "書類 ページ 文書": {
+    "en": "document page file",
+    "ko": "문서 페이지 파일"
+  },
+  "本 読書": {
+    "en": "book reading",
+    "ko": "책 독서"
+  },
+  "星 お気に入り": {
+    "en": "star favorite",
+    "ko": "별 즐겨찾기"
+  },
+  "ハート 好き": {
+    "en": "heart like",
+    "ko": "하트 좋아요"
+  },
+  "家 ホーム": {
+    "en": "house home",
+    "ko": "집 홈"
+  },
+  "カレンダー 予定 日程": {
+    "en": "calendar schedule date",
+    "ko": "달력 일정 날짜"
+  },
+  "会議 ミーティング": {
+    "en": "meeting conference",
+    "ko": "회의 미팅"
+  },
+  "チャット 会話 AI": {
+    "en": "chat conversation AI",
+    "ko": "채팅 대화 AI"
+  },
+  "コメント 会話": {
+    "en": "comment conversation",
+    "ko": "댓글 대화"
+  },
+  "コード 開発": {
+    "en": "code development",
+    "ko": "코드 개발"
+  },
+  "パソコン PC 開発": {
+    "en": "computer PC development",
+    "ko": "컴퓨터 PC 개발"
+  },
+  "データベース DB": {
+    "en": "database DB",
+    "ko": "데이터베이스 DB"
+  },
+  "表 テーブル": {
+    "en": "table grid",
+    "ko": "표 테이블"
+  },
+  "世界 地球 web": {
+    "en": "world globe web",
+    "ko": "세계 지구 웹"
+  },
+  "リンク URL": {
+    "en": "link URL",
+    "ko": "링크 URL"
+  },
+  "ロケット 開発": {
+    "en": "rocket development",
+    "ko": "로켓 개발"
+  },
+  "電球 アイデア": {
+    "en": "lightbulb idea",
+    "ko": "전구 아이디어"
+  },
+  "仕事 ビジネス": {
+    "en": "work business",
+    "ko": "업무 비즈니스"
+  },
+  "チェック 完了": {
+    "en": "check done",
+    "ko": "체크 완료"
+  },
+  "目標 ターゲット": {
+    "en": "goal target",
+    "ko": "목표 타깃"
+  },
+  "旗 フラグ": {
+    "en": "flag marker",
+    "ko": "깃발 플래그"
+  },
+  "音楽": {
+    "en": "music",
+    "ko": "음악"
+  },
+  "アート 絵": {
+    "en": "art painting",
+    "ko": "예술 그림"
+  },
+  "カメラ 写真": {
+    "en": "camera photo",
+    "ko": "카메라 사진"
+  },
+  "写真 画像": {
+    "en": "photo image",
+    "ko": "사진 이미지"
+  },
+  "クラウド 雲": {
+    "en": "cloud",
+    "ko": "클라우드 구름"
+  },
+  "太陽": {
+    "en": "sun",
+    "ko": "태양"
+  },
+  "月 夜": {
+    "en": "moon night",
+    "ko": "달 밤"
+  },
+  "コーヒー": {
+    "en": "coffee",
+    "ko": "커피"
+  },
+  "カフェ": {
+    "en": "cafe",
+    "ko": "카페"
+  },
+  "チーム": {
+    "en": "team",
+    "ko": "팀"
+  },
+  "ユーザー 人": {
+    "en": "user person",
+    "ko": "사용자 사람"
+  },
+  "人 チーム": {
+    "en": "people team",
+    "ko": "사람 팀"
+  },
+  "設定 歯車": {
+    "en": "settings gear",
+    "ko": "설정 톱니바퀴"
+  },
+  "タグ": {
+    "en": "tag",
+    "ko": "태그"
+  },
+  "ピン 固定": {
+    "en": "pin fixed",
+    "ko": "핀 고정"
+  },
+  "プリセット…": {
+    "en": "Presets…",
+    "ko": "프리셋…"
+  },
+  "画像…": {
+    "en": "Image…",
+    "ko": "이미지…"
+  },
+  "PNG・JPEG・HEIC画像から選びます": {
+    "en": "Choose a PNG, JPEG or HEIC image",
+    "ko": "PNG, JPEG, HEIC 이미지에서 선택"
+  },
+  "解除": {
+    "en": "Clear",
+    "ko": "해제"
+  },
+  "アイコンを検索": {
+    "en": "Search icons",
+    "ko": "아이콘 검색"
+  },
+  "移行しました": {
+    "en": "Imported",
+    "ko": "가져왔습니다"
+  },
+  "移行しました：{0}件（開く先の未設定：{1}件、無効なURL等：{2}件）": {
+    "en": "Imported {0} items (no destination: {1}, invalid URLs or other issues: {2})",
+    "ko": "{0}개를 가져왔습니다(대상 미설정: {1}개, 잘못된 URL 등: {2}개)"
+  },
+  "移行できませんでした：": {
+    "en": "Could not import: ",
+    "ko": "가져오지 못했습니다: "
+  },
+  "許可済み": {
+    "en": "Allowed",
+    "ko": "허용됨"
+  },
+  "未確認（ページで録音を開始すると確認します）": {
+    "en": "Not requested (requested when recording starts on a page)",
+    "ko": "미확인(페이지에서 녹음을 시작할 때 확인)"
+  },
+  "許可されていません": {
+    "en": "Not allowed",
+    "ko": "허용되지 않음"
+  },
+  "このMacの管理設定により制限されています": {
+    "en": "Restricted by this Mac’s management settings",
+    "ko": "이 Mac의 관리 설정으로 제한됨"
+  },
+  "確認できません": {
+    "en": "Unknown",
+    "ko": "확인할 수 없음"
+  },
+  "マイク・ミーティングノート": {
+    "en": "Microphone and meeting notes",
+    "ko": "마이크 및 회의록"
+  },
+  "macOSのマイク権限": {
+    "en": "macOS microphone permission",
+    "ko": "macOS 마이크 권한"
+  },
+  "macOSのマイク設定を開く": {
+    "en": "Open macOS microphone settings",
+    "ko": "macOS 마이크 설정 열기"
+  },
+  "状態を更新": {
+    "en": "Refresh status",
+    "ko": "상태 새로고침"
+  },
+  "Notionで文字起こしを開始したときに、macOSとサイトのマイク確認を許可してください。許可を変更した後はページを再読み込みします。反映されない場合は入力内容を保存してアプリを再起動してください。": {
+    "en": "Allow microphone access in macOS and the site when starting Notion transcription. Reload after changing permission. If necessary, save your input and restart the app.",
+    "ko": "Notion 음성 텍스트 변환을 시작할 때 macOS와 사이트의 마이크 접근을 허용하세요. 권한 변경 후 페이지를 새로고침하세요. 반영되지 않으면 입력 내용을 저장하고 앱을 재시작하세요."
+  },
+  "Web版の音声入力を使います。ほかのアプリのシステム音声を直接取り込む機能はありません。ヘッドホン使用中は相手の音声がマイクに入らない場合があります。": {
+    "en": "This uses web audio input and cannot directly capture another app’s system audio. When using headphones, the other person’s voice may not reach your microphone.",
+    "ko": "웹 음성 입력을 사용하며 다른 앱의 시스템 오디오를 직접 수집하지 않습니다. 헤드폰 사용 시 상대방의 목소리가 마이크에 들어가지 않을 수 있습니다."
+  },
+  "Notion APIの一覧応答が不完全なため同期を中止しました": {
+    "en": "Sync stopped because the Notion API list response was incomplete",
+    "ko": "Notion API 목록 응답이 불완전하여 동기화를 중지했습니다"
+  },
+  "Notion APIのページ送りが進まないため同期を中止しました": {
+    "en": "Sync stopped because Notion API pagination did not advance",
+    "ko": "Notion API 페이지 이동이 진행되지 않아 동기화를 중지했습니다"
+  },
+  "Notion APIのURLが無効です": {
+    "en": "Invalid Notion API URL",
+    "ko": "Notion API URL이 잘못되었습니다"
+  },
+  "Notion から応答がありません": {
+    "en": "No response from Notion",
+    "ko": "Notion에서 응답이 없습니다"
+  },
+  "Notion のアクセス制限に達しました。少し待って再試行してください": {
+    "en": "Notion’s rate limit was reached. Wait a moment and try again.",
+    "ko": "Notion 요청 한도에 도달했습니다. 잠시 후 다시 시도하세요."
+  },
+  "接続先から正常な応答を取得できませんでした": {
+    "en": "Could not get a valid response from the server",
+    "ko": "서버에서 정상 응답을 받지 못했습니다"
+  },
+  "Notion APIからJSON形式ではない応答が返されました": {
+    "en": "Notion API returned a non-JSON response",
+    "ko": "Notion API가 JSON 형식이 아닌 응답을 반환했습니다"
+  },
+  "取得できませんでした": {
+    "en": "Could not retrieve data",
+    "ko": "가져오지 못했습니다"
+  },
+  "Notion のデータベース URL または ID を入力してください": {
+    "en": "Enter a Notion database URL or ID",
+    "ko": "Notion 데이터베이스 URL 또는 ID를 입력하세요"
+  },
+  "複数のデータソースがあります。追加したいデータソースの ID を入力してください": {
+    "en": "Multiple data sources found. Enter the ID of the data source to add.",
+    "ko": "데이터 소스가 여러 개 있습니다. 추가할 데이터 소스의 ID를 입력하세요."
+  },
+  "URL 型の「URL」プロパティが必要です": {
+    "en": "A URL property of type URL is required",
+    "ko": "URL 형식의 ‘URL’ 속성이 필요합니다"
+  },
+  "「{0}」の接続トークンを設定してください": {
+    "en": "Set a connection token for “{0}”",
+    "ko": "‘{0}’의 연결 토큰을 설정하세요"
+  },
+  "カテゴリ DB のデータソースを特定できません": {
+    "en": "Could not identify the Categories database data source",
+    "ko": "카테고리 DB의 데이터 소스를 확인하지 못했습니다"
+  },
+  "カテゴリ DB を取得できません": {
+    "en": "Could not retrieve the Categories database",
+    "ko": "카테고리 DB를 가져오지 못했습니다"
+  },
+  "カテゴリ DB には数値型の Order が必要です": {
+    "en": "The Categories database needs a numeric Order property",
+    "ko": "카테고리 DB에 숫자형 Order 속성이 필요합니다"
+  },
+  "「{0}」のカテゴリは1件にしてください": {
+    "en": "Choose only one category for “{0}”",
+    "ko": "‘{0}’의 카테고리는 하나만 선택하세요"
+  },
+  "カテゴリ DB のアクセス権を確認してください": {
+    "en": "Check access to the Categories database",
+    "ko": "카테고리 DB의 접근 권한을 확인하세요"
+  },
+  "画像を取得できません: {0}": {
+    "en": "Could not load image: {0}",
+    "ko": "이미지를 가져오지 못했습니다: {0}"
+  },
+  "リンク先を取得できません。接続のトークンとページの共有設定を確認してください。\n{0}": {
+    "en": "Could not retrieve the linked page. Check the connection token and page sharing settings.\n{0}",
+    "ko": "링크 대상을 가져오지 못했습니다. 연결 토큰과 페이지 공유 설정을 확인하세요.\n{0}"
+  },
+  "Connection「{0}」に一致する接続を1件登録してください": {
+    "en": "Register exactly one connection matching “{0}”",
+    "ko": "Connection ‘{0}’에 일치하는 연결을 하나 등록하세요"
+  },
+  "使用できる接続がありません": {
+    "en": "No available connections",
+    "ko": "사용할 수 있는 연결이 없습니다"
+  },
+  "リンク先のページ情報がありません": {
+    "en": "No information for the linked page",
+    "ko": "링크 대상 페이지 정보가 없습니다"
+  },
+  "非対応の画像 URL です": {
+    "en": "Unsupported image URL",
+    "ko": "지원하지 않는 이미지 URL입니다"
+  },
+  "対応する画像を取得できませんでした": {
+    "en": "Could not retrieve a supported image",
+    "ko": "지원하는 이미지를 가져오지 못했습니다"
+  },
+  "Notionで作成": {
+    "en": "Create in Notion",
+    "ko": "Notion에서 만들기"
+  },
+  "タブ保存DB": {
+    "en": "Tabs database",
+    "ko": "탭 저장 DB"
+  },
+  "プライベートの親ページ": {
+    "en": "Private parent page",
+    "ko": "비공개 상위 페이지"
+  },
+  "カテゴリDB": {
+    "en": "Categories database",
+    "ko": "카테고리 DB"
+  },
+  "リンクDBとカテゴリリレーション": {
+    "en": "Links database and category relation",
+    "ko": "링크 DB 및 카테고리 관계"
+  },
+  "設定用カテゴリ": {
+    "en": "Settings category",
+    "ko": "설정 카테고리"
+  },
+  "設定ページへのリンク": {
+    "en": "Link to settings page",
+    "ko": "설정 페이지 링크"
+  },
+  "作成完了": {
+    "en": "Created",
+    "ko": "생성 완료"
+  },
+  "DBの作成完了・アプリへの登録を確認中": {
+    "en": "Databases created; checking app registration",
+    "ko": "DB 생성 완료 · 앱 등록 확인 중"
+  },
+  "{0}の作成結果を確認中": {
+    "en": "Checking creation of {0}",
+    "ko": "{0} 생성 결과 확인 중"
+  },
+  "親ページを作成します": {
+    "en": "Creating parent page",
+    "ko": "상위 페이지를 만듭니다"
+  },
+  "カテゴリDBを作成します": {
+    "en": "Creating Categories database",
+    "ko": "카테고리 DB를 만듭니다"
+  },
+  "リンクDBを作成します": {
+    "en": "Creating Links database",
+    "ko": "링크 DB를 만듭니다"
+  },
+  "設定用カテゴリを作成します": {
+    "en": "Creating settings category",
+    "ko": "설정 카테고리를 만듭니다"
+  },
+  "設定用リンクを作成します": {
+    "en": "Creating settings link",
+    "ko": "설정 링크를 만듭니다"
+  },
+  "タブ保存DBを作成します": {
+    "en": "Creating Tabs database",
+    "ko": "탭 저장 DB를 만듭니다"
+  },
+  "DBとリレーションを確認します": {
+    "en": "Checking databases and relations",
+    "ko": "DB 및 관계를 확인합니다"
+  },
+  "プライベートへの自動作成にはPATが必要です。内部インテグレーションのトークンでは作成できません。": {
+    "en": "A PAT is required to create private pages automatically. Internal integration tokens are not supported for this action.",
+    "ko": "비공개 영역에 자동 생성하려면 PAT가 필요합니다. 내부 통합 토큰으로는 생성할 수 없습니다."
+  },
+  "PATのワークスペースを確認できませんでした。Notion APIが有効なPATを使用してください。": {
+    "en": "Could not verify the PAT’s workspace. Use a PAT with Notion API access enabled.",
+    "ko": "PAT의 워크스페이스를 확인하지 못했습니다. Notion API가 활성화된 PAT를 사용하세요."
+  },
+  "ワークスペース（{0}）": {
+    "en": "Workspace ({0})",
+    "ko": "워크스페이스({0})"
+  },
+  "PATの所有者": {
+    "en": "PAT owner",
+    "ko": "PAT 소유자"
+  },
+  "このデータベースは作成中です": {
+    "en": "This database is being created",
+    "ko": "이 데이터베이스를 생성 중입니다"
+  },
+  "PATのワークスペースまたは所有者が、確認した作成先と一致しません。作成を中止しました。": {
+    "en": "The PAT workspace or owner does not match the confirmed destination. Creation stopped.",
+    "ko": "PAT의 워크스페이스 또는 소유자가 확인한 대상과 일치하지 않아 생성을 중지했습니다."
+  },
+  "ページ名は1〜100文字で入力してください": {
+    "en": "Enter a page name between 1 and 100 characters",
+    "ko": "페이지 이름은 1~100자로 입력하세요"
+  },
+  "{0}の作成を完了できませんでした。作成済みの内容は保存されています。\n{1}": {
+    "en": "Could not finish creating {0}. Completed work has been saved.\n{1}",
+    "ko": "{0} 생성을 완료하지 못했습니다. 생성된 내용은 저장되었습니다.\n{1}"
+  },
+  "作成結果のIDを確認できませんでした": {
+    "en": "Could not verify the created object’s ID",
+    "ko": "생성 결과의 ID를 확인하지 못했습니다"
+  },
+  "作成したDBのデータソースを確認できませんでした": {
+    "en": "Could not verify the new database’s data source",
+    "ko": "생성된 DB의 데이터 소스를 확인하지 못했습니다"
+  },
+  "DBの作成先が一致しません": {
+    "en": "Database destination does not match",
+    "ko": "DB 생성 위치가 일치하지 않습니다"
+  },
+  "作成先のプライベートページを確認できませんでした": {
+    "en": "Could not verify the private destination page",
+    "ko": "대상 비공개 페이지를 확인하지 못했습니다"
+  },
+  "カテゴリDBのName・Orderを確認できませんでした": {
+    "en": "Could not verify Name and Order in the Categories database",
+    "ko": "카테고리 DB의 Name과 Order를 확인하지 못했습니다"
+  },
+  "リンクDBの{0}を確認できませんでした": {
+    "en": "Could not verify {0} in the Links database",
+    "ko": "링크 DB의 {0}을(를) 확인하지 못했습니다"
+  },
+  "Categoryのリレーション先が作成したカテゴリDBと一致しません": {
+    "en": "The Category relation does not point to the created Categories database",
+    "ko": "Category 관계가 생성한 카테고리 DB를 가리키지 않습니다"
+  },
+  "DBの親ページまたはデータソースが一致しません": {
+    "en": "Database parent page or data source does not match",
+    "ko": "DB 상위 페이지 또는 데이터 소스가 일치하지 않습니다"
+  },
+  "タブDBの{0}を確認できませんでした": {
+    "en": "Could not verify {0} in the Tabs database",
+    "ko": "탭 DB의 {0}을(를) 확인하지 못했습니다"
+  },
+  "設定用カテゴリを確認できませんでした": {
+    "en": "Could not verify the settings category",
+    "ko": "설정 카테고리를 확인하지 못했습니다"
+  },
+  "設定用リンクとカテゴリの紐付けを確認できませんでした": {
+    "en": "Could not verify the settings link’s category relation",
+    "ko": "설정 링크와 카테고리 연결을 확인하지 못했습니다"
+  },
+  "親ページの作成記録がありません": {
+    "en": "No parent page creation record",
+    "ko": "상위 페이지 생성 기록이 없습니다"
+  },
+  "DBの作成記録がありません": {
+    "en": "No database creation record",
+    "ko": "DB 생성 기록이 없습니다"
+  },
+  "{0}の作成結果を一意に確認できません。重複作成を避けるため停止しています。少し待って再開してください。": {
+    "en": "Could not uniquely verify creation of {0}. Stopped to avoid duplicates. Wait a moment and resume.",
+    "ko": "{0} 생성 결과를 하나로 확인할 수 없습니다. 중복 생성을 방지하기 위해 중지했습니다. 잠시 후 재개하세요."
+  },
+  "Notion設定が読めません。元ファイルを保持しています。": {
+    "en": "Could not read Notion settings. The original file is kept.",
+    "ko": "Notion 설정을 읽지 못했습니다. 원본 파일은 유지됩니다."
+  },
+  "Notion設定を読めないため保存を停止しています。元ファイルを確認してください。": {
+    "en": "Saving is paused because Notion settings could not be read. Check the original file.",
+    "ko": "Notion 설정을 읽지 못해 저장을 중지했습니다. 원본 파일을 확인하세요."
+  },
+  "Notion設定を保存できません：": {
+    "en": "Could not save Notion settings: ",
+    "ko": "Notion 설정을 저장하지 못했습니다: "
+  },
+  "PATにアクセスできません。「PATを更新」から設定してください。": {
+    "en": "Cannot access the PAT. Set it using “Update PAT”.",
+    "ko": "PAT에 접근할 수 없습니다. ‘PAT 업데이트’에서 설정하세요."
+  },
+  "PATがありません。設定の「PATを更新」から保存してください。": {
+    "en": "No PAT found. Save one using “Update PAT” in Settings.",
+    "ko": "PAT가 없습니다. 설정의 ‘PAT 업데이트’에서 저장하세요."
+  },
+  "URL型のURLプロパティがありません": {
+    "en": "No URL property of type URL found",
+    "ko": "URL 형식의 URL 속성이 없습니다"
+  },
+  "PATを入力してください": {
+    "en": "Enter a PAT",
+    "ko": "PAT를 입력하세요"
+  },
+  "プライベートにLinks・Categories・Tabsを作成しました。Notion保存をオンにして使えます。": {
+    "en": "Created private Links, Categories and Tabs databases. Enable Notion storage to use them.",
+    "ko": "비공개 영역에 Links, Categories, Tabs를 만들었습니다. Notion 저장을 켜서 사용하세요."
+  },
+  "Notion保存をオンにしてください。": {
+    "en": "Enable Notion storage.",
+    "ko": "Notion 저장을 켜세요."
+  },
+  "Notionと同期しました（{0}件）": {
+    "en": "Synced with Notion ({0} items)",
+    "ko": "Notion과 동기화했습니다({0}개)"
+  },
+  "保存先のDBがありません": {
+    "en": "Destination database not found",
+    "ko": "저장할 DB가 없습니다"
+  },
+  "同じIDのリンクが複数あります。Notionで確認してください。": {
+    "en": "Multiple links share the same ID. Check them in Notion.",
+    "ko": "같은 ID의 링크가 여러 개 있습니다. Notion에서 확인하세요."
+  },
+  "前回の作成結果を確認できません。二重作成を防ぐため停止しています。NotionのDBを確認してください。": {
+    "en": "Could not verify the previous creation result. Stopped to prevent duplicates. Check the database in Notion.",
+    "ko": "이전 생성 결과를 확인할 수 없어 중복 생성을 방지하기 위해 중지했습니다. Notion DB를 확인하세요."
+  },
+  "リンクの保存先が変わりました。同期し直してください。": {
+    "en": "The link’s destination changed. Sync again.",
+    "ko": "링크 저장 위치가 변경되었습니다. 다시 동기화하세요."
+  },
+  "Notion側でも変更されています。「Notionの内容を採用」してから編集し直してください。": {
+    "en": "This item also changed in Notion. Choose “Use Notion version” before editing again.",
+    "ko": "Notion에서도 변경되었습니다. ‘Notion 내용 사용’을 선택한 뒤 다시 편집하세요."
+  },
+  "{0}はテキスト型が必要です。": {
+    "en": "{0} must be a text property.",
+    "ko": "{0}은(는) 텍스트형이어야 합니다."
+  },
+  "タイトルプロパティがありません": {
+    "en": "Title property not found",
+    "ko": "제목 속성이 없습니다"
+  },
+  "同名カテゴリが複数あります。Notionで整理してください。": {
+    "en": "Multiple categories have the same name. Resolve them in Notion.",
+    "ko": "같은 이름의 카테고리가 여러 개 있습니다. Notion에서 정리하세요."
+  },
+  "カテゴリのタイトルがありません": {
+    "en": "Category title not found",
+    "ko": "카테고리 제목이 없습니다"
+  },
+  "保存結果を確認できませんでした": {
+    "en": "Could not verify the save result",
+    "ko": "저장 결과를 확인하지 못했습니다"
+  },
+  "元のブラウザの設定を読み込めませんでした。": {
+    "en": "Could not read the previous browser settings.",
+    "ko": "이전 브라우저 설정을 읽지 못했습니다."
+  },
+  "元のブラウザを確認できません。システム設定で既定のブラウザを選んでください。": {
+    "en": "Could not identify the previous browser. Choose a default browser in System Settings.",
+    "ko": "이전 브라우저를 확인하지 못했습니다. 시스템 설정에서 기본 브라우저를 선택하세요."
+  },
+  "元のブラウザを復元する情報がありません。システム設定で一度別のブラウザを選んでください。": {
+    "en": "No information to restore the previous browser. Choose another browser in System Settings first.",
+    "ko": "이전 브라우저를 복원할 정보가 없습니다. 먼저 시스템 설정에서 다른 브라우저를 선택하세요."
+  },
+  "既定のブラウザの変更が反映されませんでした。": {
+    "en": "The default browser change did not take effect.",
+    "ko": "기본 브라우저 변경이 적용되지 않았습니다."
+  },
+  "変更を完了できず、元のブラウザへの復元も完了していません。オフを再実行するか、システム設定で既定のブラウザを選んでください。": {
+    "en": "The change and restoration both failed. Turn this off again, or choose a default browser in System Settings.",
+    "ko": "변경과 이전 브라우저 복원을 완료하지 못했습니다. 다시 끄거나 시스템 설정에서 기본 브라우저를 선택하세요."
+  },
+  "Notionリンクを受け取る設定にしました。": {
+    "en": "Notion link routing is enabled.",
+    "ko": "Notion 링크 수신을 설정했습니다."
+  },
+  "元のブラウザの情報がありません。システム設定で既定のブラウザを選んでください。": {
+    "en": "Previous browser information is missing. Choose a default browser in System Settings.",
+    "ko": "이전 브라우저 정보가 없습니다. 시스템 설정에서 기본 브라우저를 선택하세요."
+  },
+  "元のブラウザが見つかりません。システム設定で既定のブラウザを選んでください。": {
+    "en": "Previous browser not found. Choose a default browser in System Settings.",
+    "ko": "이전 브라우저를 찾을 수 없습니다. 시스템 설정에서 기본 브라우저를 선택하세요."
+  },
+  "元のブラウザへの復元を確認できません。": {
+    "en": "Could not confirm restoration of the previous browser.",
+    "ko": "이전 브라우저로 복원되었는지 확인할 수 없습니다."
+  },
+  "元のブラウザに戻しました。": {
+    "en": "Previous browser restored.",
+    "ko": "이전 브라우저로 복원했습니다."
+  },
+  "リンクの転送先ブラウザが見つかりません。設定 → リンクの受け取りを確認してください。": {
+    "en": "Forwarding browser not found. Check Settings → Link routing.",
+    "ko": "링크를 전달할 브라우저를 찾지 못했습니다. 설정 → 링크 수신을 확인하세요."
+  },
+  "NotionのWebリンクをWorkspace Tabsで開く": {
+    "en": "Open Notion web links in Workspace Tabs",
+    "ko": "Notion 웹 링크를 Workspace Tabs에서 열기"
+  },
+  "macOSの設定を変更中…": {
+    "en": "Changing macOS settings…",
+    "ko": "macOS 설정 변경 중…"
+  },
+  "オンにすると、このMacの既定のブラウザをWorkspace Tabsに変更します。Notionのリンクはこのアプリで開き、それ以外のWebリンクは変更前のブラウザへ渡します。オフにすると元のブラウザへ戻します。": {
+    "en": "Enabling this makes Workspace Tabs the default browser on this Mac. Notion links open here; other web links go to your previous browser. Disabling restores the previous browser.",
+    "ko": "켜면 Workspace Tabs가 이 Mac의 기본 브라우저가 됩니다. Notion 링크는 이 앱에서 열고 나머지는 이전 브라우저로 전달합니다. 끄면 이전 브라우저로 복원합니다."
+  },
+  "Notion専用アプリを直接指定するリンクや、サイト側の「アプリで開く」は、この設定だけでは置き換えられない場合があります。": {
+    "en": "Links that explicitly target a Notion app, or a site’s “Open in app” action, may not be replaced by this setting alone.",
+    "ko": "Notion 전용 앱을 직접 지정하는 링크나 사이트의 ‘앱에서 열기’는 이 설정만으로 대체하지 못할 수 있습니다."
+  },
+  "/ApplicationsにインストールしたWorkspace Tabsから設定してください。": {
+    "en": "Configure this from Workspace Tabs installed in /Applications.",
+    "ko": "/Applications에 설치된 Workspace Tabs에서 설정하세요."
+  },
+  "現在の設定を確認": {
+    "en": "Check current settings",
+    "ko": "현재 설정 확인"
+  },
+  "リンクの受け取り": {
+    "en": "Link routing",
+    "ko": "링크 수신"
+  },
+  "初期状態ではOSの既定アプリを変更しません。macOSから確認が表示された場合は、内容を確認して選択してください。": {
+    "en": "The OS default app is unchanged initially. If macOS shows a confirmation, review it before choosing.",
+    "ko": "초기 상태에서는 OS 기본 앱을 변경하지 않습니다. macOS 확인창이 나타나면 내용을 확인하고 선택하세요."
+  },
+  "Notionと同期": {
+    "en": "Sync with Notion",
+    "ko": "Notion과 동기화"
+  },
+  "同期中…": {
+    "en": "Syncing…",
+    "ko": "동기화 중…"
+  },
+  "1時間ごとに自動同期": {
+    "en": "Automatically sync every hour",
+    "ko": "1시간마다 자동 동기화"
+  },
+  "このMacに保存": {
+    "en": "Saved on this Mac",
+    "ko": "이 Mac에 저장"
+  },
+  "今すぐ同期": {
+    "en": "Sync now",
+    "ko": "지금 동기화"
+  },
+  "詳細": {
+    "en": "Details",
+    "ko": "세부 정보"
+  },
+  "お気に入りの保存先": {
+    "en": "Favorites storage",
+    "ko": "즐겨찾기 저장 위치"
+  },
+  "Notionは未接続です。": {
+    "en": "Notion is not connected.",
+    "ko": "Notion이 연결되지 않았습니다."
+  },
+  "Notionで開く": {
+    "en": "Open in Notion",
+    "ko": "Notion에서 열기"
+  },
+  "Notionに接続…": {
+    "en": "Connect Notion…",
+    "ko": "Notion 연결…"
+  },
+  "接続を管理…": {
+    "en": "Manage connections…",
+    "ko": "연결 관리…"
+  },
+  "送信待ち・競合": {
+    "en": "Pending changes and conflicts",
+    "ko": "전송 대기 및 충돌"
+  },
+  "送信待ち": {
+    "en": "Pending upload",
+    "ko": "전송 대기"
+  },
+  "Notionの内容を採用（この変更を取り消す）": {
+    "en": "Use Notion version (discard this change)",
+    "ko": "Notion 내용 사용(이 변경 취소)"
+  },
+  "保存したタブへ戻しますか？": {
+    "en": "Restore saved tabs?",
+    "ko": "저장한 탭으로 복원하시겠습니까?"
+  },
+  "タブを復元": {
+    "en": "Restore tabs",
+    "ko": "탭 복원"
+  },
+  "タブを復元しました。": {
+    "en": "Tabs restored.",
+    "ko": "탭을 복원했습니다."
+  },
+  "現在のタブを置き換えます。未送信の入力は失われます。お気に入りは保持します。別のMacではサイトへの再ログインが必要です。": {
+    "en": "Current tabs will be replaced and unsent input lost. Favorites are kept. On another Mac, you will need to sign in again.",
+    "ko": "현재 탭을 교체하며 미전송 입력은 사라집니다. 즐겨찾기는 유지됩니다. 다른 Mac에서는 다시 로그인해야 합니다."
+  },
+  "Notion接続": {
+    "en": "Notion connections",
+    "ko": "Notion 연결"
+  },
+  "接続済み": {
+    "en": "Connected",
+    "ko": "연결됨"
+  },
+  "接続を確認": {
+    "en": "Check connection",
+    "ko": "연결 확인"
+  },
+  "接続できました（{0}件）。": {
+    "en": "Connected ({0} items).",
+    "ko": "연결되었습니다({0}개)."
+  },
+  "接続を追加・変更": {
+    "en": "Add or update a connection",
+    "ko": "연결 추가 및 변경"
+  },
+  "接続方法": {
+    "en": "Connection method",
+    "ko": "연결 방법"
+  },
+  "既存DB": {
+    "en": "Existing DB",
+    "ko": "기존 DB"
+  },
+  "新しく作成": {
+    "en": "Create new",
+    "ko": "새로 만들기"
+  },
+  "PATを更新": {
+    "en": "Update PAT",
+    "ko": "PAT 업데이트"
+  },
+  "PATはこのMacのキーチェーンに保存します。": {
+    "en": "The PAT is stored in this Mac’s Keychain.",
+    "ko": "PAT는 이 Mac의 키체인에 저장됩니다."
+  },
+  "接続名": {
+    "en": "Connection name",
+    "ko": "연결 이름"
+  },
+  "NotionデータベースURL": {
+    "en": "Notion database URL",
+    "ko": "Notion 데이터베이스 URL"
+  },
+  "接続を確認して追加": {
+    "en": "Verify and add connection",
+    "ko": "연결 확인 후 추가"
+  },
+  "DBを接続しました。Notion保存をオンにすると同期します。": {
+    "en": "Database connected. Enable Notion storage to sync.",
+    "ko": "DB를 연결했습니다. Notion 저장을 켜면 동기화됩니다."
+  },
+  "親ページ名": {
+    "en": "Parent page name",
+    "ko": "상위 페이지 이름"
+  },
+  "プライベートに、お気に入り・カテゴリ・タブの保存先を作ります。": {
+    "en": "Create private storage for favorites, categories and tabs.",
+    "ko": "비공개 영역에 즐겨찾기, 카테고리, 탭 저장 위치를 만듭니다."
+  },
+  "PATの作成先を確認": {
+    "en": "Check PAT destination",
+    "ko": "PAT 생성 위치 확인"
+  },
+  "作成先：{0} / {1} のプライベート": {
+    "en": "Destination: Private space of {1} in {0}",
+    "ko": "생성 위치: {0} / {1}의 비공개 영역"
+  },
+  "このプライベート領域に作成": {
+    "en": "Create in this private space",
+    "ko": "이 비공개 영역에 만들기"
+  },
+  "再開": {
+    "en": "Resume",
+    "ko": "재개"
+  },
+  "更新する接続": {
+    "en": "Connection to update",
+    "ko": "업데이트할 연결"
+  },
+  "PATを確認して更新": {
+    "en": "Verify and update PAT",
+    "ko": "PAT 확인 후 업데이트"
+  },
+  "PATを更新しました。": {
+    "en": "PAT updated.",
+    "ko": "PAT를 업데이트했습니다."
+  },
+  "タブのバックアップ": {
+    "en": "Tab backups",
+    "ko": "탭 백업"
+  },
+  "このMacのタブをNotionにも保存": {
+    "en": "Also save this Mac’s tabs to Notion",
+    "ko": "이 Mac의 탭을 Notion에도 저장"
+  },
+  "開いているブラウザタブも含める": {
+    "en": "Include open browser tabs",
+    "ko": "열린 브라우저 탭도 포함"
+  },
+  "Macごとに保存します。ログイン情報は含みません。": {
+    "en": "Saved separately for each Mac. Login data is not included.",
+    "ko": "Mac별로 저장합니다. 로그인 정보는 포함하지 않습니다."
+  },
+  "既存のTabs DBに接続": {
+    "en": "Connect an existing Tabs DB",
+    "ko": "기존 Tabs DB에 연결"
+  },
+  "Tabs DBのURL": {
+    "en": "Tabs DB URL",
+    "ko": "Tabs DB URL"
+  },
+  "接続": {
+    "en": "Connect",
+    "ko": "연결"
+  },
+  "Tabs DBに接続しました。": {
+    "en": "Connected to Tabs DB.",
+    "ko": "Tabs DB에 연결했습니다."
+  },
+  "タブを今すぐ保存": {
+    "en": "Save tabs now",
+    "ko": "지금 탭 저장"
+  },
+  "タブをNotionに保存しました。": {
+    "en": "Tabs saved to Notion.",
+    "ko": "탭을 Notion에 저장했습니다."
+  },
+  "保存済みのタブを表示": {
+    "en": "Show saved tabs",
+    "ko": "저장된 탭 표시"
+  },
+  "復元…": {
+    "en": "Restore…",
+    "ko": "복원…"
+  },
+  "PATをキーチェーンに保存できません（{0}）": {
+    "en": "Could not save PAT to Keychain ({0})",
+    "ko": "PAT를 키체인에 저장하지 못했습니다({0})"
+  },
+  "キーチェーンを更新できません（{0}）": {
+    "en": "Could not update Keychain ({0})",
+    "ko": "키체인을 업데이트하지 못했습니다({0})"
+  },
+  "TabsデータベースのURLを入力してください": {
+    "en": "Enter the Tabs database URL",
+    "ko": "Tabs 데이터베이스 URL을 입력하세요"
+  },
+  "データソースIDを直接入力してください": {
+    "en": "Enter the data source ID directly",
+    "ko": "데이터 소스 ID를 직접 입력하세요"
+  },
+  "Tabs DBには{0}型の「{1}」が必要です。新規セットアップで自動作成できます。": {
+    "en": "Tabs DB requires “{1}” of type {0}. A new setup can create it automatically.",
+    "ko": "Tabs DB에 {0} 형식의 ‘{1}’이(가) 필요합니다. 새 설정에서 자동 생성할 수 있습니다."
+  },
+  "タブ保存用のDBを設定してください": {
+    "en": "Configure a database for tab storage",
+    "ko": "탭 저장용 DB를 설정하세요"
+  },
+  "タブ情報が保存上限160KBを超えました。画像やタブを減らしてください。": {
+    "en": "Tab data exceeds the 160 KB limit. Reduce images or tabs.",
+    "ko": "탭 정보가 저장 한도인 160KB를 초과했습니다. 이미지나 탭을 줄이세요."
+  },
+  "同じMacの保存行が複数あります。Notionで確認してください。": {
+    "en": "Multiple saved rows exist for this Mac. Check them in Notion.",
+    "ko": "같은 Mac의 저장 행이 여러 개 있습니다. Notion에서 확인하세요."
+  },
+  "タブ保存行の作成結果が不明です。重複作成を避けて停止しました。": {
+    "en": "The result of creating the tab row is unknown. Stopped to avoid duplicates.",
+    "ko": "탭 저장 행 생성 결과를 알 수 없어 중복 생성을 방지하기 위해 중지했습니다."
+  },
+  "タブの保存行が移動・削除されています。DBを接続し直してください。": {
+    "en": "The tab storage row was moved or deleted. Reconnect the database.",
+    "ko": "탭 저장 행이 이동되거나 삭제되었습니다. DB를 다시 연결하세요."
+  },
+  "タブ情報がNotionの保存上限を超えました。": {
+    "en": "Tab data exceeds Notion’s storage limit.",
+    "ko": "탭 정보가 Notion 저장 한도를 초과했습니다."
+  },
+  "タブの保存結果が確認できません": {
+    "en": "Could not verify tab storage",
+    "ko": "탭 저장 결과를 확인하지 못했습니다"
+  },
+  "Tabs DBを接続してください": {
+    "en": "Connect a Tabs DB",
+    "ko": "Tabs DB를 연결하세요"
+  },
+  "保存先が一致しません": {
+    "en": "Storage destination does not match",
+    "ko": "저장 위치가 일치하지 않습니다"
+  },
+  "保存データが不正です": {
+    "en": "Invalid saved data",
+    "ko": "저장 데이터가 잘못되었습니다"
+  },
+  "ページを読み込み中": {
+    "en": "Loading page",
+    "ko": "페이지 불러오는 중"
+  },
+  "アプリタブ": {
+    "en": "App tabs",
+    "ko": "앱 탭"
+  },
+  "開く先が未設定": {
+    "en": "No destination set",
+    "ko": "열 대상 미설정"
+  },
+  "作業セットを開く": {
+    "en": "Open workset",
+    "ko": "작업 세트 열기"
+  },
+  "ダイアログを閉じてからリンクを開いてください": {
+    "en": "Close the dialog before opening a link",
+    "ko": "대화상자를 닫은 후 링크를 여세요"
+  },
+  "開いているダイアログを閉じてから再実行してください": {
+    "en": "Close the open dialog and try again",
+    "ko": "열린 대화상자를 닫고 다시 실행하세요"
+  },
+  "アプリタブが見つかりません": {
+    "en": "App tab not found",
+    "ko": "앱 탭을 찾지 못했습니다"
+  },
+  "タブは閉じられています": {
+    "en": "This tab is closed",
+    "ko": "탭이 닫혀 있습니다"
+  },
+  "お気に入りが見つかりません": {
+    "en": "Favorite not found",
+    "ko": "즐겨찾기를 찾지 못했습니다"
+  },
+  "新しいブラウザタブ": {
+    "en": "New browser tab",
+    "ko": "새 브라우저 탭"
+  },
+  "閉じたタブを戻す": {
+    "en": "Reopen closed tab",
+    "ko": "닫은 탭 다시 열기"
+  },
+  "URLを入力": {
+    "en": "Enter URL",
+    "ko": "URL 입력"
+  },
+  "現在のURLをコピー": {
+    "en": "Copy current URL",
+    "ko": "현재 URL 복사"
+  },
+  "ブラウザを表示": {
+    "en": "Show browser",
+    "ko": "브라우저 표시"
+  },
+  "フルスクリーンを切り替える": {
+    "en": "Toggle full screen",
+    "ko": "전체 화면 전환"
+  },
+  "最近使ったタブを切り替える": {
+    "en": "Switch recent tabs",
+    "ko": "최근 탭 전환"
+  },
+  "Notionで作成…": {
+    "en": "Create in Notion…",
+    "ko": "Notion에서 만들기…"
+  },
+  "コマンドを検索": {
+    "en": "Search commands",
+    "ko": "명령 검색"
+  },
+  "直前のアプリタブ": {
+    "en": "Last app tab",
+    "ko": "직전 앱 탭"
+  },
+  "前のブラウザタブ": {
+    "en": "Previous browser tab",
+    "ko": "이전 브라우저 탭"
+  },
+  "次のブラウザタブ": {
+    "en": "Next browser tab",
+    "ko": "다음 브라우저 탭"
+  },
+  "HOMEを新しいタブで開く": {
+    "en": "Open Home in a new tab",
+    "ko": "새 탭에서 홈 열기"
+  },
+  "Splitの操作対象を切り替える": {
+    "en": "Switch active split pane",
+    "ko": "Split 조작 대상 전환"
+  },
+  "Split Viewを開始・解除": {
+    "en": "Toggle Split View",
+    "ko": "Split View 시작·해제"
+  },
+  "お気に入りに追加": {
+    "en": "Add to favorites",
+    "ko": "즐겨찾기에 추가"
+  },
+  "タイトル付きリンクをコピー": {
+    "en": "Copy link with title",
+    "ko": "제목이 포함된 링크 복사"
+  },
+  "Notion：新規AIチャット": {
+    "en": "Notion: New AI chat",
+    "ko": "Notion: 새 AI 채팅"
+  },
+  "Notion：新規ページ": {
+    "en": "Notion: New page",
+    "ko": "Notion: 새 페이지"
+  },
+  "Notion：新規ミーティングノート": {
+    "en": "Notion: New meeting note",
+    "ko": "Notion: 새 회의록"
+  },
+  "Notion内を検索": {
+    "en": "Search in Notion",
+    "ko": "Notion에서 검색"
+  },
+  "Notion：設定を開く": {
+    "en": "Notion: Open settings",
+    "ko": "Notion: 설정 열기"
+  },
+  "前のアプリタブ": {
+    "en": "Previous app tab",
+    "ko": "이전 앱 탭"
+  },
+  "次のアプリタブ": {
+    "en": "Next app tab",
+    "ko": "다음 앱 탭"
+  },
+  "すべてのタブを検索": {
+    "en": "Search all tabs",
+    "ko": "모든 탭 검색"
+  },
+  "アプリタブ {0}": {
+    "en": "App tab {0}",
+    "ko": "앱 탭 {0}"
+  },
+  "1〜4ストロークを記録してください。": {
+    "en": "Record 1–4 keystrokes.",
+    "ko": "키 입력을 1~4회 기록하세요."
+  },
+  "修飾キー単独は2回以上の連続入力にしてください。": {
+    "en": "Modifier-only shortcuts need at least two strokes.",
+    "ko": "보조 키만 사용할 때는 2회 이상 연속 입력하세요."
+  },
+  "Command・Control・Optionのいずれかを含めてください。": {
+    "en": "Include Command, Control or Option.",
+    "ko": "Command, Control, Option 중 하나를 포함하세요."
+  },
+  "macOS標準の編集・非表示操作に使われています。": {
+    "en": "Reserved for macOS editing or hiding commands.",
+    "ko": "macOS의 기본 편집 또는 숨기기 작업에 사용됩니다."
+  },
+  "他アプリでも使う連続入力は、⌘ → ⌘など修飾キーだけで登録してください。": {
+    "en": "For sequences used across apps, use only modifier keys, such as ⌘ → ⌘.",
+    "ko": "다른 앱에서도 사용할 연속 입력은 ⌘ → ⌘처럼 보조 키만 등록하세요."
+  },
+  "「{0}」と重複するか、同じ入力で始まっています。": {
+    "en": "This overlaps with “{0}” or shares its starting sequence.",
+    "ko": "‘{0}’과(와) 중복되거나 같은 입력으로 시작합니다."
+  },
+  "⌘・⌃・⌥から1つ以上選んでください。": {
+    "en": "Choose at least one of ⌘, ⌃ or ⌥.",
+    "ko": "⌘, ⌃, ⌥ 중 하나 이상 선택하세요."
+  },
+  "「{0}」と重複しています。変更は適用していません。": {
+    "en": "Conflicts with “{0}”. No changes were applied.",
+    "ko": "‘{0}’과(와) 중복되어 변경을 적용하지 않았습니다."
+  },
+  "記録を押し、キーを入力して登録します。同時押し・⌘ → ⌘などの連続入力（最大4回）に対応。実行時は各入力を1.2秒以内に続けます。Escでキャンセル。": {
+    "en": "Click Record and press your keys. Supports combinations and sequences such as ⌘ → ⌘ (up to 4 strokes). During use, enter each stroke within 1.2 seconds. Esc cancels.",
+    "ko": "기록을 누르고 키를 입력하세요. 동시 입력과 ⌘ → ⌘ 같은 연속 입력(최대 4회)을 지원합니다. 실행 시 각 입력을 1.2초 이내에 이어서 누르세요. Esc로 취소합니다."
+  },
+  "アプリタブ切替と検索は他アプリでも有効です。他アプリでの連続入力にはmacOSのアクセシビリティ許可が必要です。": {
+    "en": "App tab switching and search work across apps. Global sequences require macOS Accessibility permission.",
+    "ko": "앱 탭 전환과 검색은 다른 앱에서도 작동합니다. 전역 연속 입력에는 macOS 손쉬운 사용 권한이 필요합니다."
+  },
+  "キーを押してください…": {
+    "en": "Press keys…",
+    "ko": "키를 누르세요…"
+  },
+  "やり直す": {
+    "en": "Start over",
+    "ko": "다시 기록"
+  },
+  "登録": {
+    "en": "Register",
+    "ko": "등록"
+  },
+  "数字でアプリタブを開く": {
+    "en": "Open app tabs by number",
+    "ko": "숫자로 앱 탭 열기"
+  },
+  "現在はタブごとに個別設定": {
+    "en": "Currently customized per tab",
+    "ko": "현재 탭별로 개별 설정됨"
+  },
+  "適用": {
+    "en": "Apply",
+    "ko": "적용"
+  },
+  "初期値に戻す": {
+    "en": "Reset to defaults",
+    "ko": "기본값으로 초기화"
+  },
+  "選んだキー ＋ 1〜9（並び順）": {
+    "en": "Selected keys + 1–9 (in tab order)",
+    "ko": "선택한 키 + 1~9(탭 순서)"
+  },
+  "アプリタブの切り替え": {
+    "en": "Switch app tabs",
+    "ko": "앱 탭 전환"
+  },
+  "その他": {
+    "en": "Other",
+    "ko": "기타"
+  },
+  "記録": {
+    "en": "Record",
+    "ko": "기록"
+  },
+  "この操作だけ初期値に戻す": {
+    "en": "Reset only this action",
+    "ko": "이 작업만 기본값으로 초기화"
+  },
+  "をリセット": {
+    "en": " reset",
+    "ko": " 초기화"
+  },
+  "最大4ストロークです。「やり直す」で再記録できます。": {
+    "en": "Maximum of 4 strokes. Choose “Start over” to record again.",
+    "ko": "최대 4회까지 입력할 수 있습니다. ‘다시 기록’으로 재입력하세요."
+  },
+  "切り替え先のタブはありません": {
+    "en": "No tab to switch to",
+    "ko": "전환할 탭이 없습니다"
+  },
+  "最近使ったタブ": {
+    "en": "Recent tabs",
+    "ko": "최근 탭"
+  },
+  "Tab / ↑↓で選択・修飾キーを離すかEnterで移動・Escでキャンセル": {
+    "en": "Tab / ↑↓ select · Release modifier or Enter to switch · Esc cancel",
+    "ko": "Tab / ↑↓ 선택 · 보조 키 놓기 또는 Enter로 이동 · Esc 취소"
+  },
+  "作業セットを保存できませんでした: ": {
+    "en": "Could not save workset: ",
+    "ko": "작업 세트를 저장하지 못했습니다: "
+  },
+  "作業セットを保存しました": {
+    "en": "Workset saved",
+    "ko": "작업 세트를 저장했습니다"
+  },
+  "保存時のアプリタブまたはログイン環境が見つかりません。別の環境では開きません": {
+    "en": "The original app tab or login profile is missing. It will not open in a different profile.",
+    "ko": "저장 당시의 앱 탭 또는 로그인 환경을 찾지 못했습니다. 다른 환경에서는 열지 않습니다."
+  },
+  "作業セットを開きました": {
+    "en": "Workset opened",
+    "ko": "작업 세트를 열었습니다"
+  },
+  "この履歴に戻しますか？": {
+    "en": "Restore this history entry?",
+    "ko": "이 기록으로 복원하시겠습니까?"
+  },
+  "現在のタブを閉じて復元します。未送信の入力は失われます。現在の構成は復元前に保存します。": {
+    "en": "Current tabs will close and be restored. Unsent input will be lost. The current layout is saved before restoring.",
+    "ko": "현재 탭을 닫고 복원합니다. 미전송 입력은 사라집니다. 현재 구성은 복원 전에 저장합니다."
+  },
+  "復元": {
+    "en": "Restore",
+    "ko": "복원"
+  },
+  "履歴を復元しました": {
+    "en": "History restored",
+    "ko": "기록을 복원했습니다"
+  },
+  "履歴を復元できませんでした: ": {
+    "en": "Could not restore history: ",
+    "ko": "기록을 복원하지 못했습니다: "
+  },
+  "作業セット": {
+    "en": "Worksets",
+    "ko": "작업 세트"
+  },
+  "例：開発、定例会議": {
+    "en": "E.g. Development, Weekly meeting",
+    "ko": "예: 개발, 정기 회의"
+  },
+  "現在のタブを保存": {
+    "en": "Save current tabs",
+    "ko": "현재 탭 저장"
+  },
+  "全アプリタブとSplit Viewの組み合わせを保存します。復元時は現在のタブを残し、同じページを再利用します。": {
+    "en": "Save all app tabs and the Split View layout. Restoring keeps current tabs and reuses matching pages.",
+    "ko": "모든 앱 탭과 Split View 조합을 저장합니다. 복원 시 현재 탭을 유지하고 같은 페이지를 재사용합니다."
+  },
+  "重複しているタブ": {
+    "en": "Duplicate tabs",
+    "ko": "중복 탭"
+  },
+  "お気に入り・外部リンク・作業セットからは既存タブを再利用します。⌘クリックや明示的な新規タブはそのまま作成します。": {
+    "en": "Favorites, external links and worksets reuse existing tabs. ⌘-click and explicit new-tab actions always create a new tab.",
+    "ko": "즐겨찾기, 외부 링크, 작업 세트는 기존 탭을 재사용합니다. ⌘-클릭이나 명시적인 새 탭 작업은 새 탭을 만듭니다."
+  },
+  "重複はありません": {
+    "en": "No duplicates",
+    "ko": "중복이 없습니다"
+  },
+  "リンクを開く": {
+    "en": "Open links",
+    "ko": "링크 열기"
+  },
+  "外部から受け取ったNotionリンクは、URLのワークスペース名や既存タブから開く先を判定します。一意に決まらない場合は環境を選びます。": {
+    "en": "Incoming Notion links are routed using workspace names in URLs or existing tabs. If the destination is ambiguous, choose a profile.",
+    "ko": "외부 Notion 링크는 URL의 워크스페이스 이름이나 기존 탭으로 대상을 판단합니다. 하나로 결정할 수 없으면 환경을 선택합니다."
+  },
+  "既定のブラウザは自動変更しません。Raycastの「Open Notion Link」からURLを渡せます。": {
+    "en": "The default browser is not changed automatically. Pass a URL using Raycast’s “Open Notion Link”.",
+    "ko": "기본 브라우저는 자동으로 변경하지 않습니다. Raycast의 ‘Open Notion Link’로 URL을 전달할 수 있습니다."
+  },
+  "遅延診断": {
+    "en": "Latency diagnostics",
+    "ko": "지연 진단"
+  },
+  "直近200件をメモリに記録します。URL・ページ内容・入力文字は記録しません。配置時間は描画完了、読み込み時間はNotionの同期完了を意味しません。": {
+    "en": "The latest 200 timings are kept in memory. URLs, page contents and typed text are not recorded. Layout time does not mean rendering is complete; load time does not mean Notion sync is complete.",
+    "ko": "최근 200건의 처리 시간을 메모리에 기록합니다. URL, 페이지 내용, 입력 문자는 기록하지 않습니다. 배치 시간은 렌더링 완료를, 로딩 시간은 Notion 동기화 완료를 의미하지 않습니다."
+  },
+  "CSVを書き出す": {
+    "en": "Export CSV",
+    "ko": "CSV 내보내기"
+  },
+  "記録を消す": {
+    "en": "Clear records",
+    "ko": "기록 지우기"
+  },
+  "復元履歴（直近20件）": {
+    "en": "Recovery history (latest 20)",
+    "ko": "복원 기록(최근 20개)"
+  },
+  "通常は5分間隔、設定の読み込み・復元前にも保存します。現在状態の自動保存は継続します。": {
+    "en": "Usually saved every five minutes and before import or restore. Current-state autosave continues.",
+    "ko": "보통 5분마다, 그리고 가져오기·복원 전에 저장합니다. 현재 상태 자동 저장은 계속됩니다."
+  },
+  "履歴を更新": {
+    "en": "Refresh history",
+    "ko": "기록 새로고침"
+  },
+  "{0}タブ": {
+    "en": "{0} tabs",
+    "ko": "탭 {0}개"
+  },
+  "Notionリンクを開く環境": {
+    "en": "Choose a profile for the Notion link",
+    "ko": "Notion 링크를 열 환경"
+  },
+  "URLだけではワークスペースを特定できないため、開く先を選んでください。": {
+    "en": "The URL alone does not identify the workspace. Choose a destination.",
+    "ko": "URL만으로 워크스페이스를 확인할 수 없습니다. 열 대상을 선택하세요."
+  },
+  "Workspace Tabsについて": {
+    "en": "About Workspace Tabs",
+    "ko": "Workspace Tabs 정보"
+  },
+  "Workspace Tabsを隠す": {
+    "en": "Hide Workspace Tabs",
+    "ko": "Workspace Tabs 가리기"
+  },
+  "ファイル": {
+    "en": "File",
+    "ko": "파일"
+  },
+  "編集": {
+    "en": "Edit",
+    "ko": "편집"
+  },
+  "取り消す": {
+    "en": "Undo",
+    "ko": "실행 취소"
+  },
+  "カット": {
+    "en": "Cut",
+    "ko": "잘라내기"
+  },
+  "コピー": {
+    "en": "Copy",
+    "ko": "복사"
+  },
+  "ペースト": {
+    "en": "Paste",
+    "ko": "붙여넣기"
+  },
+  "すべて選択": {
+    "en": "Select All",
+    "ko": "모두 선택"
+  },
+  "ウインドウ": {
+    "en": "Window",
+    "ko": "윈도우"
+  },
+  "操作": {
+    "en": "Actions",
+    "ko": "작업"
+  },
+  "Workspace Tabsを終了しますか？": {
+    "en": "Quit Workspace Tabs?",
+    "ko": "Workspace Tabs를 종료하시겠습니까?"
+  },
+  "タブとログイン環境は保存されます。ページ内の未送信の入力内容は保存されません。": {
+    "en": "Tabs and login profiles will be saved. Unsent input within pages will not be saved.",
+    "ko": "탭과 로그인 환경은 저장됩니다. 페이지의 미전송 입력은 저장되지 않습니다."
+  },
+  "終了": {
+    "en": "Quit",
+    "ko": "종료"
+  },
+  "設定を保存できないため終了を中止しました": {
+    "en": "Quit cancelled because settings could not be saved",
+    "ko": "설정을 저장하지 못해 종료를 취소했습니다"
+  },
+  "接続先がありません": {
+    "en": "No connections",
+    "ko": "연결이 없습니다"
+  },
+  "PATにアクセスできません": {
+    "en": "Cannot access the PAT",
+    "ko": "PAT에 접근할 수 없습니다"
+  },
+  "言語": {
+    "en": "Language",
+    "ko": "언어"
+  },
+  "言語を選ぶ": {
+    "en": "Choose your language",
+    "ko": "언어 선택"
+  },
+  "アプリの表示言語を変更します。Webサイトの言語は変更しません。": {
+    "en": "Changes the app’s interface language. Website languages are unchanged.",
+    "ko": "앱의 표시 언어를 변경합니다. 웹사이트의 언어는 바뀌지 않습니다."
+  },
+  "あとから設定 → 表示で変更できます。": {
+    "en": "You can change this later in Settings → Appearance.",
+    "ko": "나중에 설정 → 표시에서 변경할 수 있습니다."
+  },
+  "タブ": {
+    "en": "Tabs",
+    "ko": "탭"
+  },
+  "設定・保存": {
+    "en": "Settings and storage",
+    "ko": "설정 및 저장"
+  },
+  "ショートカット": {
+    "en": "Shortcuts",
+    "ko": "단축키"
+  },
+  "Notion保存": {
+    "en": "Notion storage",
+    "ko": "Notion 저장"
+  },
+  "作業": {
+    "en": "Work",
+    "ko": "작업"
+  },
+  "診断": {
+    "en": "Diagnostics",
+    "ko": "진단"
+  },
+  "バックアップ": {
+    "en": "Backups",
+    "ko": "백업"
+  },
+  "新規ページ": {
+    "en": "New page",
+    "ko": "새 페이지"
+  },
+  "新規チャット": {
+    "en": "New chat",
+    "ko": "새 채팅"
+  },
+  "新規ミーティングノート": {
+    "en": "New meeting note",
+    "ko": "새 회의록"
+  },
+  "新規データベース": {
+    "en": "New database",
+    "ko": "새 데이터베이스"
+  },
+  "カスタムページ": {
+    "en": "Custom page",
+    "ko": "사용자 지정 페이지"
+  },
+  "{0}を押す": {
+    "en": "Press {0}",
+    "ko": "{0} 누르기"
+  },
+  "Notionのページで実行してください": {
+    "en": "Run this on a Notion page",
+    "ko": "Notion 페이지에서 실행하세요"
+  },
+  "データベースの作成画面を開きました": {
+    "en": "Opened database creation",
+    "ko": "데이터베이스 생성 화면을 열었습니다"
+  },
+  "カスタムページの作成画面を開きました": {
+    "en": "Opened custom page creation",
+    "ko": "사용자 지정 페이지 생성 화면을 열었습니다"
+  },
+  "新しいAIチャットを開きました": {
+    "en": "Opened a new AI chat",
+    "ko": "새 AI 채팅을 열었습니다"
+  },
+  "新規ページの作成画面を開きました": {
+    "en": "Opened page creation",
+    "ko": "새 페이지 생성 화면을 열었습니다"
+  },
+  "Notionの検索を開きました": {
+    "en": "Opened Notion search",
+    "ko": "Notion 검색을 열었습니다"
+  },
+  "Notionの設定を開きました": {
+    "en": "Opened Notion settings",
+    "ko": "Notion 설정을 열었습니다"
+  },
+  "ミーティングノートの作成画面を開きました": {
+    "en": "Opened meeting note creation",
+    "ko": "회의록 생성 화면을 열었습니다"
+  },
+  "未対応のNotion操作です": {
+    "en": "Unsupported Notion action",
+    "ko": "지원하지 않는 Notion 작업입니다"
+  },
+  "操作をキャンセルしました": {
+    "en": "Action cancelled",
+    "ko": "작업을 취소했습니다"
+  },
+  "Notionの本番・開発環境が設定と異なるため作成を中止しました": {
+    "en": "Creation stopped because the Notion production/development environment differs from your settings",
+    "ko": "Notion의 프로덕션·개발 환경이 설정과 달라 생성을 중지했습니다"
+  },
+  "設定と異なるワークスペースのため作成を中止しました": {
+    "en": "Creation stopped because the workspace differs from your settings",
+    "ko": "설정과 다른 워크스페이스여서 생성을 중지했습니다"
+  },
+  "新規AIチャット": {
+    "en": "New AI chat",
+    "ko": "새 AI 채팅"
+  },
+  "Notion検索": {
+    "en": "Notion search",
+    "ko": "Notion 검색"
+  },
+  "Notion設定": {
+    "en": "Notion settings",
+    "ko": "Notion 설정"
+  },
+  "{0}の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください": {
+    "en": "Cannot verify the destination for {0}. Set Home URL to a regular page in the target workspace.",
+    "ko": "{0} 생성 위치를 확인할 수 없습니다. 홈 URL을 대상 워크스페이스의 일반 페이지로 설정하세요."
+  },
+  "{0}のボタンが見つかりません。Notionのサイドバーを表示して再実行してください": {
+    "en": "Cannot find the button for {0}. Show Notion’s sidebar and try again.",
+    "ko": "{0} 버튼을 찾을 수 없습니다. Notion 사이드바를 표시하고 다시 실행하세요."
+  },
+  "メイン": {
+    "en": "Main",
+    "ko": "메인"
+  },
+  "この設定ファイルのバージョン（{0}）には対応していません。": {
+    "en": "Settings file version {0} is not supported.",
+    "ko": "설정 파일 버전 {0}은(는) 지원하지 않습니다."
+  },
+  "設定に重複したグループまたはタブがあります。": {
+    "en": "Settings contain duplicate groups or tabs.",
+    "ko": "설정에 중복된 그룹 또는 탭이 있습니다."
+  },
+  "設定のウインドウ座標が不正です。": {
+    "en": "The saved window coordinates are invalid.",
+    "ko": "저장된 윈도우 좌표가 잘못되었습니다."
+  },
+  "表示言語を変更する": {
+    "en": "Change the interface language",
+    "ko": "표시 언어 변경"
+  },
+  "日本語・英語・韓国語から選べます。": {
+    "en": "Choose Japanese, English or Korean.",
+    "ko": "일본어, 영어, 한국어 중 선택하세요."
+  },
+  "初回ガイドの最初、または設定 → 表示 → 言語から選びます。切り替えはすぐ反映され、再起動後も保持されます。": {
+    "en": "Choose a language at the start of onboarding or in Settings → Appearance → Language. Changes apply immediately and persist after restarting.",
+    "ko": "첫 실행 안내의 시작 화면 또는 설정 → 표시 → 언어에서 선택합니다. 변경은 즉시 반영되며 재시작 후에도 유지됩니다."
+  },
+  "システムはMacの優先言語に従います。対応言語がなければ英語を使います。": {
+    "en": "System follows your Mac’s preferred languages, falling back to English if none are supported.",
+    "ko": "시스템은 Mac의 선호 언어를 따르며 지원 언어가 없으면 영어를 사용합니다."
+  },
+  "言語を変えてもページは再読み込みしません。サイトの言語、ログイン状態、自分で付けた名前は変更しません。macOSの権限確認などはOSの言語設定に従います。": {
+    "en": "Changing language does not reload pages or change website languages, login state or your custom names. macOS permission prompts follow the OS language settings.",
+    "ko": "언어를 변경해도 페이지를 새로고침하거나 사이트 언어, 로그인 상태, 직접 지정한 이름을 바꾸지 않습니다. macOS 권한 확인은 OS 언어 설정을 따릅니다."
+  },
+  "保存しました：{0}": {
+    "en": "Saved: {0}",
+    "ko": "저장했습니다: {0}"
+  },
+  "ダウンロードできませんでした：{0}": {
+    "en": "Download failed: {0}",
+    "ko": "다운로드하지 못했습니다: {0}"
+  },
+  "ファイルをダウンロードする": {
+    "en": "Download files",
+    "ko": "파일 다운로드"
+  },
+  "保存先を選び、元のページで作業を続けます。": {
+    "en": "Choose where to save and keep working on the original page.",
+    "ko": "저장 위치를 선택하고 원래 페이지에서 작업을 계속합니다."
+  },
+  "ページのダウンロードリンクを開き、保存画面で名前と保存先を選びます。キャンセルしても元のページはそのままです。": {
+    "en": "Open a download link and choose a name and location in the save dialog. Canceling leaves the original page unchanged.",
+    "ko": "페이지의 다운로드 링크를 열고 저장 대화상자에서 이름과 저장 위치를 선택합니다. 취소해도 원래 페이지는 그대로 유지됩니다."
+  },
+  "元のタブを閉じても転送は続き、完了・失敗を通知します。アプリを終了すると進行中の転送は中止されます。": {
+    "en": "Transfers continue after the source tab closes, with a notification on completion or failure. Quitting the app cancels ongoing transfers.",
+    "ko": "원래 탭을 닫아도 전송은 계속되며 완료 또는 실패 시 알림이 표시됩니다. 앱을 종료하면 진행 중인 전송이 중단됩니다."
+  },
+  "既存ファイルへの上書きはダウンロード完了後に行います。通信に失敗した場合は元のファイルを残します。": {
+    "en": "Existing files are replaced only after the download completes. If the transfer fails, the original file is preserved.",
+    "ko": "다운로드가 완료된 후에만 기존 파일을 덮어씁니다. 전송에 실패하면 원래 파일을 유지합니다."
+  },
+  "ダウンロード": {
+    "en": "Downloads",
+    "ko": "다운로드"
+  },
+  "ダウンロードしたファイルを表示": {
+    "en": "Show downloaded files",
+    "ko": "다운로드한 파일 보기"
+  },
+  "履歴を消去": {
+    "en": "Clear history",
+    "ko": "기록 지우기"
+  },
+  "ダウンロードはまだありません": {
+    "en": "No downloads yet",
+    "ko": "아직 다운로드한 파일이 없습니다"
+  },
+  "保存したファイルがここに表示されます。": {
+    "en": "Saved files appear here.",
+    "ko": "저장한 파일이 여기에 표시됩니다."
+  },
+  "履歴を消してもファイルは削除されません。": {
+    "en": "Clearing history does not delete files.",
+    "ko": "기록을 지워도 파일은 삭제되지 않습니다."
+  },
+  "保存先を選択中…": {
+    "en": "Choosing a location…",
+    "ko": "저장 위치 선택 중…"
+  },
+  "ダウンロード中…": {
+    "en": "Downloading…",
+    "ko": "다운로드 중…"
+  },
+  "ファイルが見つかりません": {
+    "en": "File not found",
+    "ko": "파일을 찾을 수 없습니다"
+  },
+  "ダウンロードに失敗しました": {
+    "en": "Download failed",
+    "ko": "다운로드에 실패했습니다"
+  },
+  "キャンセル済み": {
+    "en": "Canceled",
+    "ko": "취소됨"
+  },
+  "中断されました": {
+    "en": "Interrupted",
+    "ko": "중단됨"
+  },
+  "ファイルを開く：{0}": {
+    "en": "Open file: {0}",
+    "ko": "파일 열기: {0}"
+  },
+  "Finderで表示": {
+    "en": "Show in Finder",
+    "ko": "Finder에서 보기"
+  },
+  "Finderで表示：{0}": {
+    "en": "Show in Finder: {0}",
+    "ko": "Finder에서 보기: {0}"
+  },
+  "履歴から削除": {
+    "en": "Remove from history",
+    "ko": "기록에서 제거"
+  },
+  "ファイルが見つかりません。移動または削除された可能性があります。": {
+    "en": "File not found. It may have been moved or deleted.",
+    "ko": "파일을 찾을 수 없습니다. 이동되었거나 삭제되었을 수 있습니다."
+  },
+  "ファイルを開けませんでした。Finderから確認してください。": {
+    "en": "Could not open the file. Check it in Finder.",
+    "ko": "파일을 열지 못했습니다. Finder에서 확인하세요."
+  },
+  "ダウンロード履歴を保存できませんでした。": {
+    "en": "Could not save download history.",
+    "ko": "다운로드 기록을 저장하지 못했습니다."
+  },
+  "サイドバーのダウンロードから履歴を開けます。ファイル名をクリックして開くか、フォルダボタンでFinderに表示します。": {
+    "en": "Open history from Downloads in the sidebar. Click a file name to open it, or the folder button to show it in Finder.",
+    "ko": "사이드바의 다운로드에서 기록을 엽니다. 파일 이름을 클릭하여 열거나 폴더 버튼으로 Finder에서 확인합니다."
+  },
+  "履歴はこのMacに最大100件保存します。履歴を消してもファイルは削除されません。": {
+    "en": "Up to 100 recent downloads are kept on this Mac. Clearing history does not delete files.",
+    "ko": "최근 다운로드 기록을 이 Mac에 최대 100개까지 저장합니다. 기록을 지워도 파일은 삭제되지 않습니다."
+  }
+}

@@ -19,8 +19,8 @@ enum NotionVault {
         if status == errSecItemNotFound {
             var item=query;item[kSecValueData as String]=data;item[kSecAttrAccessible as String]=kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             let added=SecItemAdd(item as CFDictionary,nil)
-            guard added == errSecSuccess else{throw LVError("PATをキーチェーンに保存できません（\(added)）")}
-        } else if status != errSecSuccess {throw LVError("キーチェーンを更新できません（\(status)）")}
+            guard added == errSecSuccess else{throw LVError(L("PATをキーチェーンに保存できません（\(added)）"))}
+        } else if status != errSecSuccess {throw LVError(L("キーチェーンを更新できません（\(status)）"))}
     }
 }
 enum Storage {

@@ -29,6 +29,9 @@ struct PageReference: Codable, Equatable, Identifiable {
     func engineIfLoaded(_ pageID:UUID)->BrowserEngine? {engines[pageID]}
     func pageID(for webView:WKWebView)->UUID? {engines.first{$0.value.webView === webView}?.key}
 
+    lazy var downloads=BrowserDownloads(store:self)
+    // Injectable destination selection for isolated local WebKit checks.
+    var downloadDestinationChooser:((String,@escaping(URL?)->Void)->Void)?
     lazy var notion=NotionLibrary(store:self)
     lazy var linkRouting=NotionLinkRouting(directory:directory)
     @Published var split: PageReference?
@@ -62,7 +65,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard let ref=commandPage, let page=page(ref) else {return}
         let value=engine(ref.workspaceID,ref.pageID)?.webView.url?.absoluteString ?? page.url
         pasteboard.clearContents()
-        if pasteboard.setString(value,forType:.string) {notify("URLをコピーしました")}
+        if pasteboard.setString(value,forType:.string) {notify(L("URLをコピーしました"))}
     }
     func trackClick(_ event:NSEvent) {
         guard let eventWindow=event.window,
@@ -78,6 +81,7 @@ struct PageReference: Codable, Equatable, Identifiable {
     private(set) var firstLaunch=false
     @Published var showSettings = false {willSet {if newValue && !showSettings {capturePanelFocus()}}}
     @Published var helpPresented = false {willSet {if newValue && !helpPresented {capturePanelFocus()}}}
+    @Published var downloadsPresented = false {willSet {if newValue && !downloadsPresented {capturePanelFocus()}}}
     @Published var editingBrowserTab: PageReference? {willSet {if newValue != nil && editingBrowserTab == nil {capturePanelFocus()}}}
     @Published var editingWorkspace: UUID? {willSet {if newValue != nil && editingWorkspace == nil {capturePanelFocus()}}}
     @Published var addressFocus = UUID()
@@ -116,7 +120,7 @@ struct PageReference: Codable, Equatable, Identifiable {
             try FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
             if let loaded=try SessionRecovery.load(directory:self.directory) {
                 session=loaded.session
-                if loaded.recovered {self.error="設定ファイルを直近の正常なバックアップから復元しました。元のファイルはRecoveryフォルダに保管しています。"}
+                if loaded.recovered {self.error=L("設定ファイルを直近の正常なバックアップから復元しました。元のファイルはRecoveryフォルダに保管しています。")}
             } else {
                 let old = self.directory.appendingPathComponent("workspaces.json")
                 firstLaunch = !FileManager.default.fileExists(atPath:old.path)
@@ -137,7 +141,7 @@ struct PageReference: Codable, Equatable, Identifiable {
                let ref = try? JSONDecoder().decode(PageReference.self, from: data), page(ref) != nil { split = ref }
         } catch {
             writable = false
-            self.error = "設定を読み込めませんでした。元ファイルは保持しています。\n\(error.localizedDescription)"
+            self.error = L("設定を読み込めませんでした。元ファイルは保持しています。\n\(error.localizedDescription)")
         }
         try? LegacyPagePreviewCleanup.remove(in:self.directory)
         loadWorksets()
@@ -191,8 +195,8 @@ struct PageReference: Codable, Equatable, Identifiable {
         if split?.pageID == pageID && session.selectedWorkspaceID == workspaceID { split = nil }
         changed()
     }
-    @discardableResult func addWorkspace(name: String = "新しいアプリ", url: String = "https://app.notion.com") -> UUID {
-        let profile = LoginProfile(name: name + " のログイン環境")
+    @discardableResult func addWorkspace(name: String = L("新しいアプリ"), url: String = "https://app.notion.com") -> UUID {
+        let profile = LoginProfile(name: name + L(" のログイン環境"))
         session.profiles.append(profile)
         let workspace = BrowserWorkspace(name: name, profileID: profile.id, url: url)
         session.workspaces.append(workspace); session.selectedWorkspaceID = workspace.id
@@ -220,7 +224,7 @@ struct PageReference: Codable, Equatable, Identifiable {
     func closePage(_ pageID: UUID, in workspaceID: UUID) {
         defer {selectionChanged()}
         guard let i = session.workspaces.firstIndex(where: { $0.id == workspaceID }), let j = session.workspaces[i].pages.firstIndex(where: { $0.id == pageID }) else { return }
-        guard session.workspaces[i].pages[j].pinned != true else {notify("ピン留めを解除してから閉じてください");return}
+        guard session.workspaces[i].pages[j].pinned != true else {notify(L("ピン留めを解除してから閉じてください"));return}
         closedPages.append((workspaceID, session.workspaces[i].pages[j])); closedPages = Array(closedPages.suffix(20))
         engines.removeValue(forKey: pageID)?.dispose()
         session.workspaces[i].pages.remove(at: j)
@@ -255,9 +259,9 @@ struct PageReference: Codable, Equatable, Identifiable {
     func removeWorkspace(_ id: UUID) {
         defer {selectionChanged()}
         guard let workspace = workspace(id), !workspace.pinned else { return }
-        let alert = NSAlert(); alert.messageText = "「\(workspace.name)」を閉じますか？"
-        alert.informativeText = "アプリタブとページ一覧を削除します。ログイン環境のCookieや保存データは残します。"
-        alert.addButton(withTitle: "キャンセル"); alert.addButton(withTitle: "閉じる")
+        let alert = NSAlert(); alert.messageText = L("「\(workspace.name)」を閉じますか？")
+        alert.informativeText = L("アプリタブとページ一覧を削除します。ログイン環境のCookieや保存データは残します。")
+        alert.addButton(withTitle: L("キャンセル")); alert.addButton(withTitle: L("閉じる"))
         guard alert.runModal() == .alertSecondButtonReturn else { return }
         reattachWorkspace(id,activate:false)
         for page in workspace.pages { engines.removeValue(forKey: page.id)?.dispose() }
@@ -366,7 +370,7 @@ struct PageReference: Codable, Equatable, Identifiable {
             lastPersistedSession=session;lastPersistedData=data
             exportLauncherIndex()
             return true
-        } catch { self.error = "保存できませんでした：\(error.localizedDescription)";return false }
+        } catch { self.error = L("保存できませんでした：\(error.localizedDescription)");return false }
     }
     private func recordHistory(_ data:Data) {
         do {try historyArchive.record(data);historyWarningShown=false}
@@ -375,7 +379,7 @@ struct PageReference: Codable, Equatable, Identifiable {
             // Explicit pre-restore checkpoints remain mandatory in save(forceBackup:).
             if !historyWarningShown {
                 historyWarningShown=true
-                notify("復元履歴を保存できません。現在のタブは通常どおり保存します。",isError:true)
+                notify(L("復元履歴を保存できません。現在のタブは通常どおり保存します。"),isError:true)
             }
         }
     }
@@ -395,10 +399,10 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard from == commandPage else {return false}
         let link=FavoriteLink(title:"Notion",url:url.absoluteString,workspaceID:target)
         guard openFavorite(link) else {return false}
-        notify("「\(workspace(target)?.name ?? "")」で開きました")
+        notify(L("「\(workspace(target)?.name ?? "")」で開きました"))
         return true
     }
-    func shutdown() { resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll() }
+    func shutdown() { downloads.shutdown();resetWorkspaceHints();stopRuntimeMonitoring();notion.stop();timer?.invalidate(); snapshot(); saveWork?.cancel(); save();for engine in engines.values {engine.dispose()};engines.removeAll() }
     func restoreTabBackup(_ backup:BrowserBackup)throws {
         var restored=try backup.session.validated()
         let iconDir=directory.appendingPathComponent("Icons")
@@ -412,7 +416,7 @@ struct PageReference: Codable, Equatable, Identifiable {
                 restored.workspaces[i].tabGroups![j].iconFile=try importTabIcon(restored.workspaces[i].tabGroups![j].iconFile,from:backup.icons)
             }
         }
-        guard saveBeforeExit(forceBackup:true) else{throw LVError("現在の状態を保存できないため復元を中止しました")}
+        guard saveBeforeExit(forceBackup:true) else{throw LVError(L("現在の状態を保存できないため復元を中止しました"))}
         for id in Array(detachedWorkspaceIDs) {reattachWorkspace(id,activate:false)}
         for engine in engines.values {engine.dispose()};engines.removeAll()
         restored.favorites=session.favorites;restored.windowFrame=session.windowFrame

@@ -98,7 +98,7 @@ extension BrowserStore {
     }
     var anyPanelPresented:Bool {
         notionCreationMenu != nil || newTabRequest != nil || onboardingPresented || favoritesPresented || favoriteDraft != nil || editingBrowserTab != nil || editingWorkspace != nil ||
-        pendingExternalURL != nil || helpPresented || showSettings || searchPresented || commandsPresented
+        pendingExternalURL != nil || helpPresented || downloadsPresented || showSettings || searchPresented || commandsPresented
     }
     func selectionChanged() {
         selectionRevision &+= 1
@@ -144,7 +144,7 @@ extension BrowserStore {
             let all=session.workspaces.flatMap {workspace in workspace.pages.map{PageReference(workspaceID:workspace.id,pageID:$0.id)}}
             var seen=Set<UUID>()
             recentCandidates=([current].compactMap{$0}+recentPages+all).filter{page($0) != nil && seen.insert($0.pageID).inserted}
-            guard recentCandidates.count>1 else{recentCandidates=[];notify("切り替え先のタブはありません");return}
+            guard recentCandidates.count>1 else{recentCandidates=[];notify(L("切り替え先のタブはありません"));return}
             recentIndex=0
         }
         recentIndex=(recentIndex+(backward ? -1:1)+recentCandidates.count)%recentCandidates.count
@@ -170,11 +170,12 @@ extension BrowserStore {
     }
 }
 struct RecentTabsOverlay:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     var body:some View {
         if !store.recentCandidates.isEmpty {
             VStack(alignment:.leading,spacing:8) {
-                Text("最近使ったタブ").font(.headline)
+                Text(L("最近使ったタブ")).font(.headline)
                 ScrollViewReader {proxy in
                     ScrollView {
                         VStack(spacing:4) {
@@ -195,7 +196,7 @@ struct RecentTabsOverlay:View {
                     }.frame(height:min(300,CGFloat(store.recentCandidates.count)*62))
                         .onChange(of:store.recentIndex){_,value in proxy.scrollTo(value)}
                 }
-                Text("Tab / ↑↓で選択・修飾キーを離すかEnterで移動・Escでキャンセル").font(.caption).foregroundStyle(.primary)
+                Text(L("Tab / ↑↓で選択・修飾キーを離すかEnterで移動・Escでキャンセル")).font(.caption).foregroundStyle(.primary)
             }.padding(16).frame(width:440).background(.regularMaterial,in:RoundedRectangle(cornerRadius:16)).shadow(radius:15)
         }
     }

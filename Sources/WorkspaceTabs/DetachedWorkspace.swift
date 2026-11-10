@@ -13,7 +13,7 @@ extension BrowserStore {
         detachedControllers[id]=controller
         focusedPage=workspace.selectedPageID.map {PageReference(workspaceID:id,pageID:$0)}
         if show {controller.window.makeKeyAndOrderFront(nil)}
-        changed();notify("「\(workspace.name)」を切り離しました")
+        changed();notify(L("「\(workspace.name)」を切り離しました"))
     }
     func reattachWorkspace(_ id: UUID, activate: Bool = true) {
         defer {if activate {selectionChanged()}}
@@ -25,7 +25,7 @@ extension BrowserStore {
         if activate {
             session.selectedWorkspaceID=id;focusedPage=nil
             window?.makeKeyAndOrderFront(nil)
-            notify("元のウインドウに戻しました")
+            notify(L("元のウインドウに戻しました"))
         }
         changed()
     }
@@ -36,7 +36,7 @@ extension BrowserStore {
         detachedWorkspaceIDs.remove(id)
         session.selectedWorkspaceID=id;focusedPage=nil
         window?.makeKeyAndOrderFront(nil)
-        changed();notify("元のウインドウに戻しました")
+        changed();notify(L("元のウインドウに戻しました"))
     }
 }
 
@@ -62,6 +62,7 @@ extension BrowserStore {
 }
 
 struct DetachedWorkspaceView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store: BrowserStore
     let workspaceID: UUID
     var body: some View {

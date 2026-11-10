@@ -18,6 +18,39 @@ func expectThrows(_ block: () throws -> Void, _ message: String) throws {
 }
 
 let checks: [(String, () throws -> Void)] = [
+    ("Localization resolves system languages and safely interpolates user values", {
+        try expect(AppLanguage.resolve(.system,preferredLanguages:["fr-FR","ko-KR","en-US"]) == .korean,"Select the first supported preferred language")
+        try expect(AppLanguage.resolve(.system,preferredLanguages:["ja_JP"]) == .japanese,"Support underscore regional identifiers")
+        try expect(AppLanguage.resolve(.system,preferredLanguages:["fr-FR"]) == .english,"Unsupported languages fall back to English")
+        try expect(AppLanguage.resolve(.korean,preferredLanguages:["ja"]) == .korean,"Explicit choice overrides system")
+        try expect(Localization.catalog.count >= 779,"Translation resources are present")
+        let placeholders=try NSRegularExpression(pattern:#"\{\d+\}"#)
+        func tokens(_ text:String)->[String] {placeholders.matches(in:text,range:NSRange(text.startIndex...,in:text)).map{(text as NSString).substring(with:$0.range)}.sorted()}
+        for (key,translations) in Localization.catalog {
+            try expect(Set(translations.keys) == ["en","ko"],"Every key has both translations")
+            for language in [AppLanguage.english,.korean] {
+                let value=translations[language.rawValue]!
+                try expect(!value.isEmpty && tokens(key) == tokens(value),"Translations preserve every placeholder: \(key)")
+                try expect(Localization.text(key,language:language) == value,"Catalog lookup uses selected language")
+            }
+        }
+        let workspace="Company {1} %@ 日本語",owner="한국어"
+        let message:LocalizedMessage="作成先：\(workspace) / \(owner) のプライベート"
+        try expect(Localization.render(message,language:.english) == "Destination: Private space of 한국어 in Company {1} %@ 日本語","Placeholder reordering never reinterprets user text")
+        try expect(Localization.render("\(3)タブ",language:.korean) == "탭 3개","Numeric interpolation uses Korean word order")
+        try expect(Localization.text("unknown key",language:.korean) == "unknown key","Missing translations have a safe source fallback")
+        let previous=Localization.language
+        defer {Localization.language=previous}
+        var page=BrowserPage(url:"about:blank")
+        Localization.language = .english
+        try expect(page.displayTitle == "New tab","A new tab placeholder follows the current language")
+        Localization.language = .korean
+        try expect(page.displayTitle == "새 탭","A new tab placeholder changes without rewriting stored data")
+        page.title="新しいタブ"
+        try expect(page.displayTitle == "新しいタブ","Site titles must never be translated, even if they match a UI string")
+        page.tabName="設定"
+        try expect(page.displayTitle == "設定","Custom tab names must never be translated")
+    }),
     ("Restoration uses unique identity hints and preserves ambiguity", {
         var a = WorkspaceTab(bundleID: "notion", windowTitle: "Same", name: "A", emoji: "A")
         var b = WorkspaceTab(bundleID: "notion", windowTitle: "Same", name: "B", emoji: "B")

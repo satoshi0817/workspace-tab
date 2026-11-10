@@ -1,3 +1,4 @@
+import WorkspaceCore
 import AppKit
 import SwiftUI
 
@@ -35,7 +36,7 @@ import SwiftUI
         self.canConfigure=canConfigure ?? (Bundle.main.bundleIdentifier == "com.ssuzuki.WorkspaceTabs" && application.path == "/Applications/Workspace Tabs.app")
         file=directory.appendingPathComponent("link-routing.json")
         do {if FileManager.default.fileExists(atPath:file.path) {record=try JSONDecoder().decode(Record.self,from:Data(contentsOf:file))}}
-        catch {message="元のブラウザの設定を読み込めませんでした。"}
+        catch {message=L("元のブラウザの設定を読み込めませんでした。")}
         refresh()
     }
     private func owns(_ url:URL?)->Bool {url?.standardizedFileURL.resolvingSymlinksInPath().path == application.standardizedFileURL.resolvingSymlinksInPath().path}
@@ -52,14 +53,14 @@ import SwiftUI
                 // Snapshot *both* handlers before macOS changes either of them. Its
                 // browser preference may update http and https in the same operation.
                 for scheme in Self.schemes where !owns(system.application(for:scheme)) {
-                    guard let previous=system.application(for:scheme) else{throw LVError("元のブラウザを確認できません。システム設定で既定のブラウザを選んでください。")}
+                    guard let previous=system.application(for:scheme) else{throw LVError(L("元のブラウザを確認できません。システム設定で既定のブラウザを選んでください。"))}
                     record.previous[scheme]=previous.path
                 }
-                guard Self.schemes.allSatisfy({record.previous[$0] != nil}) else{throw LVError("元のブラウザを復元する情報がありません。システム設定で一度別のブラウザを選んでください。")}
+                guard Self.schemes.allSatisfy({record.previous[$0] != nil}) else{throw LVError(L("元のブラウザを復元する情報がありません。システム設定で一度別のブラウザを選んでください。"))}
                 try persist()
                 do {
                     for scheme in Self.schemes where !owns(system.application(for:scheme)) {try await system.setApplication(application,for:scheme)}
-                    guard Self.schemes.allSatisfy({owns(system.application(for:$0))}) else{throw LVError("既定のブラウザの変更が反映されませんでした。")}
+                    guard Self.schemes.allSatisfy({owns(system.application(for:$0))}) else{throw LVError(L("既定のブラウザの変更が反映されませんでした。"))}
                 } catch {
                     // Restore only handlers still owned by us; do not undo a newer
                     // explicit choice made in System Settings or another browser.
@@ -70,19 +71,19 @@ import SwiftUI
                             catch {failures.append(scheme)}
                         }
                     }
-                    if !failures.isEmpty {throw LVError("変更を完了できず、元のブラウザへの復元も完了していません。オフを再実行するか、システム設定で既定のブラウザを選んでください。")}
+                    if !failures.isEmpty {throw LVError(L("変更を完了できず、元のブラウザへの復元も完了していません。オフを再実行するか、システム設定で既定のブラウザを選んでください。"))}
                     throw error
                 }
-                message="Notionリンクを受け取る設定にしました。"
+                message=L("Notionリンクを受け取る設定にしました。")
             } else {
                 for scheme in Self.schemes where owns(system.application(for:scheme)) {
-                    guard let old=record.previous[scheme],old != application.path else{throw LVError("元のブラウザの情報がありません。システム設定で既定のブラウザを選んでください。")}
+                    guard let old=record.previous[scheme],old != application.path else{throw LVError(L("元のブラウザの情報がありません。システム設定で既定のブラウザを選んでください。"))}
                     let target=URL(fileURLWithPath:old)
-                    guard FileManager.default.fileExists(atPath:target.path) else{throw LVError("元のブラウザが見つかりません。システム設定で既定のブラウザを選んでください。")}
+                    guard FileManager.default.fileExists(atPath:target.path) else{throw LVError(L("元のブラウザが見つかりません。システム設定で既定のブラウザを選んでください。"))}
                     try await system.setApplication(target,for:scheme)
                 }
-                guard !Self.schemes.contains(where:{owns(system.application(for:$0))}) else{throw LVError("元のブラウザへの復元を確認できません。")}
-                message="元のブラウザに戻しました。"
+                guard !Self.schemes.contains(where:{owns(system.application(for:$0))}) else{throw LVError(L("元のブラウザへの復元を確認できません。"))}
+                message=L("元のブラウザに戻しました。")
             }
         } catch {message=error.localizedDescription}
     }
@@ -95,27 +96,28 @@ import SwiftUI
         return !owns(target) && FileManager.default.fileExists(atPath:target.path) ? target:nil
     }
     func openInBrowser(_ url:URL,onError:@escaping(String)->Void) {
-        guard let target=browser(for:url) else {let text="リンクの転送先ブラウザが見つかりません。設定 → リンクの受け取りを確認してください。";message=text;onError(text);return}
+        guard let target=browser(for:url) else {let text=L("リンクの転送先ブラウザが見つかりません。設定 → リンクの受け取りを確認してください。");message=text;onError(text);return}
         NSWorkspace.shared.open([url],withApplicationAt:target,configuration:NSWorkspace.OpenConfiguration()) { [weak self] _,error in
             if let error {Task{@MainActor in self?.message=error.localizedDescription;onError(error.localizedDescription)}}
         }
     }
 }
 struct NotionLinkRoutingSettings:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var routing:NotionLinkRouting
     var body:some View {
         Section {
-            Toggle("NotionのWebリンクをWorkspace Tabsで開く",isOn:Binding(get:{routing.enabled},set:{value in Task{await routing.setEnabled(value)}}))
+            Toggle(L("NotionのWebリンクをWorkspace Tabsで開く"),isOn:Binding(get:{routing.enabled},set:{value in Task{await routing.setEnabled(value)}}))
                 .disabled(routing.busy || !routing.canConfigure)
-            if routing.busy {ProgressView("macOSの設定を変更中…")}
-            Text("オンにすると、このMacの既定のブラウザをWorkspace Tabsに変更します。Notionのリンクはこのアプリで開き、それ以外のWebリンクは変更前のブラウザへ渡します。オフにすると元のブラウザへ戻します。")
+            if routing.busy {ProgressView(L("macOSの設定を変更中…"))}
+            Text(L("オンにすると、このMacの既定のブラウザをWorkspace Tabsに変更します。Notionのリンクはこのアプリで開き、それ以外のWebリンクは変更前のブラウザへ渡します。オフにすると元のブラウザへ戻します。"))
                 .font(.callout).foregroundStyle(.secondary)
-            Text("Notion専用アプリを直接指定するリンクや、サイト側の「アプリで開く」は、この設定だけでは置き換えられない場合があります。")
+            Text(L("Notion専用アプリを直接指定するリンクや、サイト側の「アプリで開く」は、この設定だけでは置き換えられない場合があります。"))
                 .font(.caption).foregroundStyle(.secondary)
-            if !routing.canConfigure {Text("/ApplicationsにインストールしたWorkspace Tabsから設定してください。").font(.caption)}
+            if !routing.canConfigure {Text(L("/ApplicationsにインストールしたWorkspace Tabsから設定してください。")).font(.caption)}
             if let message=routing.message {Text(message).font(.callout).textSelection(.enabled)}
-            Button("現在の設定を確認") {routing.refresh()}.disabled(routing.busy)
-        } header:{Text("リンクの受け取り")} footer:{Text("初期状態ではOSの既定アプリを変更しません。macOSから確認が表示された場合は、内容を確認して選択してください。")}
+            Button(L("現在の設定を確認")) {routing.refresh()}.disabled(routing.busy)
+        } header:{Text(L("リンクの受け取り"))} footer:{Text(L("初期状態ではOSの既定アプリを変更しません。macOSから確認が表示された場合は、内容を確認して選択してください。"))}
         .onAppear{routing.refresh()}
     }
 }

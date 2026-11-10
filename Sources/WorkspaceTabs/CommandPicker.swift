@@ -19,6 +19,7 @@ extension BrowserStore {
     }
 }
 struct AllTabsPicker:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @State private var query=""
     @State private var selection:UUID?
@@ -35,16 +36,16 @@ struct AllTabsPicker:View {
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
             HStack {
-                Text(store.searchForSplit ? "右側に表示するタブ":"すべてのタブ").font(.title2.bold())
+                Text(store.searchForSplit ? L("右側に表示するタブ"):L("すべてのタブ")).font(.title2.bold())
                 Text("\(rows.count)").foregroundStyle(.secondary)
                 Spacer()
-                Button("検索") {searchFocused=true}.keyboardShortcut("f",modifiers:.command)
-                Button("閉じる") {store.searchPresented=false;store.searchForSplit=false}.keyboardShortcut(.cancelAction)
+                Button(L("検索")) {searchFocused=true}.keyboardShortcut("f",modifiers:.command)
+                Button(L("閉じる")) {store.searchPresented=false;store.searchForSplit=false}.keyboardShortcut(.cancelAction)
             }
-            TextField("アプリ名・ページ名・URLを検索",text:$query).textFieldStyle(.roundedBorder).focused($searchFocused)
+            TextField(L("アプリ名・ページ名・URLを検索"),text:$query).textFieldStyle(.roundedBorder).focused($searchFocused)
                 .onSubmit {if let row=rows.first(where:{$0.id == selection}) ?? rows.first {open(row)}}
                 .onKeyPress(.downArrow){listFocused=true;return .handled}
-            if rows.isEmpty {Text("一致するタブはありません").foregroundStyle(.secondary).frame(maxWidth:.infinity,maxHeight:.infinity)}
+            if rows.isEmpty {Text(L("一致するタブはありません")).foregroundStyle(.secondary).frame(maxWidth:.infinity,maxHeight:.infinity)}
             else {
                 List(selection:$selection) {
                     ForEach(rows) {row in
@@ -52,22 +53,22 @@ struct AllTabsPicker:View {
                             WorkspaceIcon(store:store,workspace:row.workspace,size:26)
                             VStack(alignment:.leading,spacing:4) {
                                 Text(row.page.displayTitle).lineLimit(1)
-                                Text(row.workspace.name + (store.detachedWorkspaceIDs.contains(row.workspace.id) ? " · 別ウインドウ":"")).font(.caption).foregroundStyle(.secondary)
+                                Text(row.workspace.name + (store.detachedWorkspaceIDs.contains(row.workspace.id) ? L(" · 別ウインドウ"):"")).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             if row.page.pinned == true {Image(systemName:"pin.fill").foregroundStyle(.secondary)}
                             if row.ref == store.commandPage {Image(systemName:"checkmark").foregroundStyle(.secondary)}
                         }.padding(.vertical,5).contentShape(Rectangle()).tag(row.id)
                             .onTapGesture(count:2){open(row)}
-                            .contextMenu {Button("このタブへ移動"){open(row)};Button("右側に並べて表示"){store.searchPresented=false;store.setSplit(row.ref)}}
+                            .contextMenu {Button(L("このタブへ移動")){open(row)};Button(L("右側に並べて表示")){store.searchPresented=false;store.setSplit(row.ref)}}
                     }
                 }.listStyle(.inset).focused($listFocused)
                     .onKeyPress(.return){if let row=rows.first(where:{$0.id == selection}) {open(row)};return .handled}
             }
             HStack {
-                Text("↑↓で選択 · Enterで移動 · ⌘Fで検索").font(.caption).foregroundStyle(.secondary)
+                Text(L("↑↓で選択 · Enterで移動 · ⌘Fで検索")).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button(store.searchForSplit ? "右側に表示":"このタブへ移動") {if let row=rows.first(where:{$0.id == selection}) {open(row)}}.disabled(selection == nil)
+                Button(store.searchForSplit ? L("右側に表示"):L("このタブへ移動")) {if let row=rows.first(where:{$0.id == selection}) {open(row)}}.disabled(selection == nil)
             }
         }.padding(20).frame(width:680,height:500)
             .onAppear{selection=rows.first(where:{$0.ref == store.commandPage})?.id ?? rows.first?.id;listFocused=true}
@@ -75,6 +76,7 @@ struct AllTabsPicker:View {
     }
 }
 struct CommandPicker:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @ObservedObject private var preferences=ShortcutPreferences.shared
     @State private var query=""
@@ -91,8 +93,8 @@ struct CommandPicker:View {
     }
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
-            HStack {Text("コマンド").font(.title2.bold());Spacer();Button("閉じる"){store.commandsPresented=false}.keyboardShortcut(.cancelAction)}
-            TextField("操作名を検索",text:$query).textFieldStyle(.roundedBorder).focused($searchFocused)
+            HStack {Text(L("コマンド")).font(.title2.bold());Spacer();Button(L("閉じる")){store.commandsPresented=false}.keyboardShortcut(.cancelAction)}
+            TextField(L("操作名を検索"),text:$query).textFieldStyle(.roundedBorder).focused($searchFocused)
                 .onSubmit {if let item=commands.first(where:{$0.id == selection}) ?? commands.first {run(item)}}
                 .onKeyPress(.downArrow){listFocused=true;return .handled}
             List(selection:$selection) {
@@ -102,7 +104,7 @@ struct CommandPicker:View {
                 }
             }.listStyle(.inset).focused($listFocused)
                 .onKeyPress(.return){if let item=commands.first(where:{$0.id == selection}){run(item)};return .handled}
-            Text("↑↓で選択 · Enterで実行 · キーは設定で変更できます").font(.caption).foregroundStyle(.secondary)
+            Text(L("↑↓で選択 · Enterで実行 · キーは設定で変更できます")).font(.caption).foregroundStyle(.secondary)
         }.padding(20).frame(width:640,height:480)
             .onAppear{selection=commands.first?.id;searchFocused=true}
             .onChange(of:query){_,_ in selection=commands.first?.id}

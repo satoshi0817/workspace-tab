@@ -5,6 +5,7 @@ import WorkspaceCore
 /// A brief bootstrap placeholder. Once the site draws its own loader, the WebView takes over.
 /// No page text, images or layout data are captured or persisted.
 struct PageLoadingSkeleton:View {
+    @ObservedObject private var localization = AppLocalization.shared
     let notion:Bool
     let workspace:BrowserWorkspace?
     @Environment(\.colorScheme) private var scheme
@@ -55,7 +56,7 @@ struct PageLoadingSkeleton:View {
                 }.frame(width:geometry.size.width,height:geometry.size.height,alignment:.topLeading)
                     .background(Color(nsColor:.textBackgroundColor)).clipped()
             }
-        }.accessibilityElement(children:.ignore).accessibilityLabel("ページを読み込み中")
+        }.accessibilityElement(children:.ignore).accessibilityLabel(L("ページを読み込み中"))
             .onReceive(NotificationCenter.default.publisher(for:NSApplication.didBecomeActiveNotification)) {_ in active=true}
             .onReceive(NotificationCenter.default.publisher(for:NSApplication.willResignActiveNotification)) {_ in active=false}
     }

@@ -1,3 +1,4 @@
+import WorkspaceCore
 import AppKit
 import Carbon
 
@@ -25,7 +26,7 @@ import Carbon
             owner.action?(id.id)
             return noErr
         }, 1, &type, context, &handler)
-        guard installed == noErr else { return ["ショートカットのイベントを登録できませんでした。"] }
+        guard installed == noErr else { return [L("ショートカットのイベントを登録できませんでした。")] }
         var failures: [String] = []
         for action in ShortcutPreferences.actions where action.globalID != nil {
             let binding=ShortcutPreferences.shared.binding(action)
@@ -35,7 +36,7 @@ import Carbon
             let result = RegisterEventHotKey(UInt32(key), binding.carbon, EventHotKeyID(signature: 0x57535442, id: UInt32(id)),
                                             GetApplicationEventTarget(), 0, &ref)
             if result == noErr, let ref { refs.append(ref) }
-            else { failures.append("\(name) は他のアプリと競合しているため使用できません（\(result)）。") }
+            else { failures.append(L("\(name) は他のアプリと競合しているため使用できません（\(result)）。")) }
         }
         return failures
     }
@@ -51,7 +52,7 @@ import Carbon
             var ref: EventHotKeyRef?
             let result = RegisterEventHotKey(UInt32(key), UInt32(controlKey | optionKey), EventHotKeyID(signature: 0x57535442, id: UInt32(id)), GetApplicationEventTarget(), 0, &ref)
             if result == noErr, let ref { navigationRefs.append(ref) }
-            else { failures.append("\(name) は他のアプリと競合しているため使用できません（\(result)）。") }
+            else { failures.append(L("\(name) は他のアプリと競合しているため使用できません（\(result)）。")) }
         }
         return failures
     }

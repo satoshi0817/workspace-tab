@@ -46,13 +46,13 @@ extension BrowserStore {
     func exportLauncherIndex() {
         let token=launcherToken
         guard !token.isEmpty else{return}
-        let workspaces=session.workspaces.map{LauncherEntry(id:$0.id.uuidString,title:$0.name,subtitle:"アプリタブ",emoji:$0.emoji,iconPath:launcherIconPath($0.iconFile))}
+        let workspaces=session.workspaces.map{LauncherEntry(id:$0.id.uuidString,title:$0.name,subtitle:L("アプリタブ"),emoji:$0.emoji,iconPath:launcherIconPath($0.iconFile))}
         let tabs=tabSearchRows("").map{LauncherEntry(id:$0.id.uuidString,title:$0.page.displayTitle,subtitle:$0.workspace.name,emoji:$0.page.tabEmoji ?? $0.workspace.emoji,workspaceID:$0.workspace.id.uuidString,iconPath:launcherIconPath($0.workspace.iconFile))}
         let favorites=favoriteSections().flatMap {section in section.links.map {link in
-            LauncherEntry(id:link.id.uuidString,title:link.title,subtitle:favoriteWorkspace(link)?.name ?? "開く先が未設定",emoji:link.emoji,workspaceID:favoriteWorkspace(link)?.id.uuidString,category:section.title,iconPath:launcherIconPath(link.iconFile))
+            LauncherEntry(id:link.id.uuidString,title:link.title,subtitle:favoriteWorkspace(link)?.name ?? L("開く先が未設定"),emoji:link.emoji,workspaceID:favoriteWorkspace(link)?.id.uuidString,category:section.title,iconPath:launcherIconPath(link.iconFile))
         }}
         var commands=ShortcutPreferences.actions.filter{Self.launcherCommandIDs.contains($0.id)}.map{LauncherEntry(id:$0.id,title:$0.title,subtitle:ShortcutPreferences.shared.binding($0).label,emoji:"")}
-        commands += worksets.map{LauncherEntry(id:"workset:"+$0.id.uuidString,title:$0.name,subtitle:"作業セットを開く",emoji:"")}
+        commands += worksets.map{LauncherEntry(id:"workset:"+$0.id.uuidString,title:$0.name,subtitle:L("作業セットを開く"),emoji:"")}
         let index=LauncherIndex(token:token,workspaces:workspaces,tabs:tabs,favorites:favorites,commands:commands)
         guard index != lastLauncherIndex else{return}
         let file=directory.appendingPathComponent("raycast-index.json")
@@ -80,24 +80,24 @@ extension AppDelegate {
     }
     func handleLauncherURL(_ url:URL) {
         if let external=Self.externalNotionURL(url) {
-            guard window.attachedSheet == nil else{store.notify("ダイアログを閉じてからリンクを開いてください",isError:true);return}
+            guard window.attachedSheet == nil else{store.notify(L("ダイアログを閉じてからリンクを開いてください"),isError:true);return}
             show();store.openExternalNotion(external);return
         }
         if ["http","https"].contains(url.scheme ?? "") {
             store.linkRouting.openInBrowser(url) { [weak store] message in store?.notify(message,isError:true) };return
         }
         guard let request=LauncherRequest.parse(url,token:store.launcherToken) else{return}
-        guard window.attachedSheet == nil else {store.notify("開いているダイアログを閉じてから再実行してください");return}
+        guard window.attachedSheet == nil else {store.notify(L("開いているダイアログを閉じてから再実行してください"));return}
         let original=store.commandPage
         switch request.kind {
         case "workspace":
-            guard let id=UUID(uuidString:request.id),store.workspace(id) != nil else {store.notify("アプリタブが見つかりません");return}
+            guard let id=UUID(uuidString:request.id),store.workspace(id) != nil else {store.notify(L("アプリタブが見つかりません"));return}
             show();store.selectWorkspace(id)
         case "tab":
-            guard let wid=request.workspaceID,let pid=UUID(uuidString:request.id),store.page(PageReference(workspaceID:wid,pageID:pid)) != nil else {store.notify("タブは閉じられています");return}
+            guard let wid=request.workspaceID,let pid=UUID(uuidString:request.id),store.page(PageReference(workspaceID:wid,pageID:pid)) != nil else {store.notify(L("タブは閉じられています"));return}
             show();store.activatePage(PageReference(workspaceID:wid,pageID:pid))
         case "favorite":
-            guard let id=UUID(uuidString:request.id),let link=store.favorites.first(where:{$0.id == id}) else {store.notify("お気に入りが見つかりません");return}
+            guard let id=UUID(uuidString:request.id),let link=store.favorites.first(where:{$0.id == id}) else {store.notify(L("お気に入りが見つかりません"));return}
             show();_ = store.openFavorite(link)
         case "command":
             if request.id.hasPrefix("workset:"),let id=UUID(uuidString:String(request.id.dropFirst(8))) {

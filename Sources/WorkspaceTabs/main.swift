@@ -12,6 +12,7 @@ import WorkspaceCore
     private var clickMonitor:Any?
     private var shortcutObservers:[NSObjectProtocol]=[]
     func applicationDidFinishLaunching(_ notification:Notification){
+        _ = AppLocalization.shared
         store=BrowserStore(directory:uiCheckDirectory.map{URL(fileURLWithPath:$0)})
         // Deterministic, isolated visual QA of the initial loading view; never used for normal sessions.
         if uiCheckDirectory != nil,ProcessInfo.processInfo.environment["WORKSPACE_TABS_UI_CHECK_PAUSE_LOADING"] == "1",
@@ -40,9 +41,16 @@ import WorkspaceCore
             if code==3 {self.show();self.store.searchForSplit=false;self.store.searchPresented=true}
             else if (11...19).contains(code),self.store.session.workspaces.indices.contains(Int(code-11)){self.show();self.store.selectWorkspace(self.store.session.workspaces[Int(code-11)].id)}
         }
+        shortcutObservers.append(NotificationCenter.default.addObserver(forName:AppLocalization.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {
+            self?.createMenu();self?.store.exportLauncherIndex()
+        } })
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {self?.refreshShortcuts()} })
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:ShortcutPreferences.recording,object:nil,queue:.main){[weak self] note in MainActor.assumeIsolated {self?.store.workspaceHintsSuspended=note.object as? Bool == true;self?.store.resetWorkspaceHints();if note.object as? Bool == true {self?.hotkeys.unregister()} else {self?.refreshShortcuts()}} })
-        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in self?.sequences.resetInput();self?.store.notionCreationMenu?.dismiss()}
+        (NSApp as? BrowserApplication)?.escapeAction={[weak self] in
+            self?.sequences.resetInput();self?.store.notionCreationMenu?.dismiss()
+            if self?.store.downloadsPresented == true {self?.store.downloadsPresented=false;return true}
+            return false
+        }
         sequences.canHandleLocal={
             guard let key=NSApp.keyWindow as? BrowserWindow else{return false}
             return key.attachedSheet == nil
@@ -55,37 +63,37 @@ import WorkspaceCore
     }
     func createMenu(){
         let menu=NSMenu(),appItem=NSMenuItem(),appMenu=NSMenu()
-        appMenu.addItem(withTitle:"Workspace Tabsについて",action:#selector(about),keyEquivalent:"").target=self
-        appMenu.addItem(withTitle:"設定…",action:#selector(settings),keyEquivalent:",").target=self
-        appMenu.addItem(.separator());appMenu.addItem(withTitle:"Workspace Tabsを隠す",action:#selector(NSApplication.hide(_:)),keyEquivalent:"h")
-        appMenu.addItem(withTitle:"Workspace Tabsを終了…",action:#selector(NSApplication.terminate(_:)),keyEquivalent:"q")
+        appMenu.addItem(withTitle:L("Workspace Tabsについて"),action:#selector(about),keyEquivalent:"").target=self
+        appMenu.addItem(withTitle:L("設定…"),action:#selector(settings),keyEquivalent:",").target=self
+        appMenu.addItem(.separator());appMenu.addItem(withTitle:L("Workspace Tabsを隠す"),action:#selector(NSApplication.hide(_:)),keyEquivalent:"h")
+        appMenu.addItem(withTitle:L("Workspace Tabsを終了…"),action:#selector(NSApplication.terminate(_:)),keyEquivalent:"q")
         appItem.submenu=appMenu;menu.addItem(appItem)
-        let fileItem=NSMenuItem();fileItem.title="ファイル";let file=NSMenu(title:"ファイル")
-        for (title,action,key) in [("新しいブラウザタブ",#selector(newTab),"t"),("ブラウザタブを閉じる",#selector(closeTab),"w"),("URLを入力",#selector(location),"l"),("再読み込み",#selector(reload),"r")] {file.addItem(withTitle:title,action:action,keyEquivalent:key).target=self}
-        let reopen=file.addItem(withTitle:"閉じたタブを戻す",action:#selector(reopenTab),keyEquivalent:"t");reopen.keyEquivalentModifierMask=[.command,.shift];reopen.target=self
-        let favorites=file.addItem(withTitle:"お気に入りランチャー",action:#selector(favorites),keyEquivalent:"l");favorites.keyEquivalentModifierMask=[.command,.shift];favorites.target=self
-        let copy=file.addItem(withTitle:"現在のURLをコピー",action:#selector(copyURL),keyEquivalent:"c");copy.keyEquivalentModifierMask=[.command,.shift];copy.target=self
+        let fileItem=NSMenuItem();fileItem.title=L("ファイル");let file=NSMenu(title:L("ファイル"))
+        for (title,action,key) in [(L("新しいブラウザタブ"),#selector(newTab),"t"),(L("ブラウザタブを閉じる"),#selector(closeTab),"w"),(L("URLを入力"),#selector(location),"l"),(L("再読み込み"),#selector(reload),"r")] {file.addItem(withTitle:title,action:action,keyEquivalent:key).target=self}
+        let reopen=file.addItem(withTitle:L("閉じたタブを戻す"),action:#selector(reopenTab),keyEquivalent:"t");reopen.keyEquivalentModifierMask=[.command,.shift];reopen.target=self
+        let favorites=file.addItem(withTitle:L("お気に入りランチャー"),action:#selector(favorites),keyEquivalent:"l");favorites.keyEquivalentModifierMask=[.command,.shift];favorites.target=self
+        let copy=file.addItem(withTitle:L("現在のURLをコピー"),action:#selector(copyURL),keyEquivalent:"c");copy.keyEquivalentModifierMask=[.command,.shift];copy.target=self
         fileItem.submenu=file;menu.addItem(fileItem)
-        let editItem=NSMenuItem();editItem.title="編集";let edit=NSMenu(title:"編集")
-        for (title,action,key) in [("取り消す","undo:","z"),("カット","cut:","x"),("コピー","copy:","c"),("ペースト","paste:","v"),("すべて選択","selectAll:","a")] {edit.addItem(withTitle:title,action:Selector(action),keyEquivalent:key)}
+        let editItem=NSMenuItem();editItem.title=L("編集");let edit=NSMenu(title:L("編集"))
+        for (title,action,key) in [(L("取り消す"),"undo:","z"),(L("カット"),"cut:","x"),(L("コピー"),"copy:","c"),(L("ペースト"),"paste:","v"),(L("すべて選択"),"selectAll:","a")] {edit.addItem(withTitle:title,action:Selector(action),keyEquivalent:key)}
         editItem.submenu=edit;menu.addItem(editItem)
-        let windowItem=NSMenuItem();windowItem.title="ウインドウ";let windows=NSMenu(title:"ウインドウ")
-        windows.addItem(withTitle:"ブラウザを表示",action:#selector(show),keyEquivalent:"0").target=self
-        let full=windows.addItem(withTitle:"フルスクリーンを切り替える",action:#selector(fullscreen),keyEquivalent:"f");full.keyEquivalentModifierMask=[.control,.command];full.target=self
+        let windowItem=NSMenuItem();windowItem.title=L("ウインドウ");let windows=NSMenu(title:L("ウインドウ"))
+        windows.addItem(withTitle:L("ブラウザを表示"),action:#selector(show),keyEquivalent:"0").target=self
+        let full=windows.addItem(withTitle:L("フルスクリーンを切り替える"),action:#selector(fullscreen),keyEquivalent:"f");full.keyEquivalentModifierMask=[.control,.command];full.target=self
         windows.addItem(.separator())
-        windows.addItem(withTitle:"前のアプリタブ",action:#selector(previousWorkspace),keyEquivalent:"").target=self
-        windows.addItem(withTitle:"次のアプリタブ",action:#selector(nextWorkspace),keyEquivalent:"").target=self
+        windows.addItem(withTitle:L("前のアプリタブ"),action:#selector(previousWorkspace),keyEquivalent:"").target=self
+        windows.addItem(withTitle:L("次のアプリタブ"),action:#selector(nextWorkspace),keyEquivalent:"").target=self
         windowItem.submenu=windows;menu.addItem(windowItem)
-        let commandItem=NSMenuItem();commandItem.title="操作";let commands=NSMenu(title:"操作")
+        let commandItem=NSMenuItem();commandItem.title=L("操作");let commands=NSMenu(title:L("操作"))
         for action in ShortcutPreferences.actions where BrowserCommands.ids.contains(action.id) {
             let item=commands.addItem(withTitle:action.title,action:#selector(extraCommand(_:)),keyEquivalent:"");item.target=self;item.representedObject=action.id
         }
-        let allTabs=commands.addItem(withTitle:"すべてのタブを検索",action:#selector(allTabs),keyEquivalent:"");allTabs.target=self
+        let allTabs=commands.addItem(withTitle:L("すべてのタブを検索"),action:#selector(allTabs),keyEquivalent:"");allTabs.target=self
         commandItem.submenu=commands;menu.addItem(commandItem);NSApp.mainMenu=menu;applyShortcutMenu(menu)
     }
     func applyShortcutMenu(_ menu:NSMenu){
         for item in menu.items {
-            if let action=ShortcutPreferences.actions.first(where:{$0.globalID == nil && $0.title == item.title}) {let binding=ShortcutPreferences.shared.binding(action);item.keyEquivalent=binding.sequence == nil ? binding.key:"";item.keyEquivalentModifierMask=binding.flags}
+            if let action=ShortcutPreferences.actions.first(where:{$0.globalID == nil && (item.representedObject as? String == $0.id || (item.representedObject == nil && $0.title == item.title))}) {item.representedObject=action.id;let binding=ShortcutPreferences.shared.binding(action);item.keyEquivalent=binding.sequence == nil ? binding.key:"";item.keyEquivalentModifierMask=binding.flags}
             if let submenu=item.submenu {applyShortcutMenu(submenu)}
         }
     }
@@ -130,10 +138,10 @@ import WorkspaceCore
     func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows flag:Bool)->Bool{show();return true}
     func applicationShouldTerminateAfterLastWindowClosed(_ sender:NSApplication)->Bool{false}
     func applicationShouldTerminate(_ sender:NSApplication)->NSApplication.TerminateReply{
-        let alert=NSAlert();alert.messageText="Workspace Tabsを終了しますか？";alert.informativeText="タブとログイン環境は保存されます。ページ内の未送信の入力内容は保存されません。";alert.addButton(withTitle:"キャンセル");alert.addButton(withTitle:"終了")
+        let alert=NSAlert();alert.messageText=L("Workspace Tabsを終了しますか？");alert.informativeText=L("タブとログイン環境は保存されます。ページ内の未送信の入力内容は保存されません。");alert.addButton(withTitle:L("キャンセル"));alert.addButton(withTitle:L("終了"))
         guard alert.runModal() == .alertSecondButtonReturn else {return .terminateCancel}
         guard store.saveBeforeExit() else {
-            let failure=NSAlert();failure.messageText="設定を保存できないため終了を中止しました";failure.informativeText=store.error ?? "";failure.runModal();return .terminateCancel
+            let failure=NSAlert();failure.messageText=L("設定を保存できないため終了を中止しました");failure.informativeText=store.error ?? "";failure.runModal();return .terminateCancel
         }
         return .terminateNow
     }
@@ -156,9 +164,9 @@ MainActor.assumeIsolated {
             do {
                 let state=try JSONDecoder().decode(NotionLibraryState.self,from:Data(contentsOf:Storage.root.appendingPathComponent("notion-library.json")))
                 let client=NotionClient()
-                guard !state.sources.isEmpty else{throw LVError("接続先がありません")}
+                guard !state.sources.isEmpty else{throw LVError(L("接続先がありません"))}
                 for source in state.sources {
-                    guard let secret=NotionVault.read(source.tokenId,interactive:false) else{throw LVError("PATにアクセスできません")}
+                    guard let secret=NotionVault.read(source.tokenId,interactive:false) else{throw LVError(L("PATにアクセスできません"))}
                     let count=try await client.pages(token:secret,id:source.id).count
                     print("PASS Notion database read: \(count) rows")
                 }
@@ -174,6 +182,10 @@ MainActor.assumeIsolated {
     } else if CommandLine.arguments.contains("--startup-checks") {
         app.setActivationPolicy(.accessory)
         Task {let result=await StartupChecks.run();exit(result)}
+        app.run()
+    } else if CommandLine.arguments.contains("--download-checks") {
+        app.setActivationPolicy(.accessory)
+        Task {let result=await DownloadChecks.run();exit(result)}
         app.run()
     } else if CommandLine.arguments.contains("--browser-checks") {
         app.setActivationPolicy(.accessory)

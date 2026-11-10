@@ -12,6 +12,8 @@ dist/
 # Local sessions and launcher capabilities must never be committed.
 browser-session.json
 browser-split.json
+download-history.json
+__pycache__/
 raycast-index.json
 launcher-token
 BrowserBackups/

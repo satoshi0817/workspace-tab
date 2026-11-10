@@ -84,19 +84,19 @@ extension BrowserStore {
             try JSONEncoder().encode(values).write(to:file,options:.atomic)
             try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:file.path)
             worksets=values;exportLauncherIndex();return true
-        } catch {self.error="作業セットを保存できませんでした: "+error.localizedDescription;return false}
+        } catch {self.error=L("作業セットを保存できませんでした: ")+error.localizedDescription;return false}
     }
     func saveWorkset(name:String) {
         let name=name.trimmingCharacters(in:.whitespacesAndNewlines)
         guard !name.isEmpty else{return}
         snapshot()
         let value=Workset(name:name,workspaces:session.workspaces,selectedWorkspaceID:session.selectedWorkspaceID,split:split)
-        if persistWorksets(worksets+[value]) {notify("作業セットを保存しました")}
+        if persistWorksets(worksets+[value]) {notify(L("作業セットを保存しました"))}
     }
     @discardableResult func restoreWorkset(_ id:UUID)->Bool {
         guard let value=worksets.first(where:{$0.id == id}) else{return false}
         guard value.workspaces.allSatisfy({saved in workspace(saved.id)?.profileID == saved.profileID && saved.pages.allSatisfy{BrowserAddress.url($0.url) != nil}}) else {
-            notify("保存時のアプリタブまたはログイン環境が見つかりません。別の環境では開きません",isError:true);return false
+            notify(L("保存時のアプリタブまたはログイン環境が見つかりません。別の環境では開きません"),isError:true);return false
         }
         var mapping:[UUID:UUID]=[:]
         for saved in value.workspaces {
@@ -115,7 +115,7 @@ extension BrowserStore {
         session.selectedWorkspaceID=value.selectedWorkspaceID
         if let selected=session.selectedWorkspaceID,detachedWorkspaceIDs.contains(selected) {reattachWorkspace(selected,activate:false)}
         setSplit(value.split.flatMap {ref in mapping[ref.pageID].map{PageReference(workspaceID:ref.workspaceID,pageID:$0)}})
-        focusedPage=nil;changed();notify("作業セットを開きました")
+        focusedPage=nil;changed();notify(L("作業セットを開きました"))
         return true
     }
     func sessionHistory()->[SessionHistoryEntry] {
@@ -130,9 +130,9 @@ extension BrowserStore {
     func restoreHistory(_ entry:SessionHistoryEntry) {
         do {
             let value=try JSONDecoder().decode(BrowserSession.self,from:Data(contentsOf:entry.url)).validated()
-            let alert=NSAlert();alert.messageText="この履歴に戻しますか？"
-            alert.informativeText="現在のタブを閉じて復元します。未送信の入力は失われます。現在の構成は復元前に保存します。"
-            alert.addButton(withTitle:"キャンセル");alert.addButton(withTitle:"復元")
+            let alert=NSAlert();alert.messageText=L("この履歴に戻しますか？")
+            alert.informativeText=L("現在のタブを閉じて復元します。未送信の入力は失われます。現在の構成は復元前に保存します。")
+            alert.addButton(withTitle:L("キャンセル"));alert.addButton(withTitle:L("復元"))
             guard alert.runModal() == .alertSecondButtonReturn else{return}
             var icons:[String:Data]=[:]
             for workspace in value.workspaces {
@@ -145,8 +145,8 @@ extension BrowserStore {
                 if let name=page.tabIconFile,name == URL(fileURLWithPath:name).lastPathComponent {icons[name]=try? Data(contentsOf:directory.appendingPathComponent("Icons").appendingPathComponent(name))}
             }
             try restoreTabBackup(BrowserBackup(session:value,icons:icons))
-            notify("履歴を復元しました")
-        } catch {self.error="履歴を復元できませんでした: "+error.localizedDescription}
+            notify(L("履歴を復元しました"))
+        } catch {self.error=L("履歴を復元できませんでした: ")+error.localizedDescription}
     }
     func openExternalNotion(_ url:URL) {
         guard NotionWorkspace.environment(url) != nil else{return}
@@ -161,41 +161,43 @@ extension BrowserStore {
     }
 }
 struct WorkflowSettings:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @State private var name=""
     var body:some View {
-        Section("作業セット") {
-            HStack {TextField("例：開発、定例会議",text:$name);Button("現在のタブを保存"){store.saveWorkset(name:name);name=""}.disabled(name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}
-            Text("全アプリタブとSplit Viewの組み合わせを保存します。復元時は現在のタブを残し、同じページを再利用します。").font(.caption).foregroundStyle(.secondary)
+        Section(L("作業セット")) {
+            HStack {TextField(L("例：開発、定例会議"),text:$name);Button(L("現在のタブを保存")){store.saveWorkset(name:name);name=""}.disabled(name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}
+            Text(L("全アプリタブとSplit Viewの組み合わせを保存します。復元時は現在のタブを残し、同じページを再利用します。")).font(.caption).foregroundStyle(.secondary)
             ForEach(store.worksets){value in
-                HStack {Text(value.name);Spacer();Button("開く"){_=store.restoreWorkset(value.id)};Button("削除"){_=store.persistWorksets(store.worksets.filter{$0.id != value.id})}}
+                HStack {Text(value.name);Spacer();Button(L("開く")){_=store.restoreWorkset(value.id)};Button(L("削除")){_=store.persistWorksets(store.worksets.filter{$0.id != value.id})}}
             }
         }
-        Section("重複しているタブ") {
-            Text("お気に入り・外部リンク・作業セットからは既存タブを再利用します。⌘クリックや明示的な新規タブはそのまま作成します。").font(.caption)
-            if store.duplicatePages.isEmpty {Text("重複はありません").foregroundStyle(.secondary)}
+        Section(L("重複しているタブ")) {
+            Text(L("お気に入り・外部リンク・作業セットからは既存タブを再利用します。⌘クリックや明示的な新規タブはそのまま作成します。")).font(.caption)
+            if store.duplicatePages.isEmpty {Text(L("重複はありません")).foregroundStyle(.secondary)}
             ForEach(store.duplicatePages) {ref in
                 HStack {
                     Text(store.page(ref)?.displayTitle ?? "")
                     Text(store.workspace(ref.workspaceID)?.name ?? "").foregroundStyle(.secondary)
                     Spacer()
-                    Button("表示"){store.activatePage(ref);store.showSettings=false}
+                    Button(L("表示")){store.activatePage(ref);store.showSettings=false}
                 }
             }
         }
-        Section("リンクを開く") {
-            Text("外部から受け取ったNotionリンクは、URLのワークスペース名や既存タブから開く先を判定します。一意に決まらない場合は環境を選びます。")
-            Text("既定のブラウザは自動変更しません。Raycastの「Open Notion Link」からURLを渡せます。").font(.caption).foregroundStyle(.secondary)
+        Section(L("リンクを開く")) {
+            Text(L("外部から受け取ったNotionリンクは、URLのワークスペース名や既存タブから開く先を判定します。一意に決まらない場合は環境を選びます。"))
+            Text(L("既定のブラウザは自動変更しません。Raycastの「Open Notion Link」からURLを渡せます。")).font(.caption).foregroundStyle(.secondary)
         }
     }
 }
 struct TimingSettings:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var log:TimingLog
     let export:()->Void
     var body:some View {
-        Section("遅延診断") {
-            Text("直近200件をメモリに記録します。URL・ページ内容・入力文字は記録しません。配置時間は描画完了、読み込み時間はNotionの同期完了を意味しません。").font(.caption)
-            HStack {Button("CSVを書き出す",action:export);Button("記録を消す"){log.entries.removeAll()}}
+        Section(L("遅延診断")) {
+            Text(L("直近200件をメモリに記録します。URL・ページ内容・入力文字は記録しません。配置時間は描画完了、読み込み時間はNotionの同期完了を意味しません。")).font(.caption)
+            HStack {Button(L("CSVを書き出す"),action:export);Button(L("記録を消す")){log.entries.removeAll()}}
             ForEach(log.entries.suffix(30).reversed()) {entry in
                 HStack {Text(entry.operation);Spacer();Text(String(format:"%.1f ms",entry.milliseconds)).monospacedDigit()}.font(.caption)
             }
@@ -203,32 +205,34 @@ struct TimingSettings:View {
     }
 }
 struct HistorySettings:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @State private var entries:[SessionHistoryEntry]=[]
     var body:some View {
-        Section("復元履歴（直近20件）") {
-            Text("通常は5分間隔、設定の読み込み・復元前にも保存します。現在状態の自動保存は継続します。").font(.caption).foregroundStyle(.secondary)
-            Button("履歴を更新"){entries=store.sessionHistory()}
+        Section(L("復元履歴（直近20件）")) {
+            Text(L("通常は5分間隔、設定の読み込み・復元前にも保存します。現在状態の自動保存は継続します。")).font(.caption).foregroundStyle(.secondary)
+            Button(L("履歴を更新")){entries=store.sessionHistory()}
             ForEach(entries) {entry in
-                HStack {Text(entry.date,format:.dateTime.month().day().hour().minute().second());Text("\(entry.tabCount)タブ").foregroundStyle(.secondary);Spacer();Button("復元…"){store.restoreHistory(entry);entries=store.sessionHistory()}}
+                HStack {Text(entry.date,format:.dateTime.month().day().hour().minute().second());Text(L("\(entry.tabCount)タブ")).foregroundStyle(.secondary);Spacer();Button(L("復元…")){store.restoreHistory(entry);entries=store.sessionHistory()}}
             }
         }.onAppear {entries=store.sessionHistory()}
     }
 }
 struct ExternalLinkPicker:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @Environment(\.dismiss) private var dismiss
     var body:some View {
         VStack(alignment:.leading,spacing:14) {
-            Text("Notionリンクを開く環境").font(.headline)
-            Text("URLだけではワークスペースを特定できないため、開く先を選んでください。").font(.callout)
+            Text(L("Notionリンクを開く環境")).font(.headline)
+            Text(L("URLだけではワークスペースを特定できないため、開く先を選んでください。")).font(.callout)
             ForEach(store.session.workspaces) {workspace in
                 Button(workspace.name) {
                     if let url=store.pendingExternalURL {_=store.openFavorite(FavoriteLink(title:"Notion",url:url,workspaceID:workspace.id))}
                     store.pendingExternalURL=nil;dismiss()
                 }
             }
-            Button("キャンセル"){store.pendingExternalURL=nil;dismiss()}.keyboardShortcut(.cancelAction)
+            Button(L("キャンセル")){store.pendingExternalURL=nil;dismiss()}.keyboardShortcut(.cancelAction)
         }.padding(24).frame(width:420)
     }
 }

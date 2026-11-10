@@ -90,6 +90,11 @@ import WorkspaceCore
             let resentEscape=escapeEvent()
             try expect(escapeApplication.routeEscape(resentEscape) && escapeResponder.received == 3,"Application entry point routes Escape before AppKit fullscreen handling")
             try expect(escapeApplication.routeEscape(resentEscape) && escapeResponder.received == 3,"WebKit asynchronous resend is consumed at the application entry point")
+            escapeApplication.escapeAction={true}
+            let panelEscape=escapeEvent()
+            try expect(escapeApplication.routeEscape(panelEscape) && escapeResponder.received == 3,"Closing a popover consumes Escape before it reaches the page")
+            escapeApplication.escapeAction=nil
+            try expect(escapeApplication.routeEscape(panelEscape) && escapeResponder.received == 3,"A consumed panel Escape cannot reach the page on resend")
             escapeResponder.requestFullscreen=true
             escapeWindow.sendEvent(escapeEvent())
             try expect(escapeWindow.fullscreenRequests == 0,"A focused responder cannot toggle fullscreen while handling Escape")
@@ -215,6 +220,7 @@ import WorkspaceCore
             store.selectPage(wa.pages[0].id,in:a)
             let sentinel=try await ea.webView.evaluateJavaScript("window.tabStateSentinel") as? Int
             try expect(store.engine(a,wa.pages[0].id) === ea && sentinel == 42 && ea.navigationStarts == navigationCount,"Live tab switching preserves engine, JS state and navigation count")
+            try await LocalizationChecks.run(store:store,engine:ea)
             let restoredEngine=BrowserEngine(store:store,workspace:wb,page:store.page(PageReference(workspaceID:b,pageID:eb.pageID))!)
             try expect(restoredEngine.loadingState == .loading,"Restored pages begin with a transient loading placeholder")
             restoredEngine.dispose()

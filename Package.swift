@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [.executable(name: "WorkspaceTabs", targets: ["WorkspaceTabs"])],
     targets: [
-        .target(name: "WorkspaceCore"),
+        .target(name: "WorkspaceCore", resources: [.process("Resources")]),
         .executableTarget(name: "WorkspaceTabs", dependencies: ["WorkspaceCore"]),
         .executableTarget(name: "WorkspaceCoreChecks", dependencies: ["WorkspaceCore"], path: "Tests/WorkspaceCoreTests")
     ],

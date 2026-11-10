@@ -3,7 +3,7 @@ import WebKit
 import SwiftUI
 import WorkspaceCore
 
-@MainActor final class BrowserEngine: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+@MainActor final class BrowserEngine: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
     let workspaceID: UUID
     let pageID: UUID
     let profileID: UUID
@@ -26,6 +26,8 @@ import WorkspaceCore
     private var loadingGeneration=0
     private var loadingTask:Task<Void,Never>?
     private(set) var documentGeneration:UInt=0
+    private var expectingDownloadInterruption=false
+    private var downloadOpener:PageReference?
     private var currentNavigation:WKNavigation?
     private var pendingActionNavigation:WKNavigation?
     private var detectionRequest:UUID?
@@ -123,8 +125,8 @@ import WorkspaceCore
     var workspaceIdentityLabel:String? {
         guard let workspace=store?.workspace(workspaceID),let expected=NotionWorkspace.normalizedID(workspace.notionSpaceID),
               let url=webView.url,NotionWorkspace.environment(url) != nil else{return nil}
-        if workspaceMismatch {return "Workspace IDが設定と一致しません"}
-        return detectedURL == url.absoluteString && detectedNotionSpaceID == expected ? "Workspace IDは設定と一致しています" : "Workspace IDを確認できていません"
+        if workspaceMismatch {return L("Workspace IDが設定と一致しません")}
+        return detectedURL == url.absoluteString && detectedNotionSpaceID == expected ? L("Workspace IDは設定と一致しています") : L("Workspace IDを確認できていません")
     }
     var workspaceMismatch:Bool {
         guard let workspace=store?.workspace(workspaceID),let expected=NotionWorkspace.normalizedID(workspace.notionSpaceID),
@@ -135,7 +137,7 @@ import WorkspaceCore
     func openMatchingWorkspace() {
         guard let store,let url=webView.url,let id=detectedNotionSpaceID,
               let destination=NotionWorkspace.target(url:url,detectedID:id,workspaces:store.session.workspaces) else {
-            store?.notify("一致する移動先がありません。アプリタブのWorkspace IDと自動振り分け設定を確認してください",isError:true);return
+            store?.notify(L("一致する移動先がありません。アプリタブのWorkspace IDと自動振り分け設定を確認してください"),isError:true);return
         }
         _=store.openFavorite(FavoriteLink(title:title,url:url.absoluteString,workspaceID:destination))
     }
@@ -179,9 +181,9 @@ import WorkspaceCore
                 switch result {
                 case .success(let value):
                     let response=value as? [String:Any]
-                    self.store?.notify(response?["message"] as? String ?? "操作対象を見つけられませんでした",isError:response?["ok"] as? Bool != true)
+                    self.store?.notify((response?["message"] as? String).map(NotionActions.localizedMessage) ?? L("操作対象を見つけられませんでした"),isError:response?["ok"] as? Bool != true)
                 case .failure:
-                    self.store?.notify("Notionの操作を完了できませんでした。タブを確認してください",isError:true)
+                    self.store?.notify(L("Notionの操作を完了できませんでした。タブを確認してください"),isError:true)
                 }
             }
         }
@@ -281,7 +283,7 @@ import WorkspaceCore
         invalidateDocument();connectionRetryURL=nil;failedURL=nil
         clearLoadingPlaceholder();needsRestore=false
         clearPendingNotionAction()
-        guard let url = BrowserAddress.url(text) else { failure = "http / httpsのURLを入力してください。"; return }
+        guard let url = BrowserAddress.url(text) else { failure = L("http / httpsのURLを入力してください。"); return }
         if store?.routeNotion(url,from:PageReference(workspaceID:workspaceID,pageID:pageID)) == true {return}
         if let action=notionAction,NotionActions.creationIDs.contains(action) {
             pendingNotionAction=action;notionReadyToken=UUID().uuidString
@@ -328,6 +330,11 @@ import WorkspaceCore
     private func failed(_ error: Error) {
         guard !disposed else{return}
         let networkError=error as NSError
+        if expectingDownloadInterruption,["WebKitErrorDomain","WKErrorDomain"].contains(networkError.domain),networkError.code == 102 {
+            expectingDownloadInterruption=false
+            clearLoadingPlaceholder();failure=nil;failedURL=nil;navigationStarted=nil;refresh()
+            return
+        }
         // Cancelling an HTTP error response can produce WebKit's secondary
         // policy-interruption error. Preserve the useful server response instead.
         if loadingState == .failed,lastHTTPStatus.map({(500...599).contains($0)}) == true,
@@ -343,7 +350,7 @@ import WorkspaceCore
            [NSURLErrorNotConnectedToInternet,NSURLErrorNetworkConnectionLost,NSURLErrorCannotFindHost,NSURLErrorCannotConnectToHost,NSURLErrorDNSLookupFailed].contains(networkError.code),
            let url=networkError.userInfo[NSURLErrorFailingURLErrorKey] as? URL,url == mainGET {connectionRetryURL=url}
         cancelNotionAction(clearPending:false)
-        if pendingNotionAction != nil {clearPendingNotionAction();store?.notify("新しいタブを読み込めなかったためNotionの操作を中止しました",isError:true)}
+        if pendingNotionAction != nil {clearPendingNotionAction();store?.notify(L("新しいタブを読み込めなかったためNotionの操作を中止しました"),isError:true)}
         loadingTask?.cancel();loadingTask=nil;loadingGeneration += 1
         nativeLoadingPlaceholderVisible=false;loadingState = .failed
         failure = error.localizedDescription; refresh()
@@ -353,12 +360,20 @@ import WorkspaceCore
         cancelNotionAction();invalidateDocument()
         loadingTask?.cancel();loadingTask=nil;loadingGeneration += 1;needsRestore=true
         nativeLoadingPlaceholderVisible=false;loadingState = .failed;failedURL=webView.url
-        failure = "ページの処理が終了しました。再読み込みしてください。"
+        failure = L("ページの処理が終了しました。再読み込みしてください。")
         if store?.visiblePageIDs.contains(pageID) == true {prepareForDisplay()}
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard !disposed,let url = navigationAction.request.url else { decisionHandler(.cancel); return }
+        let scheme = url.scheme?.lowercased() ?? ""
+        // Handle an explicit download before Cmd-click and workspace routing. Those
+        // paths would replace the original request and lose POST/blob/download data.
+        if navigationAction.shouldPerformDownload,["http","https","about","blob","data"].contains(scheme) {
+            if navigationAction.targetFrame?.isMainFrame != false {expectingDownloadInterruption=true}
+            decisionHandler(.download);return
+        }
         if navigationAction.targetFrame?.isMainFrame == true {
+            expectingDownloadInterruption=false
             mainGET=navigationAction.request.httpMethod == "GET" && ["http","https"].contains(url.scheme ?? "") ? url:nil
         }
         if navigationAction.navigationType == .linkActivated,
@@ -374,11 +389,10 @@ import WorkspaceCore
         if navigationAction.navigationType == .linkActivated, navigationAction.targetFrame?.isMainFrame == true,
            navigationAction.request.httpMethod == "GET",
            store?.routeNotion(url,from:PageReference(workspaceID:workspaceID,pageID:pageID)) == true {decisionHandler(.cancel);return}
-        let scheme = url.scheme?.lowercased() ?? ""
-        if ["http","https","about","blob","data"].contains(scheme) { decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow); return }
+        if ["http","https","about","blob","data"].contains(scheme) { decisionHandler(.allow); return }
         decisionHandler(.cancel)
-        let alert = NSAlert(); alert.messageText = "外部アプリで開きますか？"; alert.informativeText = "\(scheme) リンクを対応するアプリへ渡します。"
-        alert.addButton(withTitle: "キャンセル"); alert.addButton(withTitle: "開く")
+        let alert = NSAlert(); alert.messageText = L("外部アプリで開きますか？"); alert.informativeText = L("\(scheme) リンクを対応するアプリへ渡します。")
+        alert.addButton(withTitle: L("キャンセル")); alert.addButton(withTitle: L("開く"))
         if alert.runModal() == .alertSecondButtonReturn { NSWorkspace.shared.open(url) }
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
@@ -387,20 +401,25 @@ import WorkspaceCore
             lastHTTPStatus=response.statusCode
             if (500...599).contains(response.statusCode) {
                 let text=response.statusCode == 504
-                    ? "接続先のサーバーから応答がありません（HTTP 504）。時間をおいて再試行してください。"
-                    : "接続先のサーバーでエラーが発生しました（HTTP \(response.statusCode)）。時間をおいて再試行してください。"
+                    ? L("接続先のサーバーから応答がありません（HTTP 504）。時間をおいて再試行してください。")
+                    : L("接続先のサーバーでエラーが発生しました（HTTP \(response.statusCode)）。時間をおいて再試行してください。")
                 var info:[String:Any]=[NSLocalizedDescriptionKey:text]
                 if let url=response.url {info[NSURLErrorFailingURLErrorKey]=url}
                 failed(NSError(domain:"WorkspaceTabs.HTTP",code:response.statusCode,userInfo:info))
                 decisionHandler(.cancel);return
             }
         }
-        decisionHandler(navigationResponse.canShowMIMEType ? .allow : .download)
+        let disposition=(navigationResponse.response as? HTTPURLResponse)?.value(forHTTPHeaderField:"Content-Disposition")?
+            .split(separator:";",maxSplits:1).first?.trimmingCharacters(in:.whitespacesAndNewlines).lowercased()
+        let download=disposition == "attachment" || !navigationResponse.canShowMIMEType
+        if download,navigationResponse.isForMainFrame {expectingDownloadInterruption=true}
+        decisionHandler(download ? .download : .allow)
     }
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         // Keep the opener's exact persistent data store, including across app-tab switches.
         guard let store, navigationAction.targetFrame == nil else { return nil }
         let child = store.addPage(to: workspaceID, url: "about:blank", configuration: configuration,groupID:store.workspace(workspaceID).flatMap{w in w.pages.first(where:{$0.id == pageID}).map{w.groupID(for:$0)}})
+        child?.downloadOpener=PageReference(workspaceID:workspaceID,pageID:pageID)
         if store.split?.pageID == pageID, let child {
             store.setSplit(PageReference(workspaceID: workspaceID, pageID: child.pageID))
         }
@@ -412,24 +431,36 @@ import WorkspaceCore
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
         let alert = NSAlert(); alert.messageText = frame.securityOrigin.host; alert.informativeText = message
-        alert.addButton(withTitle: "キャンセル"); alert.addButton(withTitle: "OK"); completionHandler(alert.runModal() == .alertSecondButtonReturn)
+        alert.addButton(withTitle: L("キャンセル")); alert.addButton(withTitle: "OK"); completionHandler(alert.runModal() == .alertSecondButtonReturn)
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         let alert = NSAlert(); alert.messageText = frame.securityOrigin.host; alert.informativeText = prompt
         let field = NSTextField(string: defaultText ?? ""); field.frame = NSRect(x:0,y:0,width:300,height:24); alert.accessoryView = field
-        alert.addButton(withTitle: "キャンセル"); alert.addButton(withTitle: "OK"); completionHandler(alert.runModal() == .alertSecondButtonReturn ? field.stringValue : nil)
+        alert.addButton(withTitle: L("キャンセル")); alert.addButton(withTitle: "OK"); completionHandler(alert.runModal() == .alertSecondButtonReturn ? field.stringValue : nil)
     }
     func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
         let panel = NSOpenPanel(); panel.allowsMultipleSelection = parameters.allowsMultipleSelection; panel.canChooseDirectories = parameters.allowsDirectories
         completionHandler(panel.runModal() == .OK ? panel.urls : nil)
     }
-    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) { download.delegate = self }
-    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) { download.delegate = self }
-    func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
-        let panel = NSSavePanel(); panel.nameFieldStringValue = suggestedFilename
-        completionHandler(panel.runModal() == .OK ? panel.url : nil)
+    func webView(_ webView:WKWebView,navigationAction:WKNavigationAction,didBecome download:WKDownload) {handoff(download)}
+    func webView(_ webView:WKWebView,navigationResponse:WKNavigationResponse,didBecome download:WKDownload) {handoff(download)}
+    private func handoff(_ download:WKDownload) {
+        guard let store else {download.cancel(nil);return}
+        store.downloads.adopt(download)
+        if expectingDownloadInterruption {clearLoadingPlaceholder();failure=nil;failedURL=nil;navigationStarted=nil;refresh()}
+        // A target=_blank attachment needs a WebView for WebKit's original request,
+        // but must not leave a useless empty/error tab behind after the handoff.
+        if !hasCommittedDocument,let opener=downloadOpener {
+            let child=PageReference(workspaceID:workspaceID,pageID:pageID)
+            DispatchQueue.main.async { [weak store] in
+                guard let store,store.page(child) != nil,store.page(opener) != nil else{return}
+                let wasSelected=store.workspace(child.workspaceID)?.selectedPageID == child.pageID
+                store.closePage(child.pageID,in:child.workspaceID)
+                if wasSelected {store.selectPage(opener.pageID,in:opener.workspaceID)}
+            }
+        }
     }
-    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) { failure = "ダウンロード失敗：" + error.localizedDescription }
+
 }
 
 struct WebContent: NSViewRepresentable {

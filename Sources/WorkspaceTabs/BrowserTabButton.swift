@@ -2,6 +2,7 @@ import SwiftUI
 import WorkspaceCore
 
 struct BrowserTabButton: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     let workspace:BrowserWorkspace
     let page:BrowserPage
@@ -27,10 +28,10 @@ struct BrowserTabButton: View {
                 .accessibilityElement(children:.ignore)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction {select()}
-                .accessibilityLabel(page.displayTitle + (page.pinned == true ? "（ピン留め）":""))
+                .accessibilityLabel(page.displayTitle + (page.pinned == true ? L("（ピン留め）"):""))
                 .accessibilityAddTraits(selected ? .isSelected:[])
             if page.pinned != true {
-                Button {store.closePage(page.id,in:workspace.id)} label:{Image(systemName:"xmark").font(.system(size:9)).frame(width:16,height:20).contentShape(Rectangle())}.buttonStyle(.plain).help("ブラウザタブを閉じる")
+                Button {store.closePage(page.id,in:workspace.id)} label:{Image(systemName:"xmark").font(.system(size:9)).frame(width:16,height:20).contentShape(Rectangle())}.buttonStyle(.plain).help(L("ブラウザタブを閉じる"))
             }
         }.font(.system(size:12,weight:selected ? .semibold:.medium))
             .padding(.horizontal,BrowserLayout.gap).foregroundStyle(ink)
@@ -39,58 +40,59 @@ struct BrowserTabButton: View {
             .onHover {hovered=$0}
             .help(page.displayTitle + "\n" + page.url)
             .contextMenu {
-                Button(page.pinned == true ? "ピン留めを解除":"タブをピン留め") {var copy=page;copy.pinned=page.pinned != true;store.updateBrowserTab(copy,in:workspace.id)}
+                Button(page.pinned == true ? L("ピン留めを解除"):L("タブをピン留め")) {var copy=page;copy.pinned=page.pinned != true;store.updateBrowserTab(copy,in:workspace.id)}
                 if page.pinned == true {
-                    Picker("ピン留めタブの表示",selection:Binding(get:{page.pinnedDisplay ?? "icon"},set:{mode in var copy=page;copy.pinnedDisplay=mode;store.updateBrowserTab(copy,in:workspace.id)})) {
-                        Text("アイコンのみ").tag("icon")
-                        Text("アイコンと名前").tag("name")
+                    Picker(L("ピン留めタブの表示"),selection:Binding(get:{page.pinnedDisplay ?? "icon"},set:{mode in var copy=page;copy.pinnedDisplay=mode;store.updateBrowserTab(copy,in:workspace.id)})) {
+                        Text(L("アイコンのみ")).tag("icon")
+                        Text(L("アイコンと名前")).tag("name")
                     }
                 }
-                Menu("グループへ移動") {
+                Menu(L("グループへ移動")) {
                     ForEach(workspace.resolvedTabGroups) {group in
                         Button {store.movePageToGroup(page.id,in:workspace.id,groupID:group.id)} label:{
                             if workspace.groupID(for:page) == group.id {Label(group.name,systemImage:"checkmark")} else {Text(group.name)}
                         }
                     }
                 }
-                Button("表示名・アイコンを編集…") {
+                Button(L("表示名・アイコンを編集…")) {
                     store.window?.makeKeyAndOrderFront(nil)
                     store.editingBrowserTab=PageReference(workspaceID:workspace.id,pageID:page.id)
                 }
-                Button("右側に並べて表示") {store.setSplit(PageReference(workspaceID:workspace.id,pageID:page.id))}.disabled(detached || page.id == store.selectedPage?.id)
+                Button(L("右側に並べて表示")) {store.setSplit(PageReference(workspaceID:workspace.id,pageID:page.id))}.disabled(detached || page.id == store.selectedPage?.id)
                 Divider()
-                Button("タブを閉じる") {store.closePage(page.id,in:workspace.id)}.disabled(page.pinned == true)
+                Button(L("タブを閉じる")) {store.closePage(page.id,in:workspace.id)}.disabled(page.pinned == true)
             }
     }
 }
 
 struct BrowserTabEditor:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     let workspaceID:UUID
     @State var draft:BrowserPage
     @Environment(\.dismiss) private var dismiss
     var body:some View {
         VStack(alignment:.leading,spacing:16) {
-            Text("タブの表示").font(.title2.weight(.semibold))
-            TextField("表示名（空欄でページ名）",text:Binding(get:{draft.tabName ?? ""},set:{draft.tabName=$0}))
-            TextField("アイコン（絵文字・文字、空欄でサイトのfavicon）",text:Binding(get:{draft.tabEmoji ?? ""},set:{draft.tabEmoji=String($0.prefix(2))}))
+            Text(L("タブの表示")).font(.title2.weight(.semibold))
+            TextField(L("表示名（空欄でページ名）"),text:Binding(get:{draft.tabName ?? ""},set:{draft.tabName=$0}))
+            TextField(L("アイコン（絵文字・文字、空欄でサイトのfavicon）"),text:Binding(get:{draft.tabEmoji ?? ""},set:{draft.tabEmoji=String($0.prefix(2))}))
             IconSelectionRow(store:store,file:$draft.tabIconFile)
             if let workspace=store.workspace(workspaceID) {
-                Picker("グループ",selection:Binding(get:{workspace.groupID(for:draft)},set:{draft.groupID=$0})) {
+                Picker(L("グループ"),selection:Binding(get:{workspace.groupID(for:draft)},set:{draft.groupID=$0})) {
                     ForEach(workspace.resolvedTabGroups) {group in Text(group.name).tag(group.id)}
                 }
             }
-            Toggle("ピン留め",isOn:Binding(get:{draft.pinned == true},set:{draft.pinned=$0}))
+            Toggle(L("ピン留め"),isOn:Binding(get:{draft.pinned == true},set:{draft.pinned=$0}))
             if draft.pinned == true {
-                Picker("表示",selection:Binding(get:{draft.pinnedDisplay ?? "icon"},set:{draft.pinnedDisplay=$0})) {
-                    Text("アイコンのみ").tag("icon")
-                    Text("アイコンと名前").tag("name")
+                Picker(L("表示"),selection:Binding(get:{draft.pinnedDisplay ?? "icon"},set:{draft.pinnedDisplay=$0})) {
+                    Text(L("アイコンのみ")).tag("icon")
+                    Text(L("アイコンと名前")).tag("name")
                 }.pickerStyle(.segmented)
             }
             HStack {
                 Spacer()
-                Button("キャンセル") {dismiss()}.keyboardShortcut(.cancelAction)
-                Button("保存") {store.updateBrowserTab(draft,in:workspaceID);store.notify("タブの表示を保存しました");dismiss()}.keyboardShortcut(.defaultAction)
+                Button(L("キャンセル")) {dismiss()}.keyboardShortcut(.cancelAction)
+                Button(L("保存")) {store.updateBrowserTab(draft,in:workspaceID);store.notify(L("タブの表示を保存しました"));dismiss()}.keyboardShortcut(.defaultAction)
             }
         }.textFieldStyle(.roundedBorder).padding(24).frame(width:480)
     }

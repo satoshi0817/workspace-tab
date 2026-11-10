@@ -18,7 +18,7 @@ extension BrowserStore {
         let source=FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Link Viewer/state.json")
         guard FileManager.default.fileExists(atPath:source.path) else{return}
         let result=importLinkViewer()
-        if result.hasPrefix("移行しました"),saveBeforeExit() {try? Data().write(to:marker,options:.atomic)}
+        if result.hasPrefix(L("移行しました")),saveBeforeExit() {try? Data().write(to:marker,options:.atomic)}
     }
     @discardableResult func importLinkViewer(source:URL? = nil)->String {
         let root=FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Link Viewer")
@@ -49,7 +49,7 @@ extension BrowserStore {
                 links.append(link);added += 1;if matches.count != 1 {unassigned += 1}
             }
             session.favorites=links;changed()
-            return "移行しました：\(added)件（開く先の未設定：\(unassigned)件、無効なURL等：\(skipped)件）"
-        } catch {return "移行できませんでした："+error.localizedDescription}
+            return L("移行しました：\(added)件（開く先の未設定：\(unassigned)件、無効なURL等：\(skipped)件）")
+        } catch {return L("移行できませんでした：")+error.localizedDescription}
     }
 }

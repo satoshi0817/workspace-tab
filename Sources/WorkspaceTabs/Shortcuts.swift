@@ -1,3 +1,4 @@
+import WorkspaceCore
 import AppKit
 import SwiftUI
 import Carbon
@@ -27,7 +28,14 @@ struct ShortcutBinding: Codable, Equatable {
 }
 struct ShortcutAction: Identifiable {
     var id: String
-    var title: String
+    private var titleKey: String
+    var title: String {
+        if id.hasPrefix("workspace"),let number=Int(id.dropFirst(9)) { return L("アプリタブ \(number)") }
+        return Localization.text(titleKey)
+    }
+    init(id:String,title:String,initial:ShortcutBinding,globalID:UInt32? = nil) {
+        self.id=id;self.titleKey=title;self.initial=initial;self.globalID=globalID
+    }
     var initial: ShortcutBinding
     var globalID: UInt32?
 }
@@ -75,19 +83,19 @@ struct ShortcutAction: Identifiable {
     func binding(_ action:ShortcutAction)->ShortcutBinding { overrides[action.id] ?? action.initial }
     func set(_ value:ShortcutBinding,for action:ShortcutAction)->String? {
         let strokes=value.strokes
-        guard !strokes.isEmpty,strokes.count <= 4 else{return "1〜4ストロークを記録してください。"}
-        if strokes.count == 1 && strokes[0].modifierOnly {return "修飾キー単独は2回以上の連続入力にしてください。"}
+        guard !strokes.isEmpty,strokes.count <= 4 else{return L("1〜4ストロークを記録してください。")}
+        if strokes.count == 1 && strokes[0].modifierOnly {return L("修飾キー単独は2回以上の連続入力にしてください。")}
         for stroke in strokes {
             let flags=NSEvent.ModifierFlags(rawValue:stroke.modifiers)
-            guard !flags.intersection([.command,.control,.option]).isEmpty else {return "Command・Control・Optionのいずれかを含めてください。"}
-            if !stroke.modifierOnly && flags == .command && ["c","v","x","a","z","h"].contains(stroke.key) {return "macOS標準の編集・非表示操作に使われています。"}
+            guard !flags.intersection([.command,.control,.option]).isEmpty else {return L("Command・Control・Optionのいずれかを含めてください。")}
+            if !stroke.modifierOnly && flags == .command && ["c","v","x","a","z","h"].contains(stroke.key) {return L("macOS標準の編集・非表示操作に使われています。")}
         }
-        if action.globalID != nil && strokes.count > 1 && strokes.contains(where:{!$0.modifierOnly}) {return "他アプリでも使う連続入力は、⌘ → ⌘など修飾キーだけで登録してください。"}
+        if action.globalID != nil && strokes.count > 1 && strokes.contains(where:{!$0.modifierOnly}) {return L("他アプリでも使う連続入力は、⌘ → ⌘など修飾キーだけで登録してください。")}
         if let other=Self.actions.first(where:{other in
             guard other.id != action.id else{return false}
             let existing=binding(other).strokes
             return Array(existing.prefix(strokes.count)) == strokes || Array(strokes.prefix(existing.count)) == existing
-        }) {return "「\(other.title)」と重複するか、同じ入力で始まっています。"}
+        }) {return L("「\(other.title)」と重複するか、同じ入力で始まっています。")}
         overrides[action.id]=value; persist();return nil
     }
     static var numberedActions:[ShortcutAction] {actions.filter{$0.id.hasPrefix("workspace")}}
@@ -97,12 +105,12 @@ struct ShortcutAction: Identifiable {
         return first.flags
     }
     func setWorkspaceModifiers(_ flags:NSEvent.ModifierFlags,reset:Bool=false)->String? {
-        guard !flags.intersection([.command,.control,.option]).isEmpty else{return "⌘・⌃・⌥から1つ以上選んでください。"}
+        guard !flags.intersection([.command,.control,.option]).isEmpty else{return L("⌘・⌃・⌥から1つ以上選んでください。")}
         var next=overrides
         for action in Self.numberedActions {
             var value=action.initial;value.modifiers=flags.rawValue
             for other in Self.actions where !other.id.hasPrefix("workspace") {
-                if binding(other).strokes.first == value.strokes.first {return "「\(other.title)」と重複しています。変更は適用していません。"}
+                if binding(other).strokes.first == value.strokes.first {return L("「\(other.title)」と重複しています。変更は適用していません。")}
             }
             if reset {next.removeValue(forKey:action.id)} else {next[action.id]=value}
         }
@@ -193,7 +201,20 @@ final class ShortcutStrokeRecorder {
         }
     }
 }
+enum ShortcutSettingsGroup:String,CaseIterable,Identifiable {
+    case appTabs, other
+    var id:String {rawValue}
+    var title:String {self == .appTabs ? L("アプリタブの切り替え") : L("その他")}
+    @MainActor var actions:[ShortcutAction] {
+        ShortcutPreferences.actions.filter { action in
+            guard !action.id.hasPrefix("workspace") else {return false}
+            let switching=action.id == "previousWorkspace" || action.id == "nextWorkspace"
+            return self == .appTabs ? switching : !switching
+        }
+    }
+}
 struct ShortcutSettings:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject private var preferences=ShortcutPreferences.shared
     @State private var recording:ShortcutAction?
     @State private var monitor:Any?
@@ -203,24 +224,24 @@ struct ShortcutSettings:View {
     @State private var recorder=ShortcutStrokeRecorder()
     var body:some View {
         Section {
-            Text("記録を押し、キーを入力して登録します。同時押し・⌘ → ⌘などの連続入力（最大4回）に対応。実行時は各入力を1.2秒以内に続けます。Escでキャンセル。").font(.caption).foregroundStyle(.secondary)
-            Text("アプリタブ切替と検索は他アプリでも有効です。他アプリでの連続入力にはmacOSのアクセシビリティ許可が必要です。").font(.caption).foregroundStyle(.secondary)
+            Text(L("記録を押し、キーを入力して登録します。同時押し・⌘ → ⌘などの連続入力（最大4回）に対応。実行時は各入力を1.2秒以内に続けます。Escでキャンセル。")).font(.caption).foregroundStyle(.secondary)
+            Text(L("アプリタブ切替と検索は他アプリでも有効です。他アプリでの連続入力にはmacOSのアクセシビリティ許可が必要です。")).font(.caption).foregroundStyle(.secondary)
             if recording != nil {
                 VStack(alignment:.leading,spacing:10){
                     Text(recording!.title).font(.headline)
-                    Text(strokes.isEmpty ? "キーを押してください…":strokes.map(\.label).joined(separator:" → ")).monospaced()
+                    Text(strokes.isEmpty ? L("キーを押してください…"):strokes.map(\.label).joined(separator:" → ")).monospaced()
                     HStack {
-                        Button("やり直す"){strokes=[];recorder.reset()}
-                        Button("キャンセル"){stop()}
+                        Button(L("やり直す")){strokes=[];recorder.reset()}
+                        Button(L("キャンセル")){stop()}
                         Spacer()
-                        Button("登録") {save()}.disabled(strokes.isEmpty)
+                        Button(L("登録")) {save()}.disabled(strokes.isEmpty)
                     }
                 }.padding(.vertical,6)
             }
             if !message.isEmpty {Text(message).foregroundStyle(.orange).font(.caption)}
             VStack(alignment:.leading,spacing:10) {
-                Text("数字でアプリタブを開く").font(.headline)
-                Text(preferences.workspaceModifiers.map{ShortcutBinding(key:"1〜9",code:0,modifiers:$0.rawValue).label} ?? "現在はタブごとに個別設定").foregroundStyle(.secondary)
+                Text(L("数字でアプリタブを開く")).font(.headline)
+                Text(preferences.workspaceModifiers.map{ShortcutBinding(key:"1〜9",code:0,modifiers:$0.rawValue).label} ?? L("現在はタブごとに個別設定")).foregroundStyle(.secondary)
                 HStack {
                     modifierToggle("⌘ Command",.command)
                     modifierToggle("⌃ Control",.control)
@@ -228,23 +249,19 @@ struct ShortcutSettings:View {
                     modifierToggle("⇧ Shift",.shift)
                 }
                 HStack {
-                    Button("適用") {message=preferences.setWorkspaceModifiers(numberFlags) ?? ""}.disabled(recording != nil)
-                    Button("初期値に戻す") {message=preferences.setWorkspaceModifiers([.control,.option],reset:true) ?? "";if message.isEmpty {numberFlags=[.control,.option]}}.disabled(recording != nil)
-                    Text("選んだキー ＋ 1〜9（並び順）").font(.caption).foregroundStyle(.secondary)
+                    Button(L("適用")) {message=preferences.setWorkspaceModifiers(numberFlags) ?? ""}.disabled(recording != nil)
+                    Button(L("初期値に戻す")) {message=preferences.setWorkspaceModifiers([.control,.option],reset:true) ?? "";if message.isEmpty {numberFlags=[.control,.option]}}.disabled(recording != nil)
+                    Text(L("選んだキー ＋ 1〜9（並び順）")).font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(.vertical,8)
-            ForEach(["アプリタブの切り替え","その他"],id:\.self){group in
-                Text(group).font(.headline).padding(.top,8)
-                ForEach(ShortcutPreferences.actions.filter{action in
-                    if action.id.hasPrefix("workspace") {return false}
-                    let switching=action.id == "previousWorkspace" || action.id == "nextWorkspace"
-                    return group == "アプリタブの切り替え" ? switching:!switching
-                }){ action in
+            ForEach(ShortcutSettingsGroup.allCases){group in
+                Text(group.title).font(.headline).padding(.top,8)
+                ForEach(group.actions){ action in
                 HStack {
                     Text(action.title);Spacer()
                     Text(preferences.binding(action).label).monospaced().foregroundStyle(.secondary)
-                    Button("記録"){start(action)}.disabled(recording != nil)
-                    Button {message=preferences.reset(action) ?? ""} label:{Image(systemName:"arrow.counterclockwise")}.disabled(preferences.overrides[action.id] == nil || recording != nil).help("この操作だけ初期値に戻す").accessibilityLabel(action.title+"をリセット")
+                    Button(L("記録")){start(action)}.disabled(recording != nil)
+                    Button {message=preferences.reset(action) ?? ""} label:{Image(systemName:"arrow.counterclockwise")}.disabled(preferences.overrides[action.id] == nil || recording != nil).help(L("この操作だけ初期値に戻す")).accessibilityLabel(action.title+L("をリセット"))
                 }
             }
             }
@@ -266,7 +283,7 @@ struct ShortcutSettings:View {
         monitor=NSEvent.addLocalMonitorForEvents(matching:[.keyDown,.flagsChanged,.leftMouseDown,.rightMouseDown]){event in
             if event.type == .keyDown && event.keyCode == 53 {stop();return nil}
             if let stroke=recorder.consume(event) {
-                if strokes.count < 4 {strokes.append(stroke)} else {message="最大4ストロークです。「やり直す」で再記録できます。"}
+                if strokes.count < 4 {strokes.append(stroke)} else {message=L("最大4ストロークです。「やり直す」で再記録できます。")}
             }
             return event.type == .keyDown ? nil:event
         }

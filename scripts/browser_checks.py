@@ -14,6 +14,22 @@ class Fixture(BaseHTTPRequestHandler):
     def do_GET(self):
         body = b'<!doctype html><title>Browser fixture</title><link rel="icon" href="/icon.png"><nav class="notion-sidebar-container">Sidebar</nav><a href="/child" target="_blank">Child</a>'
         mime = "text/html; charset=utf-8"
+        if self.path == "/download-page":
+            body = b'''<!doctype html><title>Download fixture</title><main>Download fixture: keep this page visible.</main><input id="draft" value="keep unsent input"><a id="attachment" href="/download.bin">Attachment</a><a id="text" href="/download.txt">Text attachment</a><a id="attribute" href="/inline.txt" download="attribute.txt">Download attribute</a><a id="popup" href="/download.bin" target="_blank">New window download</a><a id="cookie" href="/download-cookie" download="cookie.bin">Authenticated download</a><a id="slow" href="/download-slow.bin">Slow download</a><a id="broken" href="/download-broken.bin">Interrupted download</a><a id="postlink" href="#">POST download</a><form id="post" method="post" action="/download-post"><input name="value" value="original"></form><button id="blob" onclick="const a=document.createElement('a');a.href=window.URL.createObjectURL(new Blob(['blob fixture content'],{type:'text/plain'}));a.download='blob.txt';document.body.append(a);a.click();a.remove();">Blob</button>'''
+        if self.path in ("/download.bin", "/download.txt", "/inline.txt", "/download-cookie", "/download-slow.bin", "/download-broken.bin"):
+            if self.path == "/download-cookie" and "download-profile=alpha" not in (self.headers.get("Cookie") or ""):
+                self.send_error(403); return
+            body = b"Workspace Tabs download fixture\n"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain" if self.path.endswith(".txt") else "application/octet-stream")
+            if self.path != "/inline.txt":
+                self.send_header("Content-Disposition", 'attachment; filename="fixture.txt"')
+            self.send_header("Content-Length", str(len(body) + (100 if self.path == "/download-broken.bin" else 0)))
+            self.end_headers()
+            if self.path == "/download-slow.bin": time.sleep(1)
+            self.wfile.write(body)
+            if self.path == "/download-broken.bin": self.close_connection = True
+            return
         if self.path in ("/gateway-timeout", "/server-unavailable"):
             self.send_error(504 if self.path == "/gateway-timeout" else 503)
             return
@@ -51,6 +67,16 @@ class Fixture(BaseHTTPRequestHandler):
             self.wfile.write(body)
         except (BrokenPipeError, ConnectionResetError):
             pass
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+        if self.path != "/download-post" or body != b"value=original":
+            self.send_error(400); return
+        body = b"original POST response"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Disposition", 'attachment; filename="post.txt"')
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers(); self.wfile.write(body)
     def log_message(self, *args):
         pass
 
@@ -66,7 +92,7 @@ if __name__ == "__main__":
     server = FixtureServer(("127.0.0.1", 48761), Fixture)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
-        result = subprocess.run([str(root / "build/Workspace Tabs.app/Contents/MacOS/WorkspaceTabs"), "--browser-checks"], timeout=180)
+        result = subprocess.run([str(root / "build/Workspace Tabs.app/Contents/MacOS/WorkspaceTabs"), "--download-checks" if "--downloads" in sys.argv else "--browser-checks"], timeout=180)
     finally:
         server.shutdown()
         server.server_close()

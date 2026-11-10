@@ -1,3 +1,4 @@
+import WorkspaceCore
 import AppKit
 import SwiftUI
 
@@ -14,13 +15,13 @@ import SwiftUI
     private weak var previousResponder:NSResponder?
     private var monitor:Any?
     private var deactivateObserver:NSObjectProtocol?
-    static let choices:[(id:String,title:String,symbol:String)]=[
-        ("notionPage","New page","doc"),
-        ("notionChat","New chat","bubble.left"),
-        ("notionMeeting","New meeting note","mic"),
-        ("notionDatabase","New database","tablecells"),
-        ("notionCustomPage","Custom page","pencil.and.outline")
-    ]
+    static var choices:[(id:String,title:String,symbol:String)] { [
+        ("notionPage",L("新規ページ"),"doc"),
+        ("notionChat",L("新規チャット"),"bubble.left"),
+        ("notionMeeting",L("新規ミーティングノート"),"mic"),
+        ("notionDatabase",L("新規データベース"),"tablecells"),
+        ("notionCustomPage",L("カスタムページ"),"pencil.and.outline")
+    ] }
     init(source:PageReference,perform:@escaping(String,PageReference)->Void) {
         self.source=source;self.perform=perform
     }
@@ -43,7 +44,7 @@ import SwiftUI
         let anchor=owner.frame.contains(point) ? point:NSPoint(x:owner.frame.midX-150,y:owner.frame.midY+100)
         let popup=CreationPanel(contentRect:Self.frame(at:anchor,inside:screen?.visibleFrame ?? owner.frame),styleMask:[.borderless],backing:.buffered,defer:false)
         popup.isReleasedWhenClosed=false;popup.isOpaque=false;popup.backgroundColor = .clear
-        popup.title="Notionで作成";popup.hasShadow=true;popup.level = .floating;popup.hidesOnDeactivate=true
+        popup.title=L("Notionで作成");popup.hasShadow=true;popup.level = .floating;popup.hidesOnDeactivate=true
         popup.collectionBehavior=[.fullScreenAuxiliary,.transient];popup.appearance=owner.effectiveAppearance
         popup.delegate=self;popup.contentView=NSHostingView(rootView:CreationPicker(menu:self))
         panel=popup
@@ -97,6 +98,7 @@ private final class CreationPanel:NSPanel {
     override func cancelOperation(_ sender:Any?) {} // Escape is handled by the picker.
 }
 private struct CreationPicker:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var menu:NotionCreationMenu
     @Environment(\.colorScheme) private var scheme
     private var ink:Color {scheme == .dark ? Color(white:0.9):Color(white:0.2)}
@@ -109,7 +111,7 @@ private struct CreationPicker:View {
                         Image(systemName:choice.symbol).font(.system(size:17,weight:.regular)).frame(width:20,height:20)
                         Text(choice.title).font(.system(size:14)).lineLimit(1)
                         Spacer(minLength:4)
-                        Text("Press \(index+1)").font(.system(size:12,weight:.medium))
+                        Text(L("\(index+1)を押す")).font(.system(size:12,weight:.medium))
                             .foregroundStyle(ink.opacity(0.45)).padding(.horizontal,5).frame(height:20)
                             .background(ink.opacity(0.035),in:RoundedRectangle(cornerRadius:4))
                     }
@@ -117,7 +119,7 @@ private struct CreationPicker:View {
                     .background(menu.selectedIndex == index ? ink.opacity(0.055):.clear,in:RoundedRectangle(cornerRadius:8))
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain).onHover {inside in if inside {menu.highlight(index)}}
-                .accessibilityLabel(choice.title).accessibilityHint("Press \(index+1)")
+                .accessibilityLabel(choice.title).accessibilityHint(L("\(index+1)を押す"))
             }
         }.padding(8).frame(width:300,height:200)
         .background(background,in:RoundedRectangle(cornerRadius:16))

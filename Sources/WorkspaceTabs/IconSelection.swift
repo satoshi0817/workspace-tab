@@ -1,3 +1,4 @@
+import WorkspaceCore
 import AppKit
 import SwiftUI
 
@@ -11,11 +12,11 @@ struct PresetIcon:Decodable,Identifiable {
     let icons:[PresetIcon]
     private let known:Set<String>
     private let cache=NSCache<NSString,NSImage>()
-    static let categories:[(id:String,title:String)]=[
-        ("people","人・表情"),("animals-nature","動物・自然"),("food-drink","食べ物・飲み物"),
-        ("activities","アクティビティ"),("travel-places","旅行・場所"),("objects","もの・仕事"),
-        ("arrows-shapes","矢印・図形"),("symbols","記号・操作")
-    ]
+    static var categories:[(id:String,title:String)] { [
+        ("people",L("人・表情")),("animals-nature",L("動物・自然")),("food-drink",L("食べ物・飲み物")),
+        ("activities",L("アクティビティ")),("travel-places",L("旅行・場所")),("objects",L("もの・仕事")),
+        ("arrows-shapes",L("矢印・図形")),("symbols",L("記号・操作"))
+    ] }
     private static let keywords:[String:String]=[
         "folder":"フォルダー フォルダ","document":"書類 ページ 文書","book":"本 読書","star":"星 お気に入り",
         "heart":"ハート 好き","home":"家 ホーム","house":"家 ホーム","calendar":"カレンダー 予定 日程",
@@ -35,11 +36,13 @@ struct PresetIcon:Decodable,Identifiable {
     }
     func filtered(query:String,category:String)->[PresetIcon] {
         let terms=query.trimmingCharacters(in:.whitespacesAndNewlines).lowercased().split(whereSeparator:{$0.isWhitespace})
+        let categories=Dictionary(uniqueKeysWithValues:Self.categories.map{($0.id,$0.title)})
+        let keywords=Self.keywords.mapValues{Localization.text($0)}
         return icons.filter {icon in
             guard category.isEmpty || icon.category == category else{return false}
             if terms.isEmpty {return true}
-            let aliases=Self.keywords.filter{icon.id.localizedCaseInsensitiveContains($0.key)}.map(\.value).joined(separator:" ")
-            let haystack=icon.id+" "+icon.title+" "+aliases+" "+(Self.categories.first{$0.id == icon.category}?.title ?? "")
+            let aliases=keywords.filter{icon.id.localizedCaseInsensitiveContains($0.key)}.map(\.value).joined(separator:" ")
+            let haystack=icon.id+" "+icon.title+" "+aliases+" "+(categories[icon.category] ?? "")
             return terms.allSatisfy{haystack.localizedCaseInsensitiveContains(String($0))}
         }
     }
@@ -55,6 +58,7 @@ struct PresetIcon:Decodable,Identifiable {
 }
 
 struct IconSelectionRow:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @Binding var file:String?
     var defaultSymbol="globe"
@@ -66,21 +70,22 @@ struct IconSelectionRow:View {
                     Image(nsImage:image).renderingMode(image.isTemplate ? .template:.original).resizable().scaledToFit()
                 } else {Image(systemName:defaultSymbol).resizable().scaledToFit().padding(3)}
             }.frame(width:24,height:24).padding(8).background(.quaternary,in:RoundedRectangle(cornerRadius:10))
-            Text("アイコン")
+            Text(L("アイコン"))
             Spacer(minLength:4)
-            Button("プリセット…") {picking=true}
+            Button(L("プリセット…")) {picking=true}
                 .popover(isPresented:$picking) {
                     PresetIconPicker {id in
                         if let image=PresetIcons.shared.image(id),let saved=store.saveIcon(image,template:true) {file=saved;picking=false}
                     }
                 }
-            Button("画像…") {if let saved=store.chooseIcon() {file=saved}}
-                .help("PNG・JPEG・HEIC画像から選びます")
-            if file != nil {Button("解除") {file=nil}}
+            Button(L("画像…")) {if let saved=store.chooseIcon() {file=saved}}
+                .help(L("PNG・JPEG・HEIC画像から選びます"))
+            if file != nil {Button(L("解除")) {file=nil}}
         }.foregroundStyle(Color.primary)
     }
 }
 private struct PresetIconPicker:View {
+    @ObservedObject private var localization = AppLocalization.shared
     var choose:(String)->Void
     @State private var query=""
     @State private var category=""
@@ -90,11 +95,11 @@ private struct PresetIconPicker:View {
         VStack(spacing:12) {
             HStack {
                 Image(systemName:"magnifyingglass").foregroundStyle(.secondary)
-                TextField("アイコンを検索",text:$query).textFieldStyle(.plain).focused($searching)
-                if !query.isEmpty {Button {query=""} label:{Image(systemName:"xmark.circle.fill")}.buttonStyle(.plain).accessibilityLabel("検索をクリア")}
+                TextField(L("アイコンを検索"),text:$query).textFieldStyle(.plain).focused($searching)
+                if !query.isEmpty {Button {query=""} label:{Image(systemName:"xmark.circle.fill")}.buttonStyle(.plain).accessibilityLabel(L("検索をクリア"))}
             }.padding(10).background(.quaternary,in:RoundedRectangle(cornerRadius:10))
-            Picker("カテゴリ",selection:$category) {
-                Text("すべて").tag("")
+            Picker(L("カテゴリ"),selection:$category) {
+                Text(L("すべて")).tag("")
                 ForEach(PresetIcons.categories,id:\.id) {item in Text(item.title).tag(item.id)}
             }.pickerStyle(.menu)
             if matches.isEmpty {

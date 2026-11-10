@@ -29,7 +29,7 @@ extension BrowserStore {
         guard !name.isEmpty,let i=session.workspaces.firstIndex(where:{$0.id == workspaceID}) else{return false}
         var groups=session.workspaces[i].resolvedTabGroups
         guard !groups.contains(where:{$0.id != value.id && $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame}) else {
-            notify("同じ名前のグループがあります",isError:true);return false
+            notify(L("同じ名前のグループがあります"),isError:true);return false
         }
         let group=BrowserTabGroup(id:value.id,name:name,iconFile:value.iconFile)
         if let j=groups.firstIndex(where:{$0.id == value.id}) {groups[j]=group} else {groups.append(group)}
@@ -53,6 +53,7 @@ extension BrowserStore {
 }
 
 struct BrowserGroupPicker:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     let workspace:BrowserWorkspace
     @State private var editing:BrowserTabGroup?
@@ -73,40 +74,41 @@ struct BrowserGroupPicker:View {
                 }
             }
             Divider()
-            Button("新しいグループ…") {editing=BrowserTabGroup(name:"")}
-            Button("グループを編集…") {editing=current}
-            if current.id != workspace.id {Button("グループを削除…") {removing=true}}
+            Button(L("新しいグループ…")) {editing=BrowserTabGroup(name:"")}
+            Button(L("グループを編集…")) {editing=current}
+            if current.id != workspace.id {Button(L("グループを削除…")) {removing=true}}
         } label:{
             // AppKit menus replace SwiftUI label foreground styles with system ink.
             // Preserve the tab bar's explicit contrast color, including the chevron.
             Image(nsImage:Palette.groupMenuLabel(current.name,ink:Palette.ink(workspace.color),icon:current.iconFile.flatMap{store.iconCache.image(directory:store.directory,name:$0)},iconKey:current.iconFile ?? "folder"))
                 .renderingMode(.original)
         }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(height:20)
-            .accessibilityLabel("タブグループ: "+current.name)
-            .help("表示するタブグループ。上下スクロールでも切り替えられます。ページはタブをクリックするまで変わりません。")
+            .accessibilityLabel(L("タブグループ: ")+current.name)
+            .help(L("表示するタブグループ。上下スクロールでも切り替えられます。ページはタブをクリックするまで変わりません。"))
             .sheet(item:$editing,onDismiss:store.restorePanelFocus) {group in
                 BrowserGroupEditor(store:store,workspaceID:workspace.id,draft:group)
             }
-            .alert("グループを削除しますか？",isPresented:$removing) {
-                Button("キャンセル",role:.cancel) {}
-                Button("削除",role:.destructive) {store.removeTabGroup(current.id,in:workspace.id)}
-            } message:{Text("タブは閉じずに、先頭のグループへ移動します。")}
+            .alert(L("グループを削除しますか？"),isPresented:$removing) {
+                Button(L("キャンセル"),role:.cancel) {}
+                Button(L("削除"),role:.destructive) {store.removeTabGroup(current.id,in:workspace.id)}
+            } message:{Text(L("タブは閉じずに、先頭のグループへ移動します。"))}
     }
 }
 private struct BrowserGroupEditor:View {
+    @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     let workspaceID:UUID
     @State var draft:BrowserTabGroup
     @Environment(\.dismiss) private var dismiss
     var body:some View {
         VStack(alignment:.leading,spacing:16) {
-            Text("タブグループ").font(.title2.weight(.semibold))
-            TextField("名前（例：Notion、外部ツール）",text:$draft.name).textFieldStyle(.roundedBorder)
+            Text(L("タブグループ")).font(.title2.weight(.semibold))
+            TextField(L("名前（例：Notion、外部ツール）"),text:$draft.name).textFieldStyle(.roundedBorder)
             IconSelectionRow(store:store,file:$draft.iconFile,defaultSymbol:"folder")
             HStack {
                 Spacer()
-                Button("キャンセル") {dismiss()}.keyboardShortcut(.cancelAction)
-                Button("保存") {if store.saveTabGroup(draft,in:workspaceID) {dismiss()}}
+                Button(L("キャンセル")) {dismiss()}.keyboardShortcut(.cancelAction)
+                Button(L("保存")) {if store.saveTabGroup(draft,in:workspaceID) {dismiss()}}
                     .keyboardShortcut(.defaultAction).disabled(draft.name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)
             }
         }.foregroundStyle(Color.primary).padding(24).frame(width:420)

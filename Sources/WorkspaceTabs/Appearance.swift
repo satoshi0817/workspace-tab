@@ -1,3 +1,4 @@
+import WorkspaceCore
 import SwiftUI
 import AppKit
 
@@ -34,9 +35,9 @@ enum AppTheme: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .system: return "システム"
-        case .light: return "ライト"
-        case .dark: return "ダーク"
+        case .system: return L("システム")
+        case .light: return L("ライト")
+        case .dark: return L("ダーク")
         }
     }
 }
@@ -122,13 +123,14 @@ enum Palette {
 }
 
 struct ColorPickerRow: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Binding var selection: String
     @State private var input = ""
     private var valid: Bool { Palette.normalizedHex(input) != nil }
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("プリセット"); Spacer()
+                Text(L("プリセット")); Spacer()
                 ForEach(Palette.names, id: \.self) { name in
                     Button { selection = name } label: {
                         Circle().fill(Palette.color(name)).frame(width: 23, height: 23)
@@ -137,14 +139,14 @@ struct ColorPickerRow: View {
                 }
             }
             HStack {
-                ColorPicker("カラー", selection: Binding(get: { Palette.color(selection) }, set: { selection = Palette.hex($0) }), supportsOpacity: false)
+                ColorPicker(L("カラー"), selection: Binding(get: { Palette.color(selection) }, set: { selection = Palette.hex($0) }), supportsOpacity: false)
                 TextField("#RRGGBB", text: $input).labelsHidden().textFieldStyle(.roundedBorder).font(.system(.body, design: .monospaced)).frame(width: 110)
-                    .accessibilityLabel("カラーコード")
+                    .accessibilityLabel(L("カラーコード"))
                     .onChange(of: input) { _, value in
                         if let hex = Palette.normalizedHex(value), hex != Palette.hex(Palette.color(selection)) { selection = hex }
                     }
             }
-            if !valid { Text("#RGB または #RRGGBBで入力してください。現在の色は保持されます。").font(.caption).foregroundStyle(.secondary) }
+            if !valid { Text(L("#RGB または #RRGGBBで入力してください。現在の色は保持されます。")).font(.caption).foregroundStyle(.secondary) }
         }
         .onAppear { input = Palette.hex(Palette.color(selection)) }
         .onChange(of: selection) { _, value in

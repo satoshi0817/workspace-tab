@@ -24,7 +24,7 @@ extension BrowserStore {
     @discardableResult func openNotionActionTab(_ action:String,from source:PageReference)->BrowserEngine? {
         guard NotionActions.creationIDs.contains(action),let sourcePage=page(source),let workspace=workspace(source.workspaceID) else{return nil}
         if let engine=engine(source.workspaceID,source.pageID),engine.workspaceMismatch {
-            notify("別のワークスペースを表示しています。正しい環境に移動してから作成してください",isError:true);return nil
+            notify(L("別のワークスペースを表示しています。正しい環境に移動してから作成してください"),isError:true);return nil
         }
         let sourceURL: String
         if NotionWorkspace.normalizedID(workspace.notionSpaceID) != nil,
@@ -41,7 +41,7 @@ extension BrowserStore {
             setSplit(destination)
         }
         focusedPage=destination
-        notify("新しいタブでNotionを準備しています")
+        notify(L("新しいタブでNotionを準備しています"))
         return child
     }
     func runCommand(_ id:String,target:PageReference? = nil) {
@@ -51,7 +51,7 @@ extension BrowserStore {
         if id == "notionCreateMenu" {openNotionCreationMenu();return}
         if id == "allTabs" {searchForSplit=false;searchPresented=true;return}
         if id == "lastWorkspace" {
-            guard let previousWorkspaceID,workspace(previousWorkspaceID) != nil else {notify("直前のアプリタブはありません");return}
+            guard let previousWorkspaceID,workspace(previousWorkspaceID) != nil else {notify(L("直前のアプリタブはありません"));return}
             selectWorkspace(previousWorkspaceID);return
         }
         if id == "toggleSplit" {
@@ -59,13 +59,13 @@ extension BrowserStore {
             return
         }
         if id == "focusSplit" {
-            guard let split,let left=selected,let pid=left.selectedPageID else {notify("Split Viewを開いてください");return}
+            guard let split,let left=selected,let pid=left.selectedPageID else {notify(L("Split Viewを開いてください"));return}
             let next=ref == split ? PageReference(workspaceID:left.id,pageID:pid):split
             focusedPage=next
             if let web=engine(next.workspaceID,next.pageID)?.webView {web.window?.makeFirstResponder(web)}
             return
         }
-        guard let ref,let workspace=workspace(ref.workspaceID),let page=page(ref) else {notify("操作するタブがありません");return}
+        guard let ref,let workspace=workspace(ref.workspaceID),let page=page(ref) else {notify(L("操作するタブがありません"));return}
         switch id {
         case "previousPage","nextPage":
             let pages=orderedPages(in:workspace.id)
@@ -80,9 +80,9 @@ extension BrowserStore {
         case "copyTitleLink":
             let title=page.displayTitle.replacingOccurrences(of:"\\",with:"\\\\").replacingOccurrences(of:"[",with:"\\[").replacingOccurrences(of:"]",with:"\\]").replacingOccurrences(of:"\n",with:" ")
             let url=page.url.replacingOccurrences(of:"(",with:"%28").replacingOccurrences(of:")",with:"%29")
-            NSPasteboard.general.clearContents();NSPasteboard.general.setString("[\(title)](\(url))",forType:.string);notify("タイトル付きリンクをコピーしました")
+            NSPasteboard.general.clearContents();NSPasteboard.general.setString("[\(title)](\(url))",forType:.string);notify(L("タイトル付きリンクをコピーしました"))
         case "notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings":
-            guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify("Notionを表示しているタブで実行してください",isError:true);return}
+            guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify(L("Notionを表示しているタブで実行してください"),isError:true);return}
             if NotionActions.creationIDs.contains(id) {
                 _=openNotionActionTab(id,from:ref)
             } else {engine.runNotionAction(id)}
@@ -92,6 +92,20 @@ extension BrowserStore {
 }
 enum NotionActions {
     static let creationIDs:Set<String>=["notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage"]
+    // Translate only messages returned by our action script, never DOM selectors or
+    // text from the page. The web site's language remains independent of the app.
+    static func localizedMessage(_ message:String)->String {
+        for name in ["新規データベース","カスタムページ","新規AIチャット","新規ページ","新規ミーティングノート","Notion検索","Notion設定"] {
+            let title=Localization.text(name)
+            if message == name+"の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください" {
+                return L("\(title)の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください")
+            }
+            if message == name+"のボタンが見つかりません。Notionのサイドバーを表示して再実行してください" {
+                return L("\(title)のボタンが見つかりません。Notionのサイドバーを表示して再実行してください")
+            }
+        }
+        return Localization.text(message)
+    }
     // Only visible, uniquely named controls are used. No private APIs, credentials,
     // automatic recording, or generic New buttons in an unrelated database.
     static let script = "const readWorkspaceIdentity=()=>"+NotionWorkspace.detectionScript+";\n" + #"""

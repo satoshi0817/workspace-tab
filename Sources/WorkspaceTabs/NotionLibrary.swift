@@ -20,15 +20,15 @@ import CryptoKit
         setup=DatabaseSetup(api:client,journal:CreationJournal(url:store.directory.appendingPathComponent("database-creations.json")))
         if FileManager.default.fileExists(atPath:file.path) {
             do {state=try JSONDecoder().decode(NotionLibraryState.self,from:Data(contentsOf:file))}
-            catch {writable=false;message="Notion設定が読めません。元ファイルを保持しています。";return}
+            catch {writable=false;message=L("Notion設定が読めません。元ファイルを保持しています。");return}
         }
     }
     func persist()throws {
-        guard writable else{throw LVError("Notion設定を読めないため保存を停止しています。元ファイルを確認してください。") }
+        guard writable else{throw LVError(L("Notion設定を読めないため保存を停止しています。元ファイルを確認してください。")) }
         try JSONEncoder().encode(state).write(to:file,options:.atomic)
         try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:file.path)
     }
-    func save(){do{try persist()}catch{message="Notion設定を保存できません："+error.localizedDescription}}
+    func save(){do{try persist()}catch{message=L("Notion設定を保存できません：")+error.localizedDescription}}
     func start(){
         guard writable else{return}
         timer?.invalidate()
@@ -55,23 +55,23 @@ import CryptoKit
             }
             state.linkViewerMigrationComplete = missing == 0
             try persist()
-            if missing > 0 {message="PATにアクセスできません。「PATを更新」から設定してください。"}
+            if missing > 0 {message=L("PATにアクセスできません。「PATを更新」から設定してください。")}
         }catch{message=error.localizedDescription}
     }
     func token(_ id:String)throws->String {
         if let credentials {return try credentials(id)}
-        guard let token=NotionVault.read(id,interactive:false),!token.isEmpty else{throw LVError("PATがありません。設定の「PATを更新」から保存してください。")}
+        guard let token=NotionVault.read(id,interactive:false),!token.isEmpty else{throw LVError(L("PATがありません。設定の「PATを更新」から保存してください。"))}
         return token
     }
     func checkConnection(_ source:LVSource)async throws->Int {
         let secret=try token(source.tokenId)
         let ds=try await client.request(token:secret,endpoint:"/data_sources/\(source.id)")
-        guard object(object(ds,"properties"),"URL")["type"] as? String == "url" else{throw LVError("URL型のURLプロパティがありません")}
+        guard object(object(ds,"properties"),"URL")["type"] as? String == "url" else{throw LVError(L("URL型のURLプロパティがありません"))}
         return try await client.pages(token:secret,id:source.id).count
     }
     func register(label:String,secret:String,input:String) async throws {
         let secret=secret.trimmingCharacters(in:.whitespacesAndNewlines)
-        guard !secret.isEmpty else{throw LVError("PATを入力してください")}
+        guard !secret.isEmpty else{throw LVError(L("PATを入力してください"))}
         let id=UUID().uuidString
         let source=try await client.resolveSource(input,token:LVToken(id:id,label:label,token:secret))
         try NotionVault.write(id,secret:secret)
@@ -98,10 +98,10 @@ import CryptoKit
         try persist()
         var done=result;done.registered=true
         try CreationJournal(url:file.deletingLastPathComponent().appendingPathComponent("database-creations.json")).save(done)
-        message="プライベートにLinks・Categories・Tabsを作成しました。Notion保存をオンにして使えます。"
+        message=L("プライベートにLinks・Categories・Tabsを作成しました。Notion保存をオンにして使えます。")
     }
     func enqueue(_ value:FavoriteLink,delete:Bool=false)throws {
-        guard state.enabled,value.notionSourceID != nil else{throw LVError("Notion保存をオンにしてください。")}
+        guard state.enabled,value.notionSourceID != nil else{throw LVError(L("Notion保存をオンにしてください。"))}
         // Keep the oldest observed remote revision until the queued edit succeeds.
         let previous=state.edits
         let old=state.edits.first{$0.id == value.id}
@@ -143,7 +143,7 @@ import CryptoKit
             let result=await client.sync(DiskState(sources:state.sources,tokens:state.tokens,data:state.cache),tokens:tokens)
             merge(result,into:store);state.cache=result;try persist()
             let failures=result.sources.compactMap(\.error)
-            message=failures.isEmpty ? "Notionと同期しました（\(result.links.count)件）":failures.joined(separator:"\n")
+            message=failures.isEmpty ? L("Notionと同期しました（\(result.links.count)件）"):failures.joined(separator:"\n")
             if state.saveTabs {try await saveTabs()}
         }catch{message=error.localizedDescription}
     }
@@ -178,22 +178,22 @@ import CryptoKit
         if store.favorites != links {store.session.favorites=links;store.changed()}
     }
     private func push(_ edit:NotionEdit)async throws->(String,String?)? {
-        guard let sid=edit.value.notionSourceID,let source=state.sources.first(where:{$0.id == sid}) else{throw LVError("保存先のDBがありません")}
+        guard let sid=edit.value.notionSourceID,let source=state.sources.first(where:{$0.id == sid}) else{throw LVError(L("保存先のDBがありません"))}
         let secret=try token(source.tokenId),value=edit.value
         var pageID=value.notionPageID
         if pageID == nil {
             let rows=try await client.pages(token:secret,id:sid)
             let candidates=rows.filter{richText(object(object($0,"properties"),"Workspace Tabs ID")["rich_text"]) == value.id.uuidString}
-            guard candidates.count <= 1 else{throw LVError("同じIDのリンクが複数あります。Notionで確認してください。")}
+            guard candidates.count <= 1 else{throw LVError(L("同じIDのリンクが複数あります。Notionで確認してください。"))}
             if let found=candidates.first {pageID=found["id"] as? String}
-            else if edit.uncertain {throw LVError("前回の作成結果を確認できません。二重作成を防ぐため停止しています。NotionのDBを確認してください。")}
+            else if edit.uncertain {throw LVError(L("前回の作成結果を確認できません。二重作成を防ぐため停止しています。NotionのDBを確認してください。"))}
         }
         if let pageID {
             let current=try await client.request(token:secret,endpoint:"/pages/\(pageID)")
-            guard object(current,"parent")["data_source_id"] as? String == sid else{throw LVError("リンクの保存先が変わりました。同期し直してください。")}
+            guard object(current,"parent")["data_source_id"] as? String == sid else{throw LVError(L("リンクの保存先が変わりました。同期し直してください。"))}
             if edit.delete,current["in_trash"] as? Bool == true {return nil}
             if let expected=value.notionEditedTime,current["last_edited_time"] as? String != expected {
-                throw LVError("Notion側でも変更されています。「Notionの内容を採用」してから編集し直してください。")
+                throw LVError(L("Notion側でも変更されています。「Notionの内容を採用」してから編集し直してください。"))
             }
         }
         if edit.delete {
@@ -204,10 +204,10 @@ import CryptoKit
         var additions:JSONObject=[:]
         for name in ["Workspace Tabs ID","Workspace Tab","Workspace Tab Name"] {
             if schema[name] == nil {additions[name]=["rich_text":[:]]}
-            else if object(schema,name)["type"] as? String != "rich_text" {throw LVError("\(name)はテキスト型が必要です。")}
+            else if object(schema,name)["type"] as? String != "rich_text" {throw LVError(L("\(name)はテキスト型が必要です。"))}
         }
         if !additions.isEmpty {schema=object(try await client.request(token:secret,method:"PATCH",endpoint:"/data_sources/\(sid)",body:["properties":additions]),"properties")}
-        guard let title=schema.first(where:{($0.value as? JSONObject)?["type"] as? String == "title"})?.key else{throw LVError("タイトルプロパティがありません")}
+        guard let title=schema.first(where:{($0.value as? JSONObject)?["type"] as? String == "title"})?.key else{throw LVError(L("タイトルプロパティがありません"))}
         var properties:JSONObject=[title:["title":Self.text(value.title)],"URL":["url":value.url],"Workspace Tabs ID":["rich_text":Self.text(value.id.uuidString)],"Workspace Tab":["rich_text":Self.text(value.workspaceID.uuidString)],"Workspace Tab Name":["rich_text":Self.text(store?.workspace(value.workspaceID)?.name ?? "")]]
         if object(schema,"Pinned")["type"] as? String == "checkbox" {properties["Pinned"]=["checkbox":value.pinned]}
         let cat=object(schema,"Category")
@@ -217,12 +217,12 @@ import CryptoKit
             if !value.category.isEmpty {
                 let categories=try await client.pages(token:secret,id:catID)
                 let matches=categories.filter{titleOf(object($0,"properties")) == value.category}
-                guard matches.count <= 1 else{throw LVError("同名カテゴリが複数あります。Notionで整理してください。")}
+                guard matches.count <= 1 else{throw LVError(L("同名カテゴリが複数あります。Notionで整理してください。"))}
                 let category:JSONObject
                 if let found=matches.first {category=found}
                 else {
                     let catSchema=object(try await client.request(token:secret,endpoint:"/data_sources/\(catID)"),"properties")
-                    guard let title=catSchema.first(where:{($0.value as? JSONObject)?["type"] as? String == "title"})?.key else{throw LVError("カテゴリのタイトルがありません")}
+                    guard let title=catSchema.first(where:{($0.value as? JSONObject)?["type"] as? String == "title"})?.key else{throw LVError(L("カテゴリのタイトルがありません"))}
                     category=try await client.request(token:secret,method:"POST",endpoint:"/pages",body:["parent":["data_source_id":catID],"properties":[title:["title":Self.text(value.category)]]])
                 }
                 if let id=category["id"] as? String {relation=[["id":id]]}
@@ -241,7 +241,7 @@ import CryptoKit
             if let error=error as? NotionAPIError,[400,401,403,404,409,422,429].contains(error.status),let i=state.edits.firstIndex(where:{$0.id == edit.id}) {state.edits[i].uncertain=false;try persist()}
             throw error
         }
-        guard let id=response["id"] as? String else{throw LVError("保存結果を確認できませんでした")}
+        guard let id=response["id"] as? String else{throw LVError(L("保存結果を確認できませんでした"))}
         return (id,response["last_edited_time"] as? String)
     }
     static func text(_ text:String)->[JSONObject] {text.isEmpty ? []:[["type":"text","text":["content":String(text.prefix(2000))]]]}

@@ -77,9 +77,9 @@ public enum StateError: Error, LocalizedError {
     case unsupportedVersion(Int), duplicateIdentity, invalidGeometry
     public var errorDescription: String? {
         switch self {
-        case .unsupportedVersion(let v): return "この設定ファイルのバージョン（\(v)）には対応していません。"
-        case .duplicateIdentity: return "設定に重複したグループまたはタブがあります。"
-        case .invalidGeometry: return "設定のウインドウ座標が不正です。"
+        case .unsupportedVersion(let v): return L("この設定ファイルのバージョン（\(v)）には対応していません。")
+        case .duplicateIdentity: return L("設定に重複したグループまたはタブがあります。")
+        case .invalidGeometry: return L("設定のウインドウ座標が不正です。")
         }
     }
 }
