@@ -67,13 +67,14 @@ extension BrowserStore {
     }
     var duplicatePages:[PageReference] {
         let rows=session.workspaces.flatMap {workspace in workspace.pages.map{(workspace,$0)}}
-        let groups=Dictionary(grouping:rows) {workspace,page in workspace.profileID.uuidString+":"+(Self.pageKey(page.url) ?? page.id.uuidString)}
+        let groups=Dictionary(grouping:rows) {workspace,page in workspace.profileID(for:page).uuidString+":"+(Self.pageKey(page.url) ?? page.id.uuidString)}
         let duplicateIDs=Set(groups.values.filter{$0.count>1}.flatMap{$0.map{$0.1.id}})
         return rows.filter{duplicateIDs.contains($0.1.id)}.map{PageReference(workspaceID:$0.0.id,pageID:$0.1.id)}
     }
     func existingPage(url:String,in workspaceID:UUID)->BrowserPage? {
-        guard let key=Self.pageKey(url) else{return nil}
-        return workspace(workspaceID)?.pages.first {Self.pageKey($0.url) == key}
+        guard let key=Self.pageKey(url),let workspace=workspace(workspaceID) else{return nil}
+        let profile=workspace.profileID(forGroup:workspace.visibleGroupID)
+        return workspace.pages.first {workspace.profileID(for:$0) == profile && Self.pageKey($0.url) == key}
     }
     func loadWorksets() {
         let file=directory.appendingPathComponent("worksets.json")
@@ -97,7 +98,10 @@ extension BrowserStore {
     }
     @discardableResult func restoreWorkset(_ id:UUID)->Bool {
         guard let value=worksets.first(where:{$0.id == id}) else{return false}
-        guard value.workspaces.allSatisfy({saved in workspace(saved.id)?.profileID == saved.profileID && saved.pages.allSatisfy{BrowserAddress.url($0.url) != nil}}) else {
+        guard value.workspaces.allSatisfy({saved in
+            guard let current=workspace(saved.id),current.profileID == saved.profileID else{return false}
+            return saved.pages.allSatisfy{page in BrowserAddress.url(page.url) != nil && saved.profileID(for:page) == current.profileID(for:page) && (page.groupID == nil || current.resolvedTabGroups.contains{$0.id == page.groupID})}
+        }) else {
             notify(L("保存時のアプリタブまたはログイン環境が見つかりません。別の環境では開きません"),isError:true);return false
         }
         var mapping:[UUID:UUID]=[:]
@@ -105,7 +109,7 @@ extension BrowserStore {
             guard let i=session.workspaces.firstIndex(where:{$0.id == saved.id}) else{continue}
             var used=Set<UUID>()
             for page in saved.pages {
-                let candidates=session.workspaces[i].pages.filter{!used.contains($0.id) && Self.pageKey($0.url) == Self.pageKey(page.url)}
+                let candidates=session.workspaces[i].pages.filter{!used.contains($0.id) && session.workspaces[i].profileID(for:$0) == saved.profileID(for:page) && Self.pageKey($0.url) == Self.pageKey(page.url)}
                 if let existing=candidates.first(where:{$0.id == page.id}) ?? candidates.first {mapping[page.id]=existing.id;used.insert(existing.id)}
                 else {
                     var restored=page;restored.id=UUID()
@@ -153,7 +157,7 @@ extension BrowserStore {
         } catch {self.error=L("履歴を復元できませんでした: ")+error.localizedDescription}
     }
     func openExternalNotion(_ url:URL) {
-        guard NotionWorkspace.environment(url) != nil else{return}
+        guard let environment=NotionWorkspace.environment(url) else{return}
         if let target=NotionWorkspace.target(url:url,detectedID:nil,workspaces:session.workspaces) {
             _=openFavorite(FavoriteLink(title:"Notion",url:url.absoluteString,workspaceID:target));return
         }
@@ -161,13 +165,33 @@ extension BrowserStore {
         if matches.count == 1,let match=matches.first,let page=existingPage(url:url.absoluteString,in:match.id) {
             activatePage(PageReference(workspaceID:match.id,pageID:page.id));return
         }
-        pendingExternalURL=BrowserAddress.savedURL(url)
+        // Only one app tab uses this Notion environment (for example the dev site):
+        // every link for it belongs there.
+        let sameEnvironment=session.workspaces.filter{BrowserAddress.url($0.homeURL).flatMap(NotionWorkspace.environment) == environment}
+        if sameEnvironment.count == 1 {_=openFavorite(FavoriteLink(title:"Notion",url:url.absoluteString,workspaceID:sameEnvironment[0].id));return}
+        // The URL does not name a workspace. Ask Notion which one owns the page, through
+        // pages that are already signed in; fall back to asking the user.
+        let engines=Array(notionEngines(environment:environment).prefix(3))
+        guard let pageID=NotionWorkspace.pageID(url),!engines.isEmpty else{pendingExternalURL=BrowserAddress.savedURL(url);return}
+        Task { [weak self] in
+            var space:String?
+            for engine in engines where space == nil {
+                let raw=try? await engine.webView.callAsyncJavaScript(NotionWorkspace.spaceLookupScript,arguments:["pageID":pageID],in:nil,contentWorld:.defaultClient)
+                space=NotionWorkspace.normalizedID(raw as? String)
+            }
+            guard let self else{return}
+            if let target=NotionWorkspace.target(url:url,detectedID:space,workspaces:self.session.workspaces) {
+                _=self.openFavorite(FavoriteLink(title:"Notion",url:url.absoluteString,workspaceID:target))
+            } else if !self.anyPanelPresented {self.pendingExternalURL=BrowserAddress.savedURL(url)}
+        }
     }
 }
 struct WorkflowSettings:View {
     @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
     @State private var name=""
+    @AppStorage(BrowserStore.idleDiscardEnabledKey) private var idleDiscard=true
+    @AppStorage(BrowserStore.idleDiscardMinutesKey) private var idleMinutes=30
     var body:some View {
         Section(L("作業セット")) {
             HStack {TextField(L("例：開発、定例会議"),text:$name);Button(L("現在のタブを保存")){store.saveWorkset(name:name);name=""}.disabled(name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}
@@ -175,6 +199,14 @@ struct WorkflowSettings:View {
             ForEach(store.worksets){value in
                 HStack {Text(value.name);Spacer();Button(L("開く")){_=store.restoreWorkset(value.id)};Button(L("削除")){_=store.persistWorksets(store.worksets.filter{$0.id != value.id})}}
             }
+        }
+        Section(L("メモリの節約")) {
+            Toggle(L("しばらく表示していないタブを休止する"),isOn:$idleDiscard)
+            Picker(L("休止するまでの時間"),selection:$idleMinutes) {
+                ForEach([15,30,60,120],id:\.self) {minutes in Text(L("\(minutes)分")).tag(minutes)}
+            }.disabled(!idleDiscard)
+            Text(L("Macのメモリが不足したときは、5〜10分表示していないタブも休止します。")).font(.caption).foregroundStyle(.secondary)
+            Text(L("休止したタブはタブ列に残り、開くと読み込み直します。未送信の入力は消えます。表示中・Split表示中・ピン留め・読み込み中・マイクやカメラを使用中のタブは休止しません。")).font(.caption).foregroundStyle(.secondary)
         }
         Section(L("重複しているタブ")) {
             Text(L("お気に入り・外部リンク・作業セットからは既存タブを再利用します。⌘クリックや明示的な新規タブはそのまま作成します。")).font(.caption)

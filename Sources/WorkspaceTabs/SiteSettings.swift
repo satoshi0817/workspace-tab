@@ -69,16 +69,17 @@ struct SiteSettingsSheet:View {
     @Environment(\.dismiss) private var dismiss
     private var url:URL? {store.engineIfLoaded(ref.pageID)?.webView.url ?? store.page(ref).flatMap{URL(string:$0.url)}}
     private var workspace:BrowserWorkspace? {store.workspace(ref.workspaceID)}
+    private var profileID:UUID? {workspace.flatMap{w in store.page(ref).map{w.profileID(for:$0)}}}
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
             HStack {Text(L("サイト設定")).font(.title2.bold());Spacer();Button(L("完了")){dismiss()}.keyboardShortcut(.cancelAction)}
-            if let workspace,let url,let preference=sites.preference(profileID:workspace.profileID,url:url) {
+            if let workspace,let profileID,let url,let preference=sites.preference(profileID:profileID,url:url) {
                 Text(preference.origin).font(.callout.monospaced()).textSelection(.enabled)
                 Form {
                     Section(L("ログイン環境")) {
                         LabeledContent(L("アプリタブ"),value:workspace.name)
-                        LabeledContent(L("ログイン環境"),value:store.profile(workspace.profileID)?.name ?? "")
-                        if let note=store.profile(workspace.profileID)?.accountNote,!note.isEmpty {Text(note).foregroundStyle(.secondary)}
+                        LabeledContent(L("ログイン環境"),value:store.profile(profileID)?.name ?? "")
+                        if let note=store.profile(profileID)?.accountNote,!note.isEmpty {Text(note).foregroundStyle(.secondary)}
                         Text(L("アカウントの表示は確認用のメモです。サイトのログイン状態を保証するものではありません。")).font(.caption).foregroundStyle(.secondary)
                     }
                     Section(L("このサイトの表示・権限")) {
@@ -88,7 +89,7 @@ struct SiteSettingsSheet:View {
                         accessPicker(L("マイク"),value:preference.microphone){var next=preference;next.microphone=$0;store.updateSitePreference(next)}
                         accessPicker(L("カメラ"),value:preference.camera){var next=preference;next.camera=$0;store.updateSitePreference(next)}
                         Text(L("許可の確認はWebKitとmacOSが行います。ブロックすると、この環境の同じサイトで進行中の入力も停止します。")).font(.caption).foregroundStyle(.secondary)
-                        Button(L("このサイトの設定をリセット")){store.updateSitePreference(SitePreference(profileID:workspace.profileID,origin:preference.origin))}
+                        Button(L("このサイトの設定をリセット")){store.updateSitePreference(SitePreference(profileID:profileID,origin:preference.origin))}
                     }
                     if BrowserAddress.isNotion(url) {
                         Section(L("サイドバーの色")) {

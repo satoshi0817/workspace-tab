@@ -8,53 +8,114 @@ struct WorkspaceEditor:View {
     @ObservedObject var store:BrowserStore
     @State var draft:BrowserWorkspace
     @State private var detectionMessage=""
+    private enum Tab {case basic,login,display,notion}
+    private var emailSize:Binding<Double> {
+        Binding(get:{draft.accountEmailStyle.size},set:{if $0.isFinite {draft.accountEmailSize=min(200,max(8,$0.rounded()))}})
+    }
+    private var emailOpacity:Binding<Double> {
+        Binding(get:{(draft.accountEmailStyle.opacity*100).rounded()},set:{if $0.isFinite {draft.accountEmailOpacity=min(100,max(1,$0.rounded()))/100}})
+    }
+    @State private var tab=Tab.basic
+    /// Why saving is blocked, so a problem on another tab is never invisible.
+    private var problem:String? {
+        if draft.name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {return L("名前を入力してください。")}
+        if BrowserAddress.url(draft.homeURL) == nil {return L("NotionタブのホームURLを確認してください。")}
+        if draft.notionAutoRoute == true && NotionWorkspace.normalizedID(draft.notionSpaceID) == nil {return L("リンクの自動振り分けには、NotionタブでワークスペースIDの設定が必要です。")}
+        return nil
+    }
     @Environment(\.dismiss) private var dismiss
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
             Text(L("アプリタブを編集")).font(.title2.weight(.semibold))
+            Picker("",selection:$tab) {
+                Text(L("基本")).tag(Tab.basic);Text(L("ログイン")).tag(Tab.login);Text(L("表示")).tag(Tab.display);Text("Notion").tag(Tab.notion)
+            }.pickerStyle(.segmented).labelsHidden()
             Form {
-                TextField(L("名前"),text:$draft.name)
-                TextField(L("ホームURL"),text:$draft.homeURL)
-                TextField(L("NotionワークスペースID（任意）"),text:Binding(get:{draft.notionSpaceID ?? ""},set:{draft.notionSpaceID=$0.isEmpty ? nil:$0}))
-                Toggle(L("このワークスペースのリンクを自動で振り分ける"),isOn:Binding(get:{draft.notionAutoRoute ?? false},set:{draft.notionAutoRoute=$0}))
-                Button(L("現在のNotionページから設定")) {
-                    guard let pageID=store.workspace(draft.id)?.selectedPageID,let engine=store.engine(draft.id,pageID) else {return}
-                    let url=engine.webView.url
-                    detectionMessage=L("確認中…")
-                    engine.detectNotionWorkspace { id in
-                        guard let id,let url,engine.webView.url == url else {detectionMessage=L("現在のページに一致するワークスペースIDを取得できませんでした。Notionのページを開いて再試行するか、IDを手入力してください。");return}
-                        draft.notionSpaceID=id;draft.homeURL=BrowserAddress.savedURL(url);draft.notionAutoRoute=true
-                        detectionMessage=L("ワークスペースIDとホームURLを設定しました。保存で適用します。")
+                switch tab {
+                case .basic:
+                    Section {
+                        TextField(L("名前"),text:$draft.name)
+                        TextField(L("絵文字・文字"),text:$draft.emoji)
+                        IconSelectionRow(store:store,file:$draft.iconFile)
                     }
+                    Section {
+                        ColorPickerRow(selection:$draft.color)
+                        Picker(L("文字色"),selection:Binding(get:{draft.textColor ?? "auto"},set:{draft.textColor=$0 == "auto" ? nil:$0})) {
+                            Text(L("自動")).tag("auto");Text(L("白")).tag("white");Text(L("黒")).tag("black")
+                        }.pickerStyle(.segmented)
+                        Toggle(L("タブを固定"),isOn:$draft.pinned)
+                    }
+                case .login:
+                    Section {
+                        Picker(L("ログイン環境"),selection:$draft.profileID) {ForEach(store.session.profiles){profile in Text(profile.name).tag(profile.id)}}
+                        Button(L("新しい環境")) {draft.profileID=store.createProfile(name:draft.name+L(" の新しい環境"))}
+                    } footer:{
+                        Text(L("同じ環境を選んだアプリタブはログイン状態を共有します。")+"\n"+L("この環境のNotionに複数のアカウントでログインしていると、新しいタブでNotionを開くときにアカウントを選べます。"))
+                    }
+                case .display:
+                    Section {
+                        Toggle(L("メールアドレスをページ上に大きく表示"),isOn:Binding(get:{draft.showAccountEmail ?? false},set:{draft.showAccountEmail=$0 ? true:nil}))
+                        Picker(L("表示位置"),selection:Binding(get:{draft.accountEmailStyle.centered ? "center":"bottomTrailing"},set:{draft.accountEmailPosition=$0 == "center" ? "center":nil})) {
+                            Text(L("右下")).tag("bottomTrailing");Text(L("中央")).tag("center")
+                        }.pickerStyle(.segmented)
+                        HStack {
+                            Text(L("文字サイズ"))
+                            Slider(value:emailSize,in:8...200)
+                            TextField(L("文字サイズ"),value:emailSize,format:.number.precision(.fractionLength(0)))
+                                .labelsHidden().textFieldStyle(.roundedBorder).monospacedDigit().multilineTextAlignment(.trailing).frame(width:58)
+                                .help(L("8〜200を入力。スライダーと連動します"))
+                            Text("pt")
+                        }
+                        HStack {
+                            Text(L("文字の濃さ"))
+                            Slider(value:emailOpacity,in:1...100)
+                            TextField(L("文字の濃さ"),value:emailOpacity,format:.number.precision(.fractionLength(0)))
+                                .labelsHidden().textFieldStyle(.roundedBorder).monospacedDigit().multilineTextAlignment(.trailing).frame(width:58)
+                                .help(L("1〜100を入力。スライダーと連動します"))
+                            Text("%")
+                        }
+                    } footer:{Text(L("このアプリタブのNotionタブすべてに表示します。タブ列の@ボタンでブラウザタブごとに切り替えられます。"))}
+                    Section {
+                        Toggle(L("Notionのサイドバーを着色"),isOn:$draft.cssEnabled)
+                        HStack {
+                            Text(L("濃さ"))
+                            Slider(value:$draft.cssStrength,in:0...1)
+                            TextField(L("濃さ"),value:Binding(get:{draft.cssStrength*100},set:{value in
+                                guard value.isFinite else {return}
+                                draft.cssStrength=min(100,max(0,value))/100
+                            }),format:.number.precision(.fractionLength(0...1)))
+                                .labelsHidden().textFieldStyle(.roundedBorder).monospacedDigit()
+                                .multilineTextAlignment(.trailing).frame(width:58)
+                                .accessibilityLabel(L("濃さ（0〜100パーセント）"))
+                                .help(L("0〜100を入力。スライダーと連動します"))
+                            Text("%")
+                        }.disabled(!draft.cssEnabled)
+                    } footer:{Text(L("指定したNotionドメインだけに適用します。ページ本文や画像の透明度は変更しません。Notionの更新で着色が効かなくなる場合はオフにできます。"))}
+                case .notion:
+                    Section {
+                        TextField(L("ホームURL"),text:$draft.homeURL)
+                        TextField(L("NotionワークスペースID（任意）"),text:Binding(get:{draft.notionSpaceID ?? ""},set:{draft.notionSpaceID=$0.isEmpty ? nil:$0}))
+                        Button(L("現在のNotionページから設定")) {
+                            guard let pageID=store.workspace(draft.id)?.selectedPageID,let engine=store.engine(draft.id,pageID) else {return}
+                            let url=engine.webView.url
+                            detectionMessage=L("確認中…")
+                            engine.detectNotionWorkspace { id in
+                                guard let id,let url,engine.webView.url == url else {detectionMessage=L("現在のページに一致するワークスペースIDを取得できませんでした。Notionのページを開いて再試行するか、IDを手入力してください。");return}
+                                draft.notionSpaceID=id;draft.homeURL=BrowserAddress.savedURL(url);draft.notionAutoRoute=true
+                                detectionMessage=L("ワークスペースIDとホームURLを設定しました。保存で適用します。")
+                            }
+                        }
+                        if !detectionMessage.isEmpty {Text(detectionMessage).font(.caption).foregroundStyle(.secondary)}
+                    }
+                    Section {
+                        Toggle(L("このワークスペースのリンクを自動で振り分ける"),isOn:Binding(get:{draft.notionAutoRoute ?? false},set:{draft.notionAutoRoute=$0}))
+                    } footer:{Text(L("IDとホームURLの環境（本番／開発）を照合します。判定不能・複数候補では切り替えません。Notionの内部仕様変更で自動取得できなくなる場合があります。"))}
                 }
-                if !detectionMessage.isEmpty {Text(detectionMessage).font(.caption).foregroundStyle(.secondary)}
-                Text(L("IDとホームURLの環境（本番／開発）を照合します。判定不能・複数候補では切り替えません。Notionの内部仕様変更で自動取得できなくなる場合があります。")).font(.caption).foregroundStyle(.secondary)
-                TextField(L("絵文字・文字"),text:$draft.emoji)
-                IconSelectionRow(store:store,file:$draft.iconFile)
-                ColorPickerRow(selection:$draft.color)
-                Picker(L("文字色"),selection:Binding(get:{draft.textColor ?? "auto"},set:{draft.textColor=$0 == "auto" ? nil:$0})) {
-                    Text(L("自動")).tag("auto");Text(L("白")).tag("white");Text(L("黒")).tag("black")
-                }.pickerStyle(.segmented)
-                Picker(L("ログイン環境"),selection:$draft.profileID) {ForEach(store.session.profiles){profile in Text(profile.name).tag(profile.id)}}
-                HStack {Text(L("同じ環境を選んだアプリタブはログイン状態を共有します。")).font(.caption).foregroundStyle(.secondary);Spacer();Button(L("新しい環境")) {draft.profileID=store.createProfile(name:draft.name+L(" の新しい環境"))}}
-                Toggle(L("Notionのサイドバーを着色"),isOn:$draft.cssEnabled)
-                HStack {
-                    Text(L("濃さ"))
-                    Slider(value:$draft.cssStrength,in:0...1)
-                    TextField(L("濃さ"),value:Binding(get:{draft.cssStrength*100},set:{value in
-                        guard value.isFinite else {return}
-                        draft.cssStrength=min(100,max(0,value))/100
-                    }),format:.number.precision(.fractionLength(0...1)))
-                        .labelsHidden().textFieldStyle(.roundedBorder).monospacedDigit()
-                        .multilineTextAlignment(.trailing).frame(width:58)
-                        .accessibilityLabel(L("濃さ（0〜100パーセント）"))
-                        .help(L("0〜100を入力。スライダーと連動します"))
-                    Text("%")
-                }.disabled(!draft.cssEnabled)
-                Text(L("指定したNotionドメインだけに適用します。ページ本文や画像の透明度は変更しません。Notionの更新で着色が効かなくなる場合はオフにできます。")).font(.caption).foregroundStyle(.secondary)
-                Text(draft.name).padding(10).frame(maxWidth:.infinity,alignment:.leading).foregroundStyle(Palette.ink(draft.color,preference:draft.textColor)).background(Palette.color(draft.color),in:RoundedRectangle(cornerRadius:8))
-                Toggle(L("タブを固定"),isOn:$draft.pinned)
             }.formStyle(.grouped)
+            HStack {
+                Text(draft.name.isEmpty ? " ":draft.name).lineLimit(1).padding(.horizontal,10).padding(.vertical,5).foregroundStyle(Palette.ink(draft.color,preference:draft.textColor)).background(Palette.color(draft.color),in:RoundedRectangle(cornerRadius:7)).accessibilityHidden(true)
+                if let problem {Label(problem,systemImage:"exclamationmark.triangle").font(.caption).foregroundStyle(.secondary)}
+            }
             HStack {Spacer();Button(L("キャンセル")){dismiss()}.keyboardShortcut(.cancelAction);Button(L("保存")) {
                 if store.workspace(draft.id)?.profileID != draft.profileID {
                     let alert=NSAlert();alert.messageText=L("ログイン環境を切り替えますか？");alert.informativeText=L("このアプリタブのページを新しい環境で読み直します。元の環境のログイン情報は残します。入力途中の内容は保存されません。");alert.addButton(withTitle:L("キャンセル"));alert.addButton(withTitle:L("切り替える"))
@@ -62,7 +123,7 @@ struct WorkspaceEditor:View {
                 }
                 draft.notionSpaceID=NotionWorkspace.normalizedID(draft.notionSpaceID);draft.homeURL=BrowserAddress.url(draft.homeURL)!.absoluteString;draft.emoji=String(draft.emoji.prefix(4));store.updateWorkspace(draft);dismiss()
             }.keyboardShortcut(.defaultAction).disabled(draft.name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty || BrowserAddress.url(draft.homeURL) == nil || (draft.notionAutoRoute == true && NotionWorkspace.normalizedID(draft.notionSpaceID) == nil))}
-        }.padding(20).frame(width:540,height:740)
+        }.padding(20).frame(width:640,height:560)
     }
 }
 struct BrowserSettings:View {
@@ -181,7 +242,7 @@ extension BrowserStore {
             let icons=directory.appendingPathComponent("Icons");try FileManager.default.createDirectory(at:icons,withIntermediateDirectories:true)
             for workspace in backup.session.workspaces {
                 var copy=workspace;copy.id=UUID();workspaceMap[workspace.id]=copy.id;copy.profileID=profileMap[workspace.profileID]!
-                copy.tabGroups=workspace.resolvedTabGroups.map{group in BrowserTabGroup(id:group.id == workspace.id ? copy.id:group.id,name:group.name,iconFile:group.iconFile)}
+                copy.tabGroups=workspace.resolvedTabGroups.map{group in BrowserTabGroup(id:group.id == workspace.id ? copy.id:group.id,name:group.name,iconFile:group.iconFile,profileID:group.profileID.flatMap{profileMap[$0]})}
                 copy.visibleTabGroupID=workspace.visibleGroupID == workspace.id ? copy.id:workspace.visibleGroupID
                 copy.pages=workspace.pages.map{page in var page=page;page.id=UUID();if page.groupID == workspace.id {page.groupID=copy.id};return page};copy.selectedPageID=copy.pages.first?.id
                 copy.iconFile=try importTabIcon(workspace.iconFile,from:backup.icons)

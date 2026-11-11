@@ -8,6 +8,7 @@ import WorkspaceCore
     let pageID: UUID
     let profileID: UUID
     let webView: WKWebView
+    let notionAccount=NotionAccountMonitor()
     weak var store: BrowserStore?
     @Published var address = ""
     @Published var title = ""
@@ -45,6 +46,7 @@ import WorkspaceCore
         if clearPending,pendingNotionAction != nil {clearPendingNotionAction()}
     }
     private func invalidateDocument(cancelAction:Bool=true) {
+        notionAccount.invalidate()
         documentGeneration &+= 1;detectionRequest=nil
         if cancelAction {cancelNotionAction(clearPending:false)}
         detectedNotionSpaceID=nil;detectedURL=nil
@@ -85,6 +87,7 @@ import WorkspaceCore
     }
     func prepareForDisplay() {
         guard store?.isPageSuspended(pageID) != true else{return}
+        notionAccount.refresh(in:webView)
         retryAfterConnectionReturns()
         guard store?.networkOffline != true,!disposed,needsRestore,!webView.isLoading,Date().timeIntervalSince(lastAutomaticRecovery)>30 else{return}
         lastAutomaticRecovery=Date();needsRestore=false;failure=nil
@@ -240,11 +243,14 @@ import WorkspaceCore
         webView.removeFromSuperview();store=nil
     }
     init(store: BrowserStore, workspace: BrowserWorkspace, page: BrowserPage, configuration: WKWebViewConfiguration? = nil) {
-        self.store = store; workspaceID = workspace.id; pageID = page.id; profileID = workspace.profileID
+        self.store = store; workspaceID = workspace.id; pageID = page.id; profileID = workspace.profileID(for:page)
         let config = configuration ?? WKWebViewConfiguration()
-        config.websiteDataStore = store.dataStore(workspace.profileID)
+        config.websiteDataStore = store.dataStore(profileID)
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         config.userContentController = WKUserContentController()
+        if let seed=store.notionAccountSeeds.removeValue(forKey:page.id).flatMap(NotionAccount.seedScript) {
+            config.userContentController.addUserScript(WKUserScript(source:seed,injectionTime:.atDocumentStart,forMainFrameOnly:true,in:.defaultClient))
+        }
         config.userContentController.addUserScript(WKUserScript(source: Self.style(workspace), injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         webView = BrowserWebView(frame: .zero, configuration: config)
         super.init()
@@ -285,6 +291,7 @@ import WorkspaceCore
             if self.canBack != self.webView.canGoBack {self.canBack=self.webView.canGoBack}
             if self.canForward != self.webView.canGoForward {self.canForward=self.webView.canGoForward}
             self.store?.updatePage(self.workspaceID, self.pageID, url: self.webView.url, title: self.webView.title)
+            if self.store?.visiblePageIDs.contains(self.pageID) == true {self.notionAccount.refresh(in:self.webView)}
         }
     }
     func navigate(_ text: String,notionAction:String? = nil) {
@@ -321,6 +328,7 @@ import WorkspaceCore
     func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
         guard acceptsNavigation(navigation) else{return}
         hasCommittedDocument=true;connectionRetryURL=nil
+        notionAccount.refresh(in:webView)
         if let store,let url=webView.url,let value=store.sites.preference(profileID:profileID,url:url) {webView.pageZoom=value.zoom}
         settleLoadingPlaceholder()
     }
@@ -329,6 +337,7 @@ import WorkspaceCore
         let generation=documentGeneration
         if let start=navigationStarted {store?.recordTiming("ページ読み込み",since:start);navigationStarted=nil}
         failure = nil;failedURL=nil;refresh()
+        notionAccount.refresh(in:webView,force:true)
         DispatchQueue.main.async { [weak self] in guard let self,self.acceptsDocumentResult(generation) else{return};self.firstLoadFinished=true;self.detectNotionWorkspace() }
         if let workspace = store?.workspace(workspaceID) { updateStyle(workspace) }
         startPendingNotionAction()

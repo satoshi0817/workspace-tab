@@ -57,6 +57,13 @@ enum Palette {
         menuGlyphs.countLimit=16;menuGlyphs.setObject(image,forKey:key)
         return image
     }
+    /// Menu labels ignore foregroundStyle, so bake the tab bar ink into the symbol.
+    static func symbolGlyph(_ name:String,_ ink:Color)->NSImage {
+        let config=NSImage.SymbolConfiguration(pointSize:14,weight:.semibold).applying(.init(paletteColors:[NSColor(ink)]))
+        let image=NSImage(systemSymbolName:name,accessibilityDescription:nil)?.withSymbolConfiguration(config) ?? NSImage()
+        image.isTemplate=false
+        return image
+    }
     private static let groupMenuLabels=NSCache<NSString,NSImage>()
     static func groupMenuLabel(_ title:String,ink:Color,icon:NSImage?=nil,iconKey:String="folder")->NSImage {
         let key=(hex(ink)+"|"+title+"|"+iconKey) as NSString

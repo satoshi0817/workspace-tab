@@ -201,14 +201,9 @@ struct BrowserPane: View {
                                 .help(L("この環境にブラウザタブを追加")).accessibilityLabel(L("ブラウザタブを追加"))
                         }.padding(.vertical,BrowserLayout.gap)
                     }.frame(maxWidth:.infinity).layoutPriority(-1)
-                    WorkspaceIdentityBadge(engine:engine)
-                    Button {store.siteSettingsPage=PageReference(workspaceID:workspaceID,pageID:pageID)} label:{Image(systemName:"slider.horizontal.3").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.buttonStyle(.plain).help(L("サイト設定")).accessibilityLabel(L("サイト設定"))
-                    Button {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID);store.addressFocus=UUID()} label:{Image(systemName:"link").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("URLを表示")).accessibilityLabel(L("URLを表示"))
-                    if detached {Button(L("元に戻す")) {store.reattachWorkspace(workspaceID)}.help(L("アプリタブを元のウインドウに戻す"))}
-                    else if isRight {
-                        Button {store.swapSplit()} label:{Image(systemName:"arrow.left.arrow.right").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("表示位置を入れ替え"))
-                        Button {store.setSplit(nil)} label:{Image(systemName:"rectangle").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("Split Viewを解除"))
-                    } else {SplitPicker(store:store)}
+                    NotionAccountPill(monitor:engine.notionAccount) {engine.notionAccount.refresh(in:engine.webView,force:true)}
+                    NotionAccountWatermarkToggle(monitor:engine.notionAccount,enabled:store.showsAccountEmail(pageID,in:workspaceID)) {store.toggleAccountEmail(pageID,in:workspaceID)}
+                    PaneMenu(store:store,engine:engine,workspaceID:workspaceID,pageID:pageID,isRight:isRight,detached:detached,ink:Palette.ink(workspace.color))
                 }.frame(height:BrowserLayout.tabBar)
                     .padding(.horizontal,BrowserLayout.inset)
                     .background(TabGroupScrollArea(enabled:workspace.resolvedTabGroups.count>1) {offset in store.cycleTabGroup(offset,in:workspaceID)}.frame(height:BrowserLayout.tabBar))
@@ -225,7 +220,7 @@ struct BrowserPane: View {
                     } else if workspace.pages.first(where:{$0.id == pageID})?.isStartPage == true {
                         NewBrowserTab(store:store,engine:engine).id(pageID)
                     } else {
-                        BrowserSurface(store:store,engine:engine,detached:detached).id(pageID)
+                        BrowserSurface(store:store,engine:engine,detached:detached,showAccountEmail:store.showsAccountEmail(pageID,in:workspaceID),accountEmailStyle:workspace.accountEmailStyle).id(pageID)
                     }
                 }
                 .background(Color(nsColor:.windowBackgroundColor))
@@ -234,9 +229,9 @@ struct BrowserPane: View {
                 .background(Palette.color(workspace.color))
             }.simultaneousGesture(TapGesture().onEnded {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID)})
                 .sheet(isPresented:Binding(get:{store.newTabRequest == PageReference(workspaceID:workspaceID,pageID:pageID)},set:{if !$0 {store.newTabRequest=nil}})) {
-                    NewTabChoice { web in
+                    NewTabChoice(loadAccounts:{await store.notionAccountChoices(in:workspaceID,from:pageID)}) { web,account in
                         store.newTabRequest=nil
-                        if let child=store.addPage(to:workspaceID,startPage:web) {
+                        if let child=store.addPage(to:workspaceID,groupID:account?.groupID,startPage:web,notionUserID:account?.notionUserID) {
                             let ref=PageReference(workspaceID:workspaceID,pageID:child.pageID)
                             if isRight {store.setSplit(ref)}
                             store.focusedPage=ref
@@ -280,26 +275,47 @@ struct BrowserNavigation:View {
             .onChange(of:store.addressFocus) {_,_ in if store.commandPage?.pageID == engine.pageID {expanded=true;DispatchQueue.main.async {editing=true}}}
     }
 }
-struct SplitPicker:View {
+/// Per-pane actions behind one icon, so the tab bar stays tabs + account.
+struct PaneMenu:View {
     @ObservedObject private var localization = AppLocalization.shared
     @ObservedObject var store:BrowserStore
+    @ObservedObject var engine:BrowserEngine
+    let workspaceID:UUID
+    let pageID:UUID
+    let isRight:Bool
+    let detached:Bool
+    let ink:Color
     var body:some View {
         Menu {
-            ForEach(store.session.workspaces) {workspace in
-                Menu(workspace.name) {
-                    ForEach(workspace.pages) {page in
-                        Button(page.displayTitle) {store.setSplit(PageReference(workspaceID:workspace.id,pageID:page.id))}.disabled(page.id == store.selectedPage?.id)
+            Button(L("サイト設定")) {store.siteSettingsPage=PageReference(workspaceID:workspaceID,pageID:pageID)}
+            Button(L("URLを表示")) {store.focusedPage=PageReference(workspaceID:workspaceID,pageID:pageID);store.addressFocus=UUID()}
+            if let label=engine.workspaceIdentityLabel {Divider();Text(label)}
+            Divider()
+            if detached {
+                Button(L("元に戻す")) {store.reattachWorkspace(workspaceID)}
+            } else {
+                if !isRight {
+                    Menu(L("別の環境のページを並べて表示")) {
+                        ForEach(store.session.workspaces) {workspace in
+                            Menu(workspace.name) {
+                                ForEach(workspace.pages) {page in
+                                    Button(page.displayTitle) {store.setSplit(PageReference(workspaceID:workspace.id,pageID:page.id))}.disabled(page.id == store.selectedPage?.id)
+                                }
+                            }
+                        }
                     }
                 }
+                if store.split != nil {
+                    Button(L("表示位置を入れ替え")) {store.swapSplit()}
+                    Button(L("Split Viewを解除")) {store.setSplit(nil)}
+                    Divider()
+                    Button(L("左右に分割")){store.session.splitOrientation="horizontal";store.changed()}
+                    Button(L("上下に分割")){store.session.splitOrientation="vertical";store.changed()}
+                    Button(L("均等に戻す")){store.session.splitFraction=0.5;store.changed()}
+                }
             }
-            if store.split != nil {Divider();Button(L("表示位置を入れ替え")) {store.swapSplit()};Button(L("Split Viewを解除")) {store.setSplit(nil)}}
-            if store.split != nil {
-                Divider()
-                Button(L("左右に分割")){store.session.splitOrientation="horizontal";store.changed()}
-                Button(L("上下に分割")){store.session.splitOrientation="vertical";store.changed()}
-                Button(L("均等に戻す")){store.session.splitFraction=0.5;store.changed()}
-            }
-        } label:{Image(systemName:store.session.splitOrientation == "vertical" ? "rectangle.split.1x2":"rectangle.split.2x1").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L("別の環境のページを並べて表示"))
+        } label:{Image(nsImage:Palette.symbolGlyph("ellipsis",ink)).renderingMode(.original)}
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L("タブのメニュー")).accessibilityLabel(L("タブのメニュー"))
     }
 }
 struct WorkspaceIcon:View {
@@ -341,6 +357,10 @@ struct BrowserSurface:View {
     let store:BrowserStore
     @ObservedObject var engine:BrowserEngine
     let detached:Bool
+    // Passed as a value: this view does not observe the store, so reading the
+    // setting here would not redraw when the @ button is pressed.
+    var showAccountEmail=false
+    var accountEmailStyle=BrowserWorkspace(name:"",profileID:UUID()).accountEmailStyle
     var body:some View {
         VStack(spacing:0) {
             if engine.workspaceMismatch {
@@ -357,6 +377,7 @@ struct BrowserSurface:View {
                 WebContent(webView:engine.webView,store:store,workspaceID:engine.workspaceID,detached:detached)
                     .allowsHitTesting(engine.loadingState == .none)
                     .accessibilityHidden(engine.loadingState != .none)
+                NotionAccountWatermark(monitor:engine.notionAccount,enabled:showAccountEmail,color:store.workspace(engine.workspaceID).map{Palette.color($0.color)} ?? .gray,style:accountEmailStyle)
                 if engine.loadingState == .loading {
                     if !engine.nativeLoadingPlaceholderVisible {
                         PageLoadingSkeleton(notion:BrowserAddress.url(engine.address).map(BrowserAddress.isNotion) ?? false,
@@ -381,17 +402,6 @@ struct BrowserSurface:View {
             }.frame(maxWidth:.infinity,maxHeight:.infinity)
         }.animation(reduceMotion ? nil:.easeOut(duration:0.18),value:engine.loadingState)
             .onAppear {engine.prepareForDisplay()}
-    }
-}
-
-struct WorkspaceIdentityBadge:View {
-    @ObservedObject private var localization = AppLocalization.shared
-    @ObservedObject var engine:BrowserEngine
-    var body:some View {
-        if let label=engine.workspaceIdentityLabel {
-            Image(systemName:engine.workspaceMismatch ? "exclamationmark.shield" : engine.detectedNotionSpaceID == nil ? "questionmark.circle" : "checkmark.shield")
-                .help(label).accessibilityLabel(label)
-        }
     }
 }
 
@@ -435,32 +445,79 @@ struct NewBrowserTab:View {
 
 struct NewTabChoice:View {
     @ObservedObject private var localization = AppLocalization.shared
-    let open:(Bool)->Void
+    var loadAccounts:()async->[AccountChoice]={[]}
+    let open:(Bool,AccountChoice?)->Void
     let cancel:()->Void
     @State private var submitted=false
+    @State private var choosingAccount=false
+    /// nil while the signed-in accounts are still being read.
+    @State private var loaded:[AccountChoice]?
+    @State private var waiting=false
+    private var accounts:[AccountChoice] {loaded ?? []}
+    @State private var highlighted=0
     @FocusState private var focused:Bool
-    private static let notionLogo=Bundle.main.url(forResource:"NotionLogo",withExtension:"png").flatMap{NSImage(contentsOf:$0)}
+    static let notionLogo=Bundle.main.url(forResource:"NotionLogo",withExtension:"png").flatMap{NSImage(contentsOf:$0)}
     var body:some View {
         VStack(spacing:20) {
-            Text(L("新しいタブ")).font(.headline)
-            HStack(spacing:12) {
-                choice("Notion",description:L("この環境のNotionを開く\n設定したホームページに移動"),key:"←",web:false)
-                choice(L("URL・検索"),description:L("URLを入力してサイトを開く\nキーワードならGoogleで検索"),key:"→",web:true)
+            Text(choosingAccount ? L("どのアカウントで開きますか？"):waiting ? L("アカウントを確認中…"):L("新しいタブ")).font(.headline)
+            if choosingAccount {
+                VStack(spacing:6) {
+                    ForEach(Array(accounts.prefix(9).enumerated()),id:\.element.id) {index,account in
+                        Button {submit(false,account:account)} label:{
+                            HStack(spacing:10) {
+                                Text("\(index+1)").font(.body.monospaced()).frame(width:24,height:24)
+                                    .background(.quaternary,in:RoundedRectangle(cornerRadius:5))
+                                VStack(alignment:.leading,spacing:2) {
+                                    Text(account.title).font(.body.weight(.medium)).lineLimit(1)
+                                    if !account.detail.isEmpty {Text(account.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)}
+                                }
+                                Spacer()
+                                if index == highlighted {Text("⏎").font(.body.monospaced()).foregroundStyle(.secondary)}
+                            }.padding(.horizontal,12).padding(.vertical,9)
+                                .background(Color.primary.opacity(index == highlighted ? 0.12:0.04),in:RoundedRectangle(cornerRadius:10))
+                                .contentShape(RoundedRectangle(cornerRadius:10))
+                        }.buttonStyle(.plain).accessibilityLabel(account.title+" "+account.detail)
+                            .accessibilityAddTraits(index == highlighted ? .isSelected:[])
+                    }
+                }
+            } else {
+                HStack(spacing:12) {
+                    choice("Notion",description:L("この環境のNotionを開く\n設定したホームページに移動"),key:"←",web:false)
+                    choice(L("URL・検索"),description:L("URLを入力してサイトを開く\nキーワードならGoogleで検索"),key:"→",web:true)
+                }
             }
             HStack {
                 Button(L("キャンセル"),action:cancel).keyboardShortcut(.cancelAction)
+                if choosingAccount {Button(L("戻る")) {choosingAccount=false}}
                 Spacer()
-                Text(L("クリック、または矢印キーですぐに開く")).font(.caption).foregroundStyle(.secondary)
+                Text(choosingAccount ? L("数字キー、または↑↓とEnterで開く"):L("クリック、または矢印キーですぐに開く")).font(.caption).foregroundStyle(.secondary)
             }
         }.padding(24).frame(width:480)
             .focusable().focused($focused).focusEffectDisabled()
-            .onKeyPress(.leftArrow) {submit(false);return .handled}
-            .onKeyPress(.rightArrow) {submit(true);return .handled}
+            .onKeyPress(.leftArrow) {if choosingAccount {choosingAccount=false} else {submit(false)};return .handled}
+            .onKeyPress(.rightArrow) {if !choosingAccount {submit(true)};return .handled}
+            .onKeyPress(.upArrow) {guard choosingAccount else{return .ignored};highlighted=max(0,highlighted-1);return .handled}
+            .onKeyPress(.downArrow) {guard choosingAccount else{return .ignored};highlighted=min(min(accounts.count,9)-1,highlighted+1);return .handled}
+            .onKeyPress(.return) {guard choosingAccount,accounts.indices.contains(highlighted) else{return .ignored};submit(false,account:accounts[highlighted]);return .handled}
+            .onKeyPress(characters:.decimalDigits) {press in
+                guard choosingAccount,let number=Int(press.characters),number>=1,number<=min(accounts.count,9) else{return .ignored}
+                submit(false,account:accounts[number-1]);return .handled
+            }
             .onAppear {focused=true}
+            .task {
+                loaded=await loadAccounts()
+                if waiting {waiting=false;submit(false)}
+            }
     }
-    private func submit(_ web:Bool) {
+    private func submit(_ web:Bool,account:AccountChoice?=nil) {
         guard !submitted else{return}
-        submitted=true;open(web)
+        // Notion was chosen before the account list arrived; continue once it does.
+        if !web,account == nil,loaded == nil {waiting=true;return}
+        // Only Notion needs an account. Ask once, and only when there is a real choice.
+        if !web,account == nil,accounts.count>1 {
+            highlighted=accounts.firstIndex{$0.current} ?? 0;choosingAccount=true;return
+        }
+        submitted=true;open(web,account)
     }
     private func choice(_ title:String,description:String,key:String,web:Bool)->some View {
         Button {submit(web)} label:{

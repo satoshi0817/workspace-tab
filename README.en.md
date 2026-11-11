@@ -38,7 +38,7 @@ See [Build from source](#build-from-source) if you want to build the app yoursel
 4. Press **⌘T** to choose a new tab. Under **→ URL or Search**, enter a URL to open a site or keywords to search Google.
 5. Right-click a tab to change its name, icon, pinned state, or group.
 
-Use **Settings → Link routing** to route links by domain, and the adjustment icon in the tab bar to set site-specific zoom and permissions. If the app has trouble starting, hold Option while launching it or set safe mode for the next launch in **Settings → Diagnostics**.
+Use **Settings → Link routing** to route links by domain, and the “…” menu at the right end of the tab bar to set site-specific zoom and permissions. If the app has trouble starting, hold Option while launching it or set safe mode for the next launch in **Settings → Diagnostics**.
 
 Open **?** in the sidebar for searchable help and an option to show the introduction again.
 
@@ -102,7 +102,12 @@ You can assign Hotkeys and Aliases in Raycast settings. See the [Raycast guide](
 - Each app tab contains browser tabs. Different sign-in environments keep cookies and site data separate; app tabs assigned to the same environment share them.
 - Switch tab groups with the selector at the left end of the tab bar or by scrolling vertically over the tab bar. The visible page does not change until you click a tab.
 - You can pin tabs as icons, temporarily detach a tab into another window, and save work sets.
-- Ordinary tab switching does not reload pages. While a page reloads, the app shows a shimmer and status message. It does not capture or save page screenshots, and it does not automatically discard loaded tabs.
+- Ordinary tab switching does not reload pages. While a page reloads, the app shows a shimmer and status message. It does not capture or save page screenshots.
+- Tabs that have not been shown for a while (30 minutes by default) are rested to free memory and load again when opened. Change the time or turn it off in **Settings → Work → Memory saving**. Resting a tab discards unsubmitted input. Tabs that are visible, in Split View, pinned, loading, or using the microphone or camera are never rested.
+- Closing the current tab switches to the tab on its left. Site settings, the URL bar, and Split View actions are in the “…” menu at the right end of the tab bar.
+- Incoming Notion links open in the only app tab for that environment (for example the dev site); otherwise the app checks which workspace owns the page and opens the matching app tab. If the Notion desktop app opens first, turn off “Open links in desktop app” in the Notion app’s settings.
+- The signed-in Notion account (user name and profile photo, or an initial) is shown at the top right of each tab; click it to check again when it is unverified. The @ button next to it shows the email address over the page per browser tab; the default for an app tab, plus position, text size, and opacity, are set in the app tab edit screen. Names, email addresses, and photos are kept in memory only.
+- In an app tab with several sign-in environments, or signed in to Notion with several accounts, choosing Notion for a new tab lets you pick the account with a number key or ↑↓ and Return.
 - On relaunch, saved tab URLs are restored. Unsubmitted form input and temporary state inside a page are not restored.
 - Settings are stored in `~/Library/Application Support/WorkspaceTabs/`; site data lives in persistent WebKit profiles. Current state saves automatically when it changes. Layout snapshots for recovery are normally kept every five minutes and before loading or restoring. You can restore from the 20 most recent snapshots.
 - The app does not import login sessions from other browsers or install browser extensions.

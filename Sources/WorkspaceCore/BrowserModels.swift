@@ -18,6 +18,8 @@ public struct BrowserPage: Codable, Identifiable, Equatable {
     public var tabEmoji: String?
     public var tabIconFile: String?
     public var groupID: UUID?
+    /// Large account email over this tab's page. nil follows the app tab's setting.
+    public var showAccountEmail: Bool?
     public var displayTitle: String {tabName?.isEmpty == false ? tabName! : (title.isEmpty ? L("新しいタブ") : title)}
     public var iconOnly: Bool {pinned == true && pinnedDisplay != "name"}
     public init(url: String) { self.url = url }
@@ -26,7 +28,8 @@ public struct BrowserTabGroup: Codable, Identifiable, Equatable {
     public var id: UUID
     public var name: String
     public var iconFile: String?
-    public init(id:UUID = UUID(),name:String,iconFile:String?=nil) {self.id=id;self.name=name;self.iconFile=iconFile}
+    public var profileID:UUID?
+    public init(id:UUID = UUID(),name:String,iconFile:String?=nil,profileID:UUID?=nil) {self.id=id;self.name=name;self.iconFile=iconFile;self.profileID=profileID}
 }
 public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var id: UUID = UUID()
@@ -41,6 +44,16 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     public var notionSpaceID: String?
     public var notionAutoRoute: Bool?
     public var cssEnabled = false
+    /// Default for every browser tab in this app tab; a tab's own choice wins.
+    public var showAccountEmail: Bool?
+    public func showsAccountEmail(for page:BrowserPage)->Bool {page.showAccountEmail ?? showAccountEmail ?? false}
+    /// Look of the account email over the page, per app tab. nil uses the default.
+    public var accountEmailOpacity: Double?
+    public var accountEmailSize: Double?
+    public var accountEmailPosition: String?
+    public var accountEmailStyle:AccountEmailStyle {
+        AccountEmailStyle(opacity:min(1,max(0.01,accountEmailOpacity ?? 0.1)),size:min(200,max(8,accountEmailSize ?? 96)),centered:accountEmailPosition == "center")
+    }
     public var cssStrength: Double = 0.18
     public var pages: [BrowserPage]
     public var selectedPageID: UUID?
@@ -54,6 +67,8 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
         guard let group=page.groupID,resolvedTabGroups.contains(where:{$0.id == group}) else{return id}
         return group
     }
+    public func profileID(for page:BrowserPage)->UUID {profileID(forGroup:groupID(for:page))}
+    public func profileID(forGroup groupID:UUID)->UUID {resolvedTabGroups.first{$0.id == groupID}?.profileID ?? profileID}
     public var visibleGroupID:UUID {
         guard let group=visibleTabGroupID,resolvedTabGroups.contains(where:{$0.id == group}) else{return id}
         return group
@@ -116,11 +131,13 @@ public struct BrowserSession: Codable, Equatable {
               links.allSatisfy({ !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && BrowserAddress.url($0.url) != nil }) else { throw BrowserSessionError.invalid }
         // Missing destinations remain editable; never silently use a different login environment.
         for w in workspaces {
-            guard profileIDs.contains(w.profileID), !w.pages.isEmpty,
+            let groups=w.resolvedTabGroups,groupIDs=Set(groups.map(\.id))
+            guard groupIDs.count == groups.count,groups.allSatisfy({$0.profileID.map{profileIDs.contains($0)} ?? true}),
+                  profileIDs.contains(w.profileID), !w.pages.isEmpty,
                   w.selectedPageID.map({ id in w.pages.contains { $0.id == id } }) ?? false,
                   w.cssStrength.isFinite, (0...1).contains(w.cssStrength),
                   BrowserAddress.url(w.homeURL) != nil,
-                  w.pages.allSatisfy({ BrowserAddress.url($0.url) != nil }) else { throw BrowserSessionError.invalid }
+                  w.pages.allSatisfy({ BrowserAddress.url($0.url) != nil && ($0.groupID.map{groupIDs.contains($0)} ?? true) }) else { throw BrowserSessionError.invalid }
         }
         if splitStateRecorded == true, splitWorkspaceID != nil || splitPageID != nil {
             guard let wid=splitWorkspaceID, let pid=splitPageID, workspaces.contains(where: {$0.id == wid && $0.pages.contains(where: {$0.id == pid})}) else {throw BrowserSessionError.invalid}
@@ -186,4 +203,11 @@ public enum BrowserAddress {
         if let fragment = parts.fragment, fragment.lowercased().contains("token=") { parts.fragment = nil }
         return parts.url?.absoluteString ?? "about:blank"
     }
+}
+
+public struct AccountEmailStyle:Equatable {
+    public let opacity:Double
+    public let size:Double
+    /// false places it at the bottom right of the page.
+    public let centered:Bool
 }

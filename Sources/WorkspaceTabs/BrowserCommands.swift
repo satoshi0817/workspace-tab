@@ -75,7 +75,7 @@ extension BrowserStore {
             if ref == split {setSplit(PageReference(workspaceID:workspace.id,pageID:next.id));focusedPage=split}
             else {selectPage(next.id,in:workspace.id);focusedPage=PageReference(workspaceID:workspace.id,pageID:next.id)}
         case "home":
-            if let child=addPage(to:workspace.id,url:workspace.homeURL),ref == split {setSplit(PageReference(workspaceID:workspace.id,pageID:child.pageID))}
+            if let child=addPage(to:workspace.id,url:workspace.homeURL,groupID:workspace.groupID(for:page)),ref == split {setSplit(PageReference(workspaceID:workspace.id,pageID:child.pageID))}
         case "addFavorite":prepareFavorite(workspaceID:workspace.id,pageID:page.id)
         case "copyTitleLink":
             let title=page.displayTitle.replacingOccurrences(of:"\\",with:"\\\\").replacingOccurrences(of:"[",with:"\\[").replacingOccurrences(of:"]",with:"\\]").replacingOccurrences(of:"\n",with:" ")

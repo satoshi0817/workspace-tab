@@ -21,7 +21,7 @@ struct BrowserTabButton: View {
                 HStack(spacing:BrowserLayout.gap) {
                     if let file=page.tabIconFile,let image=store.iconCache.image(directory:store.directory,name:file) {Image(nsImage:image).renderingMode(image.isTemplate ? .template:.original).resizable().scaledToFit().frame(width:18,height:18)}
                     else if let emoji=page.tabEmoji,!emoji.isEmpty {Text(emoji).font(.system(size:16))}
-                    else {BrowserFavicon(cache:store.faviconCache,profile:workspace.profileID,pageURL:page.url)}
+                    else {BrowserFavicon(cache:store.faviconCache,profile:workspace.profileID(for:page),pageURL:page.url)}
                     if !page.iconOnly {Text(page.displayTitle).lineLimit(1).frame(maxWidth:180)}
                 }.frame(minWidth:page.iconOnly ? 16:0,minHeight:BrowserLayout.control).contentShape(Rectangle())
                     .overlay(TabDragHandle(payload:TabDragPayload(workspaceID:workspace.id,pageID:page.id),title:page.displayTitle,drop:{payload,after in if let id=payload.pageID,payload.workspaceID == workspace.id {_ = store.movePage(id,in:workspace.id,relativeTo:page.id,after:after)}},click:{select()}))
@@ -92,7 +92,7 @@ struct BrowserTabEditor:View {
             HStack {
                 Spacer()
                 Button(L("キャンセル")) {dismiss()}.keyboardShortcut(.cancelAction)
-                Button(L("保存")) {store.updateBrowserTab(draft,in:workspaceID);store.notify(L("タブの表示を保存しました"));dismiss()}.keyboardShortcut(.defaultAction)
+                Button(L("保存")) {if store.updateBrowserTab(draft,in:workspaceID) {store.notify(L("タブの表示を保存しました"));dismiss()}}.keyboardShortcut(.defaultAction)
             }
         }.textFieldStyle(.roundedBorder).padding(24).frame(width:480)
     }

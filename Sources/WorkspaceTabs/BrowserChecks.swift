@@ -399,7 +399,10 @@ import WorkspaceCore
             let closing=childPage.id
             store.selectPage(closing,in:a)
             store.focusedPage=PageReference(workspaceID:a,pageID:closing)
+            let stripBeforeClose=store.visibleGroupPages(in:a).map(\.id)
+            let leftOfClosing=stripBeforeClose.firstIndex(of:closing).flatMap{$0>0 ? stripBeforeClose[$0-1]:nil}
             store.closePage(closing,in:a)
+            try expect(leftOfClosing == nil || store.workspace(a)?.selectedPageID == leftOfClosing, "Closing the current tab selects the tab on its left")
             try expect(store.commandPage?.workspaceID == a && store.commandPage?.pageID == store.workspace(a)?.selectedPageID, "Detached keyboard commands stay in the same app after closing a page")
             store.reopenPage()
             store.reattachWorkspace(a,activate:false)
@@ -655,6 +658,8 @@ import WorkspaceCore
             try await StartupSafetyChecks.run(root:root)
             try await TabGroupChecks.run(root:root)
             try await ProductivityChecks.run(root:root)
+            try await NotionAccountChecks.run()
+            try await GroupLoginChecks.run(root:root)
             reordered.shutdown()
             exited.shutdown();loaded.shutdown();store.shutdown()
             for id in profiles { try? await WKWebsiteDataStore.remove(forIdentifier:id) }

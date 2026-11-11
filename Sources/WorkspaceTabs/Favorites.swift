@@ -241,7 +241,7 @@ struct FavoriteEditor: View {
                     ForEach(store.session.workspaces) { Text($0.name).tag($0.id) }
                 }
                 if let workspace = store.favoriteWorkspace(draft) {
-                    Text(L("ログイン環境：") + (store.profile(workspace.profileID)?.name ?? "")).font(.caption).foregroundStyle(.secondary)
+                    Text(L("ログイン環境：") + (store.profile(workspace.profileID(forGroup:workspace.visibleGroupID))?.name ?? "")).font(.caption).foregroundStyle(.secondary)
                 }
                 TextField(L("アイコン（絵文字・文字）"), text: $draft.emoji)
                 IconSelectionRow(store:store,file:$draft.iconFile,defaultSymbol:"link")

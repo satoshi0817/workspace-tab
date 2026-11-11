@@ -80,12 +80,15 @@ extension AppDelegate {
     }
     func handleLauncherURL(_ url:URL) {
         if let external=Self.externalNotionURL(url) {
+            // Come to the front even when a dialog blocks the link, so the reason is visible
+            // instead of the click appearing to do nothing.
+            show()
             guard window.attachedSheet == nil else{store.notify(L("ダイアログを閉じてからリンクを開いてください"),isError:true);return}
-            show();store.openExternalNotion(external);return
+            store.openExternalNotion(external);return
         }
         if ["http","https"].contains(url.scheme ?? "") {
             if !BrowserLinkRule.candidates(for:url,rules:store.session.linkRules ?? []).isEmpty {
-                guard !store.anyPanelPresented else{store.notify(L("ダイアログを閉じてからリンクを開いてください"),isError:true);return}
+                guard !store.anyPanelPresented else{show();store.notify(L("ダイアログを閉じてからリンクを開いてください"),isError:true);return}
                 if store.routeLink(url) {show();return}
             }
             store.linkRouting.openInBrowser(url) { [weak store] message in store?.notify(message,isError:true) };return

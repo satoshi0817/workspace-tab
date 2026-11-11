@@ -54,7 +54,13 @@ extension BrowserStore {
     @discardableResult func restoreClosedPage(_ pageID:UUID)->Bool {
         guard let index=closedPages.lastIndex(where:{$0.1.id == pageID}),
               let i=session.workspaces.firstIndex(where:{$0.id == closedPages[index].0}) else{return false}
+        let closed=closedPages[index].1,workspace=session.workspaces[i]
+        guard closedPageProfiles[pageID] == workspace.profileID(for:closed),
+              closed.groupID == nil || workspace.resolvedTabGroups.contains(where:{$0.id == closed.groupID}) else {
+            notify(L("閉じたタブのログイン環境が変わっています。別の環境では復元しません。"),isError:true);return false
+        }
         let page=closedPages.remove(at:index).1
+        closedPageProfiles[pageID]=nil
         if !session.workspaces[i].pages.contains(where:{$0.id == page.id}) {session.workspaces[i].pages.append(page)}
         session.workspaces[i].selectedPageID=page.id;session.selectedWorkspaceID=session.workspaces[i].id
         revealTabGroup(page.id,in:session.workspaces[i].id);changed();selectionChanged();return true

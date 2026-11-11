@@ -33,6 +33,31 @@ struct PageReference: Codable, Equatable, Identifiable {
     let timings=TimingLog()
     var pendingDisplay:[UUID:Double]=[:]
     func engineIfLoaded(_ pageID:UUID)->BrowserEngine? {engines[pageID]}
+    /// When each loaded tab was last on screen (system uptime). Memory only.
+    var lastVisibleAt:[UUID:TimeInterval]=[:]
+    static let idleDiscardEnabledKey="IdleTabDiscardEnabled",idleDiscardMinutesKey="IdleTabDiscardMinutes"
+    static var idleDiscardEnabled:Bool {UserDefaults.standard.object(forKey:idleDiscardEnabledKey) as? Bool ?? true}
+    static var idleDiscardMinutes:Int {max(5,UserDefaults.standard.object(forKey:idleDiscardMinutesKey) as? Int ?? 30)}
+    /// Frees the memory of tabs that have not been shown for a while. The tab stays in
+    /// the strip and loads again from its saved URL when opened; unsent input is lost,
+    /// so anything visible, pinned, busy or using the mic or camera is left alone.
+    @discardableResult func discardIdleTabs(olderThan seconds:TimeInterval,now:TimeInterval=ProcessInfo.processInfo.systemUptime)->Int {
+        let visible=visiblePageIDs
+        for id in visible {lastVisibleAt[id]=now}
+        lastVisibleAt=lastVisibleAt.filter{engines[$0.key] != nil}
+        var count=0
+        for engine in Array(engines.values) where !visible.contains(engine.pageID) {
+            guard let last=lastVisibleAt[engine.pageID] else{lastVisibleAt[engine.pageID]=now;continue}
+            guard now-last>=seconds,let page=page(PageReference(workspaceID:engine.workspaceID,pageID:engine.pageID)),
+                  page.pinned != true,page.isStartPage != true,!engine.webView.isLoading,engine.webView.url != nil,
+                  engine.webView.cameraCaptureState == .none,engine.webView.microphoneCaptureState == .none,
+                  newTabRequest?.pageID != engine.pageID,siteSettingsPage?.pageID != engine.pageID else{continue}
+            updatePage(engine.workspaceID,engine.pageID,url:engine.webView.url,title:engine.webView.title)
+            engines.removeValue(forKey:engine.pageID)?.dispose();lastVisibleAt[engine.pageID]=nil;count += 1
+        }
+        if count>0 {changed()}
+        return count
+    }
     func pageID(for webView:WKWebView)->UUID? {engines.first{$0.value.webView === webView}?.key}
 
     lazy var downloads=BrowserDownloads(store:self)
@@ -119,9 +144,26 @@ struct PageReference: Codable, Equatable, Identifiable {
     var liveEngineCount:Int {engines.count}
     private var saveWork: DispatchWorkItem?
     private var timer: Timer?
+    private var memoryPressure:DispatchSourceMemoryPressure?
     private var engines: [UUID: BrowserEngine] = [:]
     private var dataStores: [UUID: WKWebsiteDataStore] = [:]
+    /// Account to start Notion as, keyed by a tab that has not been created yet.
+    var notionAccountSeeds:[UUID:String]=[:]
+    /// Names for the account chooser. Memory only.
+    var notionDirectory:[String:NotionAccount]=[:]
+    /// Live Notion pages of one environment (production or dev), current tab first.
+    func notionEngines(environment:String)->[BrowserEngine] {
+        engines.values.filter{!isPageSuspended($0.pageID) && !$0.webView.isLoading && $0.webView.url.flatMap(NotionWorkspace.environment) == environment}
+            .sorted{a,_ in a.pageID == selectedPage?.id}
+    }
+    /// A live Notion page in this login environment, to ask Notion about its accounts.
+    func notionEngine(profileID:UUID,environment:String)->BrowserEngine? {
+        engines.values.first{$0.profileID == profileID && !isPageSuspended($0.pageID) && !$0.webView.isLoading && $0.webView.url.flatMap(NotionWorkspace.environment) == environment}
+    }
     var closedPages: [(UUID, BrowserPage)] = []
+    var closedPageProfiles:[UUID:UUID]=[:]
+    // Isolated checks supply a decision without opening modal UI or sending keys.
+    var loginEnvironmentChangeConfirmation:(([UUID])->Bool)?
     var window: NSWindow?
     var selected: BrowserWorkspace? { session.workspaces.first { $0.id == session.selectedWorkspaceID } }
     var selectedPage: BrowserPage? { selected.flatMap { w in w.pages.first { $0.id == w.selectedPageID } } }
@@ -162,9 +204,21 @@ struct PageReference: Codable, Equatable, Identifiable {
         loadWorksets()
         applyTheme()
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.snapshot(); self?.save(); self?.pollNotionWorkspace() }
+            MainActor.assumeIsolated {
+                self?.snapshot(); self?.save(); self?.pollNotionWorkspace()
+                if Self.idleDiscardEnabled {self?.discardIdleTabs(olderThan:TimeInterval(Self.idleDiscardMinutes*60))}
+            }
         }
         timer?.tolerance=1
+        // When macOS reports memory pressure, do not wait for the full idle time.
+        let pressure=DispatchSource.makeMemoryPressureSource(eventMask:[.warning,.critical],queue:.main)
+        pressure.setEventHandler { [weak self] in
+            MainActor.assumeIsolated {
+                guard Self.idleDiscardEnabled,let self,let event=self.memoryPressure?.data else{return}
+                self.discardIdleTabs(olderThan:event.contains(.critical) ? 300:600)
+            }
+        }
+        pressure.resume();memoryPressure=pressure
     }
     func profile(_ id: UUID) -> LoginProfile? { session.profiles.first { $0.id == id } }
     func workspace(_ id: UUID) -> BrowserWorkspace? { session.workspaces.first { $0.id == id } }
@@ -174,11 +228,12 @@ struct PageReference: Codable, Equatable, Identifiable {
         let store = WKWebsiteDataStore(forIdentifier: id); dataStores[id] = store; return store
     }
     func engine(_ workspaceID: UUID, _ pageID: UUID, configuration: WKWebViewConfiguration? = nil, load: Bool = true) -> BrowserEngine? {
+        guard let workspace = workspace(workspaceID), let page = workspace.pages.first(where: { $0.id == pageID }),profile(workspace.profileID(for:page)) != nil else { return nil }
+        if let engine=engines[pageID],engine.profileID != workspace.profileID(for:page) {engines.removeValue(forKey:pageID);engine.dispose()}
         if let engine = engines[pageID],engine.workspaceID == workspaceID {
             if load,suspendedPages.contains(pageID),!isPageSuspended(pageID) {resumePage(PageReference(workspaceID:workspaceID,pageID:pageID))}
             return engine
         }
-        guard let workspace = workspace(workspaceID), let page = workspace.pages.first(where: { $0.id == pageID }) else { return nil }
         let engine = BrowserEngine(store: self, workspace: workspace, page: page, configuration: configuration)
         engines[pageID] = engine
         if load,page.isStartPage != true {
@@ -223,7 +278,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         session.workspaces.append(workspace); session.selectedWorkspaceID = workspace.id
         changed(); return workspace.id
     }
-    @discardableResult func addPage(to workspaceID: UUID? = nil, url: String? = nil, configuration: WKWebViewConfiguration? = nil, load:Bool = true, groupID:UUID? = nil, startPage:Bool = false) -> BrowserEngine? {
+    @discardableResult func addPage(to workspaceID: UUID? = nil, url: String? = nil, configuration: WKWebViewConfiguration? = nil, load:Bool = true, groupID:UUID? = nil, startPage:Bool = false, notionUserID:String? = nil) -> BrowserEngine? {
         defer {selectionChanged()}
         guard let id = workspaceID ?? session.selectedWorkspaceID, let i = session.workspaces.firstIndex(where: { $0.id == id }) else { return nil }
         var page = BrowserPage(url: startPage ? "about:blank" : (url ?? session.workspaces[i].homeURL))
@@ -231,6 +286,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         page.groupID=groupID ?? session.workspaces[i].visibleGroupID
         session.workspaces[i].visibleTabGroupID=page.groupID
         session.workspaces[i].pages.append(page); session.workspaces[i].selectedPageID = page.id
+        if !startPage,let notionUserID {notionAccountSeeds[page.id]=notionUserID}
         changed()
         return engine(id, page.id, configuration: configuration, load: configuration == nil && load)
     }
@@ -246,25 +302,45 @@ struct PageReference: Codable, Equatable, Identifiable {
         defer {selectionChanged()}
         guard let i = session.workspaces.firstIndex(where: { $0.id == workspaceID }), let j = session.workspaces[i].pages.firstIndex(where: { $0.id == pageID }) else { return }
         guard session.workspaces[i].pages[j].pinned != true else {notify(L("ピン留めを解除してから閉じてください"));return}
+        let closedGroup=session.workspaces[i].pages[j].groupID
+        // Closing the current tab moves one tab to the left in the strip as shown
+        // (pinned first, same group). The leftmost tab hands over to its right neighbour.
+        let strip=orderedPages(in:workspaceID).filter{session.workspaces[i].groupID(for:$0) == session.workspaces[i].groupID(for:session.workspaces[i].pages[j])}.map(\.id)
+        let neighbour=strip.firstIndex(of:pageID).flatMap{$0>0 ? strip[$0-1]:(strip.count>1 ? strip[1]:nil)}
         closedPages.append((workspaceID, session.workspaces[i].pages[j])); closedPages = Array(closedPages.suffix(20))
+        closedPageProfiles[pageID]=session.workspaces[i].profileID(for:session.workspaces[i].pages[j])
+        let retained=Set(closedPages.map{$0.1.id});closedPageProfiles=closedPageProfiles.filter{retained.contains($0.key)}
         engines.removeValue(forKey: pageID)?.dispose()
         session.workspaces[i].pages.remove(at: j)
-        if session.workspaces[i].pages.isEmpty { session.workspaces[i].pages = [BrowserPage(url: session.workspaces[i].homeURL)] }
+        if session.workspaces[i].pages.isEmpty {var page=BrowserPage(url:session.workspaces[i].homeURL);page.groupID=closedGroup;session.workspaces[i].pages=[page]}
         if session.workspaces[i].selectedPageID == pageID {
-            let next=visibleGroupPages(in:workspaceID).first ?? session.workspaces[i].pages[min(j,session.workspaces[i].pages.count-1)]
+            let next=session.workspaces[i].pages.first{$0.id == neighbour} ?? visibleGroupPages(in:workspaceID).first ?? session.workspaces[i].pages[min(j,session.workspaces[i].pages.count-1)]
             session.workspaces[i].selectedPageID=next.id;revealTabGroup(next.id,in:workspaceID)
         }
         if split?.pageID == pageID { split = nil }
         changed()
     }
-    func updateBrowserTab(_ value: BrowserPage, in workspaceID: UUID) {
-        guard let i=session.workspaces.firstIndex(where: {$0.id == workspaceID}),let j=session.workspaces[i].pages.firstIndex(where: {$0.id == value.id}) else {return}
+    @discardableResult func updateBrowserTab(_ value: BrowserPage, in workspaceID: UUID)->Bool {
+        guard let i=session.workspaces.firstIndex(where: {$0.id == workspaceID}),let j=session.workspaces[i].pages.firstIndex(where: {$0.id == value.id}) else {return false}
+        if session.workspaces[i].groupID(for:session.workspaces[i].pages[j]) != session.workspaces[i].groupID(for:value),
+           !movePageToGroup(value.id,in:workspaceID,groupID:session.workspaces[i].groupID(for:value)) {return false}
         session.workspaces[i].pages[j].pinned=value.pinned
         session.workspaces[i].pages[j].pinnedDisplay=value.pinnedDisplay
         session.workspaces[i].pages[j].tabName=value.tabName
         session.workspaces[i].pages[j].tabEmoji=value.tabEmoji
         session.workspaces[i].pages[j].tabIconFile=value.tabIconFile
         session.workspaces[i].pages[j].groupID=value.groupID
+        changed();return true
+    }
+    func showsAccountEmail(_ pageID:UUID,in workspaceID:UUID)->Bool {
+        guard let w=workspace(workspaceID),let page=w.pages.first(where:{$0.id == pageID}) else{return false}
+        return w.showsAccountEmail(for:page)
+    }
+    func toggleAccountEmail(_ pageID:UUID,in workspaceID:UUID) {
+        guard let i=session.workspaces.firstIndex(where:{$0.id == workspaceID}),let j=session.workspaces[i].pages.firstIndex(where:{$0.id == pageID}) else{return}
+        // Store only a difference from the app tab's setting, so tabs keep following it.
+        let next = !session.workspaces[i].showsAccountEmail(for:session.workspaces[i].pages[j])
+        session.workspaces[i].pages[j].showAccountEmail=next == (session.workspaces[i].showAccountEmail ?? false) ? nil:next
         changed()
     }
     func orderedPages(in workspaceID:UUID) -> [BrowserPage] {
@@ -272,10 +348,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         return pages.filter {$0.pinned == true} + pages.filter {$0.pinned != true}
     }
     func reopenPage() {
-        defer {selectionChanged()}
-        guard let (id, page) = closedPages.popLast(), let i = session.workspaces.firstIndex(where: { $0.id == id }) else { return }
-        session.workspaces[i].pages.append(page); session.workspaces[i].selectedPageID = page.id; session.selectedWorkspaceID = id
-        revealTabGroup(page.id,in:id);changed()
+        if let page=closedPages.last?.1 {_=restoreClosedPage(page.id)}
     }
     func removeWorkspace(_ id: UUID) {
         defer {selectionChanged()}
@@ -314,10 +387,9 @@ struct PageReference: Codable, Equatable, Identifiable {
         updated.tabGroups=old.tabGroups;updated.visibleTabGroupID=old.visibleTabGroupID
         session.workspaces[i] = updated
         if old.profileID != value.profileID {
-            for page in old.pages { engines.removeValue(forKey: page.id)?.dispose() }
-        } else {
-            for page in old.pages { engines[page.id]?.updateStyle(updated) }
+            for page in old.pages where old.profileID(for:page) != updated.profileID(for:page) {engines.removeValue(forKey:page.id)?.dispose()}
         }
+        for page in old.pages {engines[page.id]?.updateStyle(updated)}
         changed()
     }
     func updateProfile(_ profile: LoginProfile) {
@@ -326,6 +398,13 @@ struct PageReference: Codable, Equatable, Identifiable {
     }
     func createProfile(name: String) -> UUID {
         let profile = LoginProfile(name: name); session.profiles.append(profile); changed(); return profile.id
+    }
+    func discardPageEngines(_ ids:[UUID]) {
+        for id in ids {
+            guard let engine=engines[id] else{continue}
+            updatePage(engine.workspaceID,id,url:engine.webView.url,title:engine.webView.title)
+            engines.removeValue(forKey:id)?.dispose()
+        }
     }
     func updatePage(_ workspaceID: UUID, _ pageID: UUID, url: URL?, title: String?) {
         guard let i = session.workspaces.firstIndex(where: { $0.id == workspaceID }), let j = session.workspaces[i].pages.firstIndex(where: { $0.id == pageID }) else { return }
@@ -414,7 +493,10 @@ struct PageReference: Codable, Equatable, Identifiable {
         return ids
     }
     func pollNotionWorkspace() {
-        for id in visiblePageIDs {engines[id]?.detectNotionWorkspace()}
+        for id in visiblePageIDs {
+            engines[id]?.detectNotionWorkspace()
+            if let engine=engines[id],!isPageSuspended(id) {engine.notionAccount.refresh(in:engine.webView)}
+        }
     }
     @discardableResult func routeNotion(_ url:URL, detectedID:String?=nil, from:PageReference) -> Bool {
         guard let target=NotionWorkspace.target(url:url,detectedID:detectedID,workspaces:session.workspaces),target != from.workspaceID else {return false}
