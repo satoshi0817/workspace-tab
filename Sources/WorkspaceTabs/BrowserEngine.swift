@@ -497,24 +497,49 @@ struct WebContent: NSViewRepresentable {
     let store: BrowserStore
     let workspaceID: UUID
     let detached: Bool
-    func makeNSView(context: Context) -> NSView { NSView() }
-    func updateNSView(_ container: NSView, context: Context) {
-        guard store.detachedWorkspaceIDs.contains(workspaceID) == detached else {
-            if webView.superview === container {webView.removeFromSuperview()}
-            return
+    func makeNSView(context: Context) -> WebContainer { WebContainer() }
+    func updateNSView(_ container: WebContainer, context: Context) {
+        container.claim = { [weak container, weak store, webView] in
+            guard let container, let store else { return }
+            guard store.detachedWorkspaceIDs.contains(workspaceID) == detached else {
+                if webView.superview === container {webView.removeFromSuperview()}
+                return
+            }
+            guard webView.superview !== container else { return }
+            // A layout change (starting or ending a Split) builds the new container while
+            // the old one is still on screen. The newer one keeps the web view; the old
+            // one must not take it back on its way out, or the page is left blank.
+            if let owner = webView.superview as? WebContainer, owner.serial > container.serial,
+               owner.window != nil || container.window == nil { return }
+            for child in container.subviews { child.removeFromSuperview() }
+            webView.removeFromSuperview()
+            webView.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(webView)
+            store.recordDisplay(pageID:store.pageID(for:webView))
+            NSLayoutConstraint.activate([
+                webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                webView.topAnchor.constraint(equalTo: container.topAnchor),
+                webView.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            ])
         }
-        guard webView.superview !== container else { return }
-        for child in container.subviews { child.removeFromSuperview() }
-        webView.removeFromSuperview()
-        webView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(webView)
-        store.recordDisplay(pageID:store.pageID(for:webView))
-        NSLayoutConstraint.activate([
-            webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            webView.topAnchor.constraint(equalTo: container.topAnchor),
-            webView.bottomAnchor.constraint(equalTo: container.bottomAnchor)
-        ])
+        container.claim?()
+        // Check again once the layout change has settled, in case an outgoing container
+        // took the web view after this one was set up.
+        DispatchQueue.main.async { [weak container] in container?.claim?() }
+    }
+}
+
+/// Holds one tab's web view. Newer containers win when two want the same web view.
+final class WebContainer: NSView {
+    private static var count = 0
+    let serial: Int
+    var claim: (() -> Void)?
+    override init(frame: NSRect) { WebContainer.count += 1; serial = WebContainer.count; super.init(frame: frame) }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil { claim?() }
     }
 }
 

@@ -50,8 +50,8 @@ struct BrowserRoot: View {
             .sheet(item:$store.previewFile,onDismiss:store.restorePanelFocus) {FilePreviewSheet(file:$0)}
             .sheet(item:$store.siteSettingsPage,onDismiss:store.restorePanelFocus) {SiteSettingsSheet(store:store,sites:store.sites,ref:$0)}
             .sheet(item: $store.favoriteDraft,onDismiss:store.restorePanelFocus) { draft in FavoriteEditor(store: store, draft: draft) }
-            .sheet(item:$store.editingBrowserTab,onDismiss:store.restorePanelFocus) {ref in
-                if let page=store.page(ref) {BrowserTabEditor(store:store,workspaceID:ref.workspaceID,draft:page)}
+            .sheet(item:$store.editingBrowserTab,onDismiss:{store.editingBrowserTabToPin=false;store.restorePanelFocus()}) {ref in
+                if let page=store.page(ref) {BrowserTabEditor(store:store,workspaceID:ref.workspaceID,draft:BrowserTabEditor.draft(page,pinning:store.editingBrowserTabToPin),pinning:store.editingBrowserTabToPin)}
             }
             .sheet(isPresented:Binding(get:{store.pendingExternalURL != nil},set:{if !$0 {store.pendingExternalURL=nil}}),onDismiss:store.restorePanelFocus) {ExternalLinkPicker(store:store)}
             .sheet(isPresented:$store.onboardingPresented,onDismiss:store.restorePanelFocus) {BrowserOnboarding(store:store,firstRun:true)}
@@ -85,9 +85,18 @@ struct BrowserRoot: View {
                         Button(L("ここに戻す")) {store.reattachWorkspace(workspace.id)}
                     }
                 }.frame(maxWidth:.infinity,maxHeight:.infinity)
-            } else if let split = store.split, store.page(split) != nil, split.pageID != page.id {
-                BrowserSplit(store:store,left:PageReference(workspaceID:workspace.id,pageID:page.id),right:split)
-            } else { BrowserPane(store:store,workspaceID:workspace.id,pageID:page.id,isRight:false) }
+            } else {
+                Group {
+                    if let split = store.split, store.page(split) != nil, split.pageID != page.id {
+                        BrowserSplit(store:store,left:PageReference(workspaceID:workspace.id,pageID:page.id),right:split)
+                    } else { BrowserPane(store:store,workspaceID:workspace.id,pageID:page.id,isRight:false) }
+                }
+                // Dragging a tab or an app tab onto the page starts a Split on that side.
+                .overlay(SplitDropZone(color:NSColor(activeColor)) {payload,side in
+                    guard let pageID=payload.pageID ?? store.workspace(payload.workspaceID)?.selectedPageID else{return}
+                    if !store.dropForSplit(PageReference(workspaceID:payload.workspaceID,pageID:pageID),side:side) {store.notify(L("並べて表示するには、タブがもう1つ必要です"))}
+                }.allowsHitTesting(false))
+            }
         } else {
             VStack(spacing:16) { Text(L("アプリタブを追加")).font(.title2); Button(L("Notionを追加")) {store.addWorkspace(name:"Notion")} }.frame(maxWidth:.infinity,maxHeight:.infinity)
         }
@@ -192,7 +201,7 @@ struct BrowserPane: View {
                     BrowserGroupPicker(store:store,workspace:workspace)
                     ScrollView(.horizontal,showsIndicators:false) {
                         HStack(spacing:BrowserLayout.small) {
-                            ForEach(store.visibleGroupPages(in:workspaceID)) {page in
+                            ForEach(store.paneTabs(in:workspaceID,second:isRight,detached:detached)) {page in
                                 BrowserTabButton(store:store,workspace:workspace,page:page,selected:page.id == pageID,isRight:isRight,detached:detached)
                             }
                             Button {
@@ -203,6 +212,12 @@ struct BrowserPane: View {
                     }.frame(maxWidth:.infinity).layoutPriority(-1)
                     NotionAccountPill(monitor:engine.notionAccount) {engine.notionAccount.refresh(in:engine.webView,force:true)}
                     NotionAccountWatermarkToggle(monitor:engine.notionAccount,enabled:store.showsAccountEmail(pageID,in:workspaceID)) {store.toggleAccountEmail(pageID,in:workspaceID)}
+                    if !detached,let split=store.split,store.page(split) != nil,split.pageID != store.selectedPage?.id {
+                        Button {store.setSplit(nil)} label:{
+                            Image(systemName:"rectangle.split.2x1.slash").font(.system(size:11,weight:.semibold))
+                                .frame(width:22,height:22).background(.primary.opacity(0.08),in:Circle()).contentShape(Circle())
+                        }.buttonStyle(.plain).help(L("Split Viewを解除")).accessibilityLabel(L("Split Viewを解除"))
+                    }
                     PaneMenu(store:store,engine:engine,workspaceID:workspaceID,pageID:pageID,isRight:isRight,detached:detached,ink:Palette.ink(workspace.color))
                 }.frame(height:BrowserLayout.tabBar)
                     .padding(.horizontal,BrowserLayout.inset)

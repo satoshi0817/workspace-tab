@@ -14,6 +14,8 @@ public struct BrowserPage: Codable, Identifiable, Equatable {
     public var isStartPage: Bool?
     public var pinned: Bool?
     public var pinnedDisplay: String?
+    /// The page a pinned tab opens when the app starts. nil restores the last page shown.
+    public var pinnedURL: String?
     public var tabName: String?
     public var tabEmoji: String?
     public var tabIconFile: String?
@@ -105,6 +107,8 @@ public struct BrowserSession: Codable, Equatable {
     public var splitStateRecorded: Bool?
     public var splitOrientation:String?
     public var splitFraction:Double?
+    /// Tabs shown in the second pane's strip while both panes show the same app tab.
+    public var splitSidePageIDs:[UUID]?
     public var version = 1
     public var profiles: [LoginProfile] = []
     public var workspaces: [BrowserWorkspace] = []

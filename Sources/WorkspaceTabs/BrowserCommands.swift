@@ -68,7 +68,9 @@ extension BrowserStore {
         guard let ref,let workspace=workspace(ref.workspaceID),let page=page(ref) else {notify(L("操作するタブがありません"));return}
         switch id {
         case "previousPage","nextPage":
-            let pages=orderedPages(in:workspace.id)
+            // In a same-app-tab Split, step through the focused pane's own tabs only.
+            let second=secondPanePageIDs()
+            let pages=orderedPages(in:workspace.id).filter{second.isEmpty || workspace.id != session.selectedWorkspaceID || second.contains($0.id) == (ref == split)}
             guard let index=pages.firstIndex(where:{$0.id == ref.pageID}),!pages.isEmpty else{return}
             let offset=id == "nextPage" ? 1:-1
             let next=pages[(index+offset+pages.count)%pages.count]

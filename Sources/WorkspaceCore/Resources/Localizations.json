@@ -3790,5 +3790,65 @@
   "別のログイン環境へタブを移動すると読み込み直します。確認でキャンセルすれば、元の入力と環境を保ちます。グループの名前・アイコンだけの変更では再読み込みしません。": {
     "en": "Moving tabs to another login environment reloads them. Cancel the confirmation to keep the original input and environment. Renaming a group or changing its icon does not reload pages.",
     "ko": "탭을 다른 로그인 환경으로 이동하면 다시 로드됩니다. 확인 창에서 취소하면 원래 입력과 환경을 유지합니다. 그룹 이름이나 아이콘만 변경하면 다시 로드하지 않습니다."
+  },
+  "並べて表示するには、タブがもう1つ必要です": {
+    "en": "Open one more tab to show two side by side",
+    "ko": "나란히 보려면 탭이 하나 더 필요합니다"
+  },
+  "タブやアプリタブをページの上へドラッグしても始められます。左半分・右半分に落とすとその側に並び、下端に落とすと上下に分割します。同じアプリタブ内のタブ同士でも並べられます。": {
+    "en": "You can also start by dragging a tab or an app tab onto the page. Drop it on the left or right half to place it on that side, or near the bottom edge to split top and bottom. Two tabs from the same app tab can be shown together.",
+    "ko": "탭이나 앱 탭을 페이지 위로 드래그해도 시작할 수 있습니다. 왼쪽 또는 오른쪽 절반에 놓으면 그쪽에 나란히 표시되고, 아래쪽 가장자리에 놓으면 위아래로 분할됩니다. 같은 앱 탭 안의 탭끼리도 나란히 볼 수 있습니다."
+  },
+  "同じアプリタブ内でSplit Viewにすると、タブ列は左右で分かれ、各タブはどちらか一方にだけ表示されます。タブを反対側のページやタブ列へドラッグすると、そちらへ移動します。": {
+    "en": "When two tabs of the same app tab are split, the tab bar is divided too: each tab appears on one side only. Drag a tab onto the other page or tab bar to move it across.",
+    "ko": "같은 앱 탭 안에서 Split View를 사용하면 탭 줄도 좌우로 나뉘며, 각 탭은 한쪽에만 표시됩니다. 탭을 반대쪽 페이지나 탭 줄로 드래그하면 그쪽으로 이동합니다."
+  },
+  "同じアプリタブ内のSplit Viewは、そのアプリタブのものです。別のアプリタブへ切り替えると分割なしで表示し、戻ると元の分割に戻ります。": {
+    "en": "A Split within one app tab belongs to that app tab. Switching to another app tab shows it without a split, and coming back restores the split.",
+    "ko": "같은 앱 탭 안의 Split View는 해당 앱 탭에 속합니다. 다른 앱 탭으로 전환하면 분할 없이 표시되고, 돌아오면 원래 분할로 복원됩니다."
+  },
+  "分割中はタブ列右側の分割解除ボタン、または「…」メニューの「Split Viewを解除」で元に戻せます。": {
+    "en": "While split, use the end-split button at the right of the tab bar, or End Split View in the … menu, to go back to one page.",
+    "ko": "분할 중에는 탭 줄 오른쪽의 분할 해제 버튼이나 … 메뉴의 Split View 해제로 되돌릴 수 있습니다."
+  },
+  "ピン留めするURLを確認してください": {
+    "en": "Check the URL to pin",
+    "ko": "고정할 URL을 확인하세요"
+  },
+  "ピン留めしたページに戻る": {
+    "en": "Go back to the pinned page",
+    "ko": "고정한 페이지로 돌아가기"
+  },
+  "ピン留めの設定…": {
+    "en": "Pin settings…",
+    "ko": "고정 설정…"
+  },
+  "タブをピン留め…": {
+    "en": "Pin tab…",
+    "ko": "탭 고정…"
+  },
+  "ピン留めするページ": {
+    "en": "Page to pin",
+    "ko": "고정할 페이지"
+  },
+  "URL（空欄で最後に開いていたページ）": {
+    "en": "URL (leave empty for the last page shown)",
+    "ko": "URL (비워 두면 마지막으로 연 페이지)"
+  },
+  "今のページを使う": {
+    "en": "Use the current page",
+    "ko": "현재 페이지 사용"
+  },
+  "アプリを開き直すと、このタブはこのURLで開きます。空欄にすると、最後に開いていたページを復元します。": {
+    "en": "When the app starts, this tab opens this URL. Leave it empty to restore the last page shown instead.",
+    "ko": "앱을 다시 열면 이 탭은 이 URL로 열립니다. 비워 두면 마지막으로 연 페이지를 복원합니다."
+  },
+  "タブを右クリックして「タブをピン留め…」を選ぶと設定画面が開き、ピン留めするページのURLを確認・変更できます。初期値は今開いているページです。": {
+    "en": "Right-click a tab and choose Pin tab… to open its settings, where you can check or change the URL of the page to pin. It starts as the page now showing.",
+    "ko": "탭을 오른쪽 클릭하고 탭 고정…을 선택하면 설정 화면이 열리며, 고정할 페이지의 URL을 확인하거나 변경할 수 있습니다. 초깃값은 현재 열려 있는 페이지입니다."
+  },
+  "アプリを開き直すと、ピン留めしたタブはそのURLで開きます。途中で別のページへ移動していても変わりません。変更するときは、ピン留めしたタブを右クリックして「ピン留めの設定…」を選びます。「ピン留めしたページに戻る」でいつでも戻れます。": {
+    "en": "When the app starts, a pinned tab opens that URL, even if you browsed elsewhere in it. To change it, right-click the pinned tab and choose Pin settings…. Go back to the pinned page returns there at any time.",
+    "ko": "앱을 다시 열면 고정한 탭은 그 URL로 열리며, 도중에 다른 페이지로 이동했어도 바뀌지 않습니다. 변경하려면 고정한 탭을 오른쪽 클릭하고 고정 설정…을 선택합니다. 고정한 페이지로 돌아가기로 언제든지 돌아갈 수 있습니다."
   }
 }

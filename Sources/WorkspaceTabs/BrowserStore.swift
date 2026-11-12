@@ -67,6 +67,11 @@ struct PageReference: Codable, Equatable, Identifiable {
     lazy var notion=NotionLibrary(store:self)
     lazy var linkRouting=NotionLinkRouting(directory:directory)
     @Published var split: PageReference?
+    struct InnerSplit {var pageID:UUID;var sidePageIDs:[UUID];var orientation:String?;var fraction:Double?}
+    /// Same-app-tab Splits set aside while another app tab is showing. Memory only.
+    var innerSplits:[UUID:InnerSplit]=[:]
+    /// The tab a new tab replaced as the visible one, until the new tab is placed.
+    var selectionBeforeNewPage:(new:UUID,previous:UUID?)?
     @Published var detachedWorkspaceIDs: Set<UUID> = []
     var detachedControllers: [UUID: DetachedWorkspaceController] = [:]
     @Published var error: String?
@@ -118,6 +123,8 @@ struct PageReference: Codable, Equatable, Identifiable {
     @Published var downloadsPresented = false {willSet {if newValue && !downloadsPresented {capturePanelFocus()}}}
     @Published var previewFile:FilePreview? {willSet {if newValue != nil && previewFile == nil {capturePanelFocus()}}}
     @Published var siteSettingsPage:PageReference? {willSet {if newValue != nil && siteSettingsPage == nil {capturePanelFocus()}}}
+    /// The tab editor was opened to pin the tab, so it starts with pinning switched on.
+    var editingBrowserTabToPin=false
     @Published var editingBrowserTab: PageReference? {willSet {if newValue != nil && editingBrowserTab == nil {capturePanelFocus()}}}
     @Published var editingWorkspace: UUID? {willSet {if newValue != nil && editingWorkspace == nil {capturePanelFocus()}}}
     @Published var addressFocus = UUID()
@@ -191,6 +198,7 @@ struct PageReference: Codable, Equatable, Identifiable {
                 if session.workspaces.isEmpty { addWorkspace(name: "Notion") }
                 save()
             }
+            restorePinnedURLs()
             if session.splitStateRecorded == true {
                 if let wid=session.splitWorkspaceID,let pid=session.splitPageID {split=PageReference(workspaceID:wid,pageID:pid)}
             } else if let data = try? Data(contentsOf: self.directory.appendingPathComponent("browser-split.json")),
@@ -248,7 +256,21 @@ struct PageReference: Codable, Equatable, Identifiable {
         guard workspace(id) != nil else { return }
         let current=commandPage?.workspaceID ?? session.selectedWorkspaceID
         if current != id {previousWorkspaceID=current}
+        // A Split between two tabs of one app tab belongs to that app tab: leaving shows
+        // the next app tab on its own, and coming back brings the Split back.
+        if let leaving=session.selectedWorkspaceID,leaving != id,let inner=split,inner.workspaceID == leaving {
+            let side=secondPanePageIDs()
+            if !side.isEmpty {
+                innerSplits[leaving]=InnerSplit(pageID:inner.pageID,sidePageIDs:session.splitSidePageIDs ?? [inner.pageID],orientation:session.splitOrientation,fraction:session.splitFraction)
+                split=nil;session.splitSidePageIDs=nil
+            }
+        }
         session.selectedWorkspaceID = id
+        if split == nil,let saved=innerSplits.removeValue(forKey:id),let w=workspace(id),saved.pageID != w.selectedPageID,w.pages.contains(where:{$0.id == saved.pageID}),!detachedWorkspaceIDs.contains(id) {
+            split=PageReference(workspaceID:id,pageID:saved.pageID)
+            session.splitSidePageIDs=saved.sidePageIDs.filter{pid in pid != w.selectedPageID && w.pages.contains{$0.id == pid}}
+            session.splitOrientation=saved.orientation;session.splitFraction=saved.fraction
+        }
         focusedPage=nil
         if let detached=detachedControllers[id] {detached.window.makeKeyAndOrderFront(nil);focusedPage=selectedPage.map {PageReference(workspaceID:id,pageID:$0.id)}}
         if split?.workspaceID == id && split?.pageID == selectedPage?.id { split = nil }
@@ -269,6 +291,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         session.workspaces[i].selectedPageID = pageID
         revealTabGroup(pageID,in:workspaceID)
         if split?.pageID == pageID && session.selectedWorkspaceID == workspaceID { split = nil }
+        if split?.workspaceID == workspaceID {session.splitSidePageIDs?.removeAll{$0 == pageID}}
         changed()
     }
     @discardableResult func addWorkspace(name: String = L("新しいアプリ"), url: String = "https://app.notion.com") -> UUID {
@@ -285,6 +308,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         page.isStartPage=startPage ? true:nil
         page.groupID=groupID ?? session.workspaces[i].visibleGroupID
         session.workspaces[i].visibleTabGroupID=page.groupID
+        selectionBeforeNewPage=(page.id,session.workspaces[i].selectedPageID)
         session.workspaces[i].pages.append(page); session.workspaces[i].selectedPageID = page.id
         if !startPage,let notionUserID {notionAccountSeeds[page.id]=notionUserID}
         changed()
@@ -305,7 +329,8 @@ struct PageReference: Codable, Equatable, Identifiable {
         let closedGroup=session.workspaces[i].pages[j].groupID
         // Closing the current tab moves one tab to the left in the strip as shown
         // (pinned first, same group). The leftmost tab hands over to its right neighbour.
-        let strip=orderedPages(in:workspaceID).filter{session.workspaces[i].groupID(for:$0) == session.workspaces[i].groupID(for:session.workspaces[i].pages[j])}.map(\.id)
+        let second=secondPanePageIDs(),closedSecond=second.contains(pageID)
+        let strip=orderedPages(in:workspaceID).filter{session.workspaces[i].groupID(for:$0) == session.workspaces[i].groupID(for:session.workspaces[i].pages[j]) && second.contains($0.id) == closedSecond}.map(\.id)
         let neighbour=strip.firstIndex(of:pageID).flatMap{$0>0 ? strip[$0-1]:(strip.count>1 ? strip[1]:nil)}
         closedPages.append((workspaceID, session.workspaces[i].pages[j])); closedPages = Array(closedPages.suffix(20))
         closedPageProfiles[pageID]=session.workspaces[i].profileID(for:session.workspaces[i].pages[j])
@@ -314,16 +339,31 @@ struct PageReference: Codable, Equatable, Identifiable {
         session.workspaces[i].pages.remove(at: j)
         if session.workspaces[i].pages.isEmpty {var page=BrowserPage(url:session.workspaces[i].homeURL);page.groupID=closedGroup;session.workspaces[i].pages=[page]}
         if session.workspaces[i].selectedPageID == pageID {
-            let next=session.workspaces[i].pages.first{$0.id == neighbour} ?? visibleGroupPages(in:workspaceID).first ?? session.workspaces[i].pages[min(j,session.workspaces[i].pages.count-1)]
+            let next=session.workspaces[i].pages.first{$0.id == neighbour} ?? session.workspaces[i].pages.first{!second.contains($0.id)} ?? (closedSecond ? nil:session.workspaces[i].pages.first{$0.id == split?.pageID}) ?? visibleGroupPages(in:workspaceID).first ?? session.workspaces[i].pages[min(j,session.workspaces[i].pages.count-1)]
             session.workspaces[i].selectedPageID=next.id;revealTabGroup(next.id,in:workspaceID)
+            // The first pane's only tab was closed: end the Split and show the other pane's tab.
+            if split?.pageID == next.id {split=nil}
         }
-        if split?.pageID == pageID { split = nil }
+        if split?.pageID == pageID {
+            // Hand the second pane to another of its tabs before giving up the Split.
+            let heir=session.workspaces[i].pages.first{$0.id == neighbour && closedSecond} ?? session.workspaces[i].pages.first{second.contains($0.id) && $0.id != pageID}
+            split=heir.map{PageReference(workspaceID:workspaceID,pageID:$0.id)}
+        }
+        if split == nil {session.splitSidePageIDs=nil} else {session.splitSidePageIDs?.removeAll{$0 == pageID}}
         changed()
     }
     @discardableResult func updateBrowserTab(_ value: BrowserPage, in workspaceID: UUID)->Bool {
         guard let i=session.workspaces.firstIndex(where: {$0.id == workspaceID}),let j=session.workspaces[i].pages.firstIndex(where: {$0.id == value.id}) else {return false}
         if session.workspaces[i].groupID(for:session.workspaces[i].pages[j]) != session.workspaces[i].groupID(for:value),
            !movePageToGroup(value.id,in:workspaceID,groupID:session.workspaces[i].groupID(for:value)) {return false}
+        // The pinned page is kept only while pinned, in the same cleaned form as saved URLs.
+        var pinnedURL:String?
+        let typed=(value.pinnedURL ?? "").trimmingCharacters(in:.whitespacesAndNewlines)
+        if value.pinned == true,!typed.isEmpty {
+            guard let url=BrowserAddress.url(typed),url.scheme != "about" else {notify(L("ピン留めするURLを確認してください"),isError:true);return false}
+            pinnedURL=BrowserAddress.savedURL(url)
+        }
+        session.workspaces[i].pages[j].pinnedURL=pinnedURL
         session.workspaces[i].pages[j].pinned=value.pinned
         session.workspaces[i].pages[j].pinnedDisplay=value.pinnedDisplay
         session.workspaces[i].pages[j].tabName=value.tabName
@@ -331,6 +371,21 @@ struct PageReference: Codable, Equatable, Identifiable {
         session.workspaces[i].pages[j].tabIconFile=value.tabIconFile
         session.workspaces[i].pages[j].groupID=value.groupID
         changed();return true
+    }
+    /// At launch a pinned tab starts from its pinned page, not wherever it was left.
+    func restorePinnedURLs() {
+        for i in session.workspaces.indices {
+            for j in session.workspaces[i].pages.indices {
+                let page=session.workspaces[i].pages[j]
+                guard page.pinned == true,let pinned=page.pinnedURL,pinned != page.url,BrowserAddress.url(pinned) != nil else{continue}
+                session.workspaces[i].pages[j].url=pinned
+                session.workspaces[i].pages[j].isStartPage=nil
+            }
+        }
+    }
+    func openPinnedURL(_ ref:PageReference) {
+        guard let pinned=page(ref)?.pinnedURL,let engine=engine(ref.workspaceID,ref.pageID) else{return}
+        engine.navigate(pinned)
     }
     func showsAccountEmail(_ pageID:UUID,in workspaceID:UUID)->Bool {
         guard let w=workspace(workspaceID),let page=w.pages.first(where:{$0.id == pageID}) else{return false}
@@ -418,19 +473,114 @@ struct PageReference: Codable, Equatable, Identifiable {
     }
     func setSplit(_ ref: PageReference?) {
         defer {selectionChanged()}
-        guard let ref else { split = nil; changed(); return }
+        guard let ref else { split = nil; session.splitSidePageIDs=nil; if let id=session.selectedWorkspaceID {innerSplits[id]=nil}; changed(); return }
+        // A tab just opened from the second pane became the visible tab. Put back what was
+        // showing so the new tab can take the second pane instead.
+        if ref.pageID == selectedPage?.id,let before=selectionBeforeNewPage,before.new == ref.pageID,let previous=before.previous,previous != ref.pageID,
+           let i=session.workspaces.firstIndex(where:{$0.id == ref.workspaceID}),session.workspaces[i].pages.contains(where:{$0.id == previous}) {
+            session.workspaces[i].selectedPageID=previous
+        }
+        selectionBeforeNewPage=nil
         guard page(ref) != nil, ref.pageID != selectedPage?.id else { return }
         if detachedWorkspaceIDs.contains(ref.workspaceID) {reattachWorkspace(ref.workspaceID,activate:false)}
         if let selected,detachedWorkspaceIDs.contains(selected.id) {reattachWorkspace(selected.id,activate:false)}
         revealTabGroup(ref.pageID,in:ref.workspaceID)
+        if ref.workspaceID == session.selectedWorkspaceID {
+            // Keep the second pane's other tabs; the first pane's current tab stays out.
+            var ids=secondPanePageIDs();ids.insert(ref.pageID)
+            session.splitSidePageIDs=session.workspaces.first{$0.id == ref.workspaceID}?.pages.map(\.id).filter(ids.contains)
+        } else {session.splitSidePageIDs=nil}
         split = ref; changed()
+    }
+    /// Tabs that belong to the second pane. Empty unless both panes show the same app tab,
+    /// where each tab appears in exactly one pane's strip.
+    func secondPanePageIDs()->Set<UUID> {
+        guard let split,let workspace=selected,split.workspaceID == workspace.id,let main=workspace.selectedPageID,split.pageID != main,
+              workspace.pages.contains(where:{$0.id == split.pageID}),!detachedWorkspaceIDs.contains(workspace.id) else{return []}
+        var ids=Set(session.splitSidePageIDs ?? []).intersection(workspace.pages.map(\.id))
+        ids.insert(split.pageID);ids.remove(main)
+        return ids
+    }
+    /// The tab strip for one pane: the visible group, minus tabs that belong to the other pane.
+    func paneTabs(in workspaceID:UUID,second isSecond:Bool,detached:Bool=false)->[BrowserPage] {
+        let pages=visibleGroupPages(in:workspaceID)
+        let second=secondPanePageIDs()
+        guard !detached,!second.isEmpty,workspaceID == session.selectedWorkspaceID else{return pages}
+        return pages.filter{second.contains($0.id) == isSecond}
+    }
+    /// Moves a tab to one pane of a same-app-tab Split and shows it there. No other tab
+    /// changes sides: if the move empties a pane, the Split ends.
+    @discardableResult func movePageToPane(_ ref:PageReference,second toSecond:Bool)->Bool {
+        let second=secondPanePageIDs()
+        guard !second.isEmpty,let workspace=selected,ref.workspaceID == workspace.id,let main=workspace.selectedPageID,let current=split,page(ref) != nil else{return false}
+        func neighbour(of id:UUID,second side:Bool)->UUID? {
+            let strip=paneTabs(in:workspace.id,second:side).map(\.id)
+            if let index=strip.firstIndex(of:id),strip.count>1 {return strip[index>0 ? index-1:1]}
+            return orderedPages(in:workspace.id).map(\.id).first{second.contains($0) == side && $0 != id}
+        }
+        if toSecond {
+            if ref.pageID == main {
+                // The first pane needs another of its own tabs to show.
+                guard let next=neighbour(of:main,second:false) else {setSplit(nil);return true}
+                selectPage(next,in:workspace.id)
+            }
+            setSplit(ref)
+        } else if ref == current {
+            // The second pane needs another of its own tabs to show.
+            if let next=neighbour(of:ref.pageID,second:true) {setSplit(PageReference(workspaceID:workspace.id,pageID:next))} else {setSplit(nil)}
+            selectPage(ref.pageID,in:workspace.id)
+        } else {selectPage(ref.pageID,in:workspace.id)}
+        return true
+    }
+    /// A tab dropped on the page area: show it on that side next to what is on screen.
+    /// Returns false when there is nothing to pair it with.
+    @discardableResult func dropForSplit(_ dropped:PageReference,side:SplitDropSide)->Bool {
+        guard let workspace=selected,let main=selectedPage,page(dropped) != nil,!detachedWorkspaceIDs.contains(workspace.id) else{return false}
+        let mainRef=PageReference(workspaceID:workspace.id,pageID:main.id)
+        let wantsFirst=side == .left
+        let sameAppTab=dropped.workspaceID == workspace.id
+        if sameAppTab,!secondPanePageIDs().isEmpty {
+            // Already split within this app tab: the tab moves to that pane.
+            guard movePageToPane(dropped,second:!wantsFirst) else{return false}
+            if split != nil {session.splitOrientation=side == .bottom ? "vertical":"horizontal";changed()}
+            return true
+        }
+        if dropped == mainRef {
+            if let other=split,page(other) != nil {
+                // Already on screen in the first pane; swap only if it should be the second.
+                if !wantsFirst {swapSplit()}
+            } else {
+                // The visible tab itself was dragged: pair it with the tab beside it.
+                guard let index=workspace.pages.firstIndex(where:{$0.id == main.id}),workspace.pages.count>1 else{return false}
+                let neighbour=PageReference(workspaceID:workspace.id,pageID:workspace.pages[index>0 ? index-1:index+1].id)
+                if wantsFirst {setSplit(neighbour)} else {selectPage(neighbour.pageID,in:workspace.id);setSplit(dropped)}
+            }
+        } else if split == dropped {
+            if wantsFirst {swapSplit()}
+        } else if wantsFirst,let other=split,page(other) != nil {
+            // Replace the first pane and keep the second.
+            selectWorkspace(dropped.workspaceID);selectPage(dropped.pageID,in:dropped.workspaceID);setSplit(other)
+        } else if wantsFirst,sameAppTab {
+            // Only the dropped tab and the one that was showing take part; the rest stay put.
+            selectPage(dropped.pageID,in:workspace.id);setSplit(mainRef)
+        } else {
+            setSplit(dropped)
+            if wantsFirst {swapSplit()}
+        }
+        guard split != nil else{return false}
+        session.splitOrientation=side == .bottom ? "vertical":"horizontal"
+        changed()
+        return true
     }
     func swapSplit() {
         defer {selectionChanged()}
         guard let right = split, let leftW = selected, let leftP = selectedPage else { return }
+        let second=secondPanePageIDs()
+        let traded=second.isEmpty ? nil:leftW.pages.map(\.id).filter{!second.contains($0)}
         session.selectedWorkspaceID = right.workspaceID
         session.splitFraction=1-(session.splitFraction ?? 0.5)
         if let i = session.workspaces.firstIndex(where: { $0.id == right.workspaceID }) { session.workspaces[i].selectedPageID = right.pageID }
+        session.splitSidePageIDs=traded
         split = PageReference(workspaceID: leftW.id, pageID: leftP.id); changed()
     }
     func applyTheme() {

@@ -573,6 +573,79 @@ import WorkspaceCore
             store.closePage(readyChild.pageID,in:a)
             let sourceRef=PageReference(workspaceID:a,pageID:wa.pages[0].id)
             store.selectWorkspace(a);store.selectPage(sourceRef.pageID,in:a);store.setSplit(nil)
+            let dragTab=store.addPage(to:a,url:"http://127.0.0.1:48761/",load:false)!
+            let dragRef=PageReference(workspaceID:a,pageID:dragTab.pageID)
+            store.selectPage(sourceRef.pageID,in:a)
+            try expect(store.dropForSplit(dragRef,side:.right) && store.selectedPage?.id == sourceRef.pageID && store.split == dragRef && store.session.splitOrientation == "horizontal","Dropping a tab on the right half starts a same-app-tab Split with it on the right")
+            try expect(store.dropForSplit(dragRef,side:.left) && store.selectedPage?.id == dragRef.pageID && store.split == nil,"Dragging the second pane's only tab back ends the Split without moving any other tab")
+            store.selectPage(sourceRef.pageID,in:a)
+            try expect(store.dropForSplit(dragRef,side:.left) && store.selectedPage?.id == dragRef.pageID && store.split == sourceRef && store.secondPanePageIDs() == [sourceRef.pageID],"Dropping a tab on the left half pairs it with the tab that was showing and leaves the rest alone")
+            store.setSplit(nil)
+            try expect(store.dropForSplit(dragRef,side:.right) && store.split == dragRef && store.secondPanePageIDs() == [dragRef.pageID],"Dragging the visible tab to the right moves only that tab")
+            store.setSplit(nil)
+            try expect(store.dropForSplit(dragRef,side:.bottom) && store.split == dragRef && store.selectedPage?.id != dragRef.pageID && store.session.splitOrientation == "vertical","Dropping the visible tab itself on the bottom pairs it with its neighbour in a vertical Split")
+            let otherApp=PageReference(workspaceID:b,pageID:store.workspace(b)!.pages[0].id)
+            try expect(store.dropForSplit(otherApp,side:.right) && store.split == otherApp && store.selected?.id == a,"Dropping another app tab's page replaces the second pane without leaving the current app tab")
+            // Same-app-tab Split: each tab is listed in exactly one pane.
+            store.setSplit(nil);store.session.splitOrientation="horizontal";store.selectWorkspace(a);store.selectPage(sourceRef.pageID,in:a)
+            let third=store.addPage(to:a,url:"http://127.0.0.1:48761/",load:false)!
+            let thirdRef=PageReference(workspaceID:a,pageID:third.pageID)
+            store.selectPage(sourceRef.pageID,in:a)
+            _=store.dropForSplit(dragRef,side:.right)
+            func strips()->(first:[UUID],second:[UUID]) {(store.paneTabs(in:a,second:false).map(\.id),store.paneTabs(in:a,second:true).map(\.id))}
+            let allInGroup=Set(store.visibleGroupPages(in:a).map(\.id))
+            try expect(strips().second == [dragRef.pageID] && !strips().first.contains(dragRef.pageID) && Set(strips().first+strips().second) == allInGroup,"A same-app-tab Split lists every tab in exactly one pane")
+            try expect(store.dropForSplit(thirdRef,side:.right) && store.split == thirdRef && Set(strips().second) == [dragRef.pageID,thirdRef.pageID] && Set(strips().first).isDisjoint(with:strips().second),"Dropping another tab on the second pane moves it there and keeps the pane's earlier tab")
+            try expect(store.dropForSplit(thirdRef,side:.left) && store.selectedPage?.id == thirdRef.pageID && store.split == dragRef && strips().second == [dragRef.pageID],"Dragging the second pane's visible tab to the first pane hands the second pane to its other tab")
+            let firstBefore=strips().first
+            store.swapSplit()
+            try expect(store.selectedPage?.id == dragRef.pageID && strips().first == [dragRef.pageID] && Set(strips().second) == Set(firstBefore),"Swapping panes swaps their tab lists")
+            store.swapSplit()
+            try expect(store.split == dragRef && strips().second == [dragRef.pageID] && strips().first == firstBefore,"Swapping back restores both tab lists")
+            let fromSecond=store.addPage(to:a,url:"http://127.0.0.1:48761/",load:false)!
+            store.setSplit(PageReference(workspaceID:a,pageID:fromSecond.pageID))
+            try expect(store.split?.pageID == fromSecond.pageID && store.selectedPage?.id != fromSecond.pageID && strips().second.contains(dragRef.pageID),"A tab opened from the second pane opens there and leaves the first pane's tab showing")
+            store.closePage(fromSecond.pageID,in:a)
+            try expect(store.split == dragRef,"Closing the second pane's visible tab shows its other tab instead of ending the Split")
+            let keptMain=store.selectedPage?.id
+            let keptStrips=strips()
+            store.selectWorkspace(b)
+            try expect(store.split == nil && store.selected?.id == b,"Leaving an app tab that is split within itself shows the next app tab on its own")
+            store.selectWorkspace(a)
+            try expect(store.split == dragRef && store.selectedPage?.id == keptMain && strips().first == keptStrips.first && strips().second == keptStrips.second && !keptStrips.second.isEmpty,"Returning to the app tab restores its own Split and tab lists")
+            for id in strips().second where id != dragRef.pageID {_=store.movePageToPane(PageReference(workspaceID:a,pageID:id),second:false)}
+            try expect(store.split != nil && strips().second.count == 1,"Tabs can be moved back to the first pane one at a time")
+            store.closePage(strips().second[0],in:a)
+            try expect(store.split == nil && store.paneTabs(in:a,second:false).map(\.id) == store.visibleGroupPages(in:a).map(\.id),"Closing the second pane's last tab ends the Split and shows all tabs again")
+            if store.page(dragRef) != nil {store.closePage(dragRef.pageID,in:a)}
+            // The first pane's only tab is closed: the Split ends on the other pane's tab.
+            store.selectPage(thirdRef.pageID,in:a);store.setSplit(sourceRef)
+            for id in strips().first where id != thirdRef.pageID {_=store.movePageToPane(PageReference(workspaceID:a,pageID:id),second:true)}
+            let shownSecond=store.split?.pageID
+            try expect(strips().first == [thirdRef.pageID] && shownSecond != nil,"All but one tab can be moved to the second pane")
+            store.closePage(thirdRef.pageID,in:a)
+            try expect(store.split == nil && store.selectedPage?.id == shownSecond && store.secondPanePageIDs().isEmpty,"Closing the first pane's only tab ends the Split and keeps the other pane's tab showing")
+            store.setSplit(nil);store.session.splitOrientation="horizontal"
+            // Pinned tabs remember the page to reopen.
+            let pinTab=store.addPage(to:a,url:"http://127.0.0.1:48761/pin-home?token=secret&view=1",load:false)!
+            let pinRef=PageReference(workspaceID:a,pageID:pinTab.pageID)
+            var pinDraft=BrowserTabEditor.draft(store.page(pinRef)!,pinning:true)
+            try expect(pinDraft.pinned == true && pinDraft.pinnedURL == store.page(pinRef)!.url,"Pinning proposes the page now showing as the page to reopen")
+            try expect(store.updateBrowserTab(pinDraft,in:a) && store.page(pinRef)!.pinnedURL == "http://127.0.0.1:48761/pin-home?view=1","The pinned page is saved without sign-in tokens")
+            store.updatePage(a,pinRef.pageID,url:URL(string:"http://127.0.0.1:48761/somewhere-else")!,title:nil)
+            try expect(store.page(pinRef)!.url.hasSuffix("/somewhere-else") && store.page(pinRef)!.pinnedURL == "http://127.0.0.1:48761/pin-home?view=1","Browsing inside a pinned tab does not change its pinned page")
+            store.restorePinnedURLs()
+            try expect(store.page(pinRef)!.url == "http://127.0.0.1:48761/pin-home?view=1","At launch a pinned tab starts from its pinned page")
+            pinDraft=store.page(pinRef)!;pinDraft.pinnedURL="not a url"
+            try expect(!store.updateBrowserTab(pinDraft,in:a) && store.page(pinRef)!.pinnedURL == "http://127.0.0.1:48761/pin-home?view=1","An invalid pinned URL is rejected and the saved one kept")
+            pinDraft=store.page(pinRef)!;pinDraft.pinnedURL=nil
+            try expect(store.updateBrowserTab(pinDraft,in:a) && store.page(pinRef)!.pinned == true && store.page(pinRef)!.pinnedURL == nil,"A pinned tab may keep no pinned page and restore the last page instead")
+            pinDraft=store.page(pinRef)!;pinDraft.pinnedURL="http://127.0.0.1:48761/pin-home";_=store.updateBrowserTab(pinDraft,in:a)
+            pinDraft=store.page(pinRef)!;pinDraft.pinned=false
+            try expect(store.updateBrowserTab(pinDraft,in:a) && store.page(pinRef)!.pinnedURL == nil,"Unpinning forgets the pinned page")
+            store.closePage(pinRef.pageID,in:a)
+            store.selectWorkspace(a);store.selectPage(sourceRef.pageID,in:a)
+            try expect(!store.dropForSplit(PageReference(workspaceID:a,pageID:UUID()),side:.right) && store.split == nil,"Dropping an unknown tab does not start a Split")
             let sourceURL=store.page(sourceRef)!.url
             for action in NotionActions.creationIDs.sorted() {
                 let previousCount=store.workspace(a)!.pages.count
