@@ -19,9 +19,9 @@ New environments start with a gray color. Choose a left sidebar or top tab bar, 
 
 ## Install
 
-**Workspace Tabs v1.0.2 (build 8)** supports Apple Silicon and Intel Macs running macOS 14 or later. The Universal app is signed with Developer ID and notarized by Apple. To build from source, use the `main` branch or the `v1.0.2` tag.
+**Workspace Tabs v1.0.3 (build 9)** supports Apple Silicon and Intel Macs running macOS 14 or later. The Universal app is signed with Developer ID and notarized by Apple. To build from source, use the `main` branch or the `v1.0.3` tag.
 
-1. Download `Workspace-Tabs-1.0.2-universal.dmg` from the [release page](https://github.com/satoshi0817/workspace-tab/releases/tag/v1.0.2) under **Assets**.
+1. Download `Workspace-Tabs-1.0.3-universal.dmg` from the [release page](https://github.com/satoshi0817/workspace-tab/releases/tag/v1.0.3) under **Assets**.
 2. Double-click the DMG to open it.
 3. Drag **Workspace Tabs.app** to the **Applications** folder beside it.
 4. Open **Workspace Tabs** from Applications.

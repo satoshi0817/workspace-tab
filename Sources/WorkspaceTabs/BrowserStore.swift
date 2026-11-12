@@ -339,7 +339,12 @@ struct PageReference: Codable, Equatable, Identifiable {
         session.workspaces[i].pages.remove(at: j)
         if session.workspaces[i].pages.isEmpty {var page=BrowserPage(url:session.workspaces[i].homeURL);page.groupID=closedGroup;session.workspaces[i].pages=[page]}
         if session.workspaces[i].selectedPageID == pageID {
-            let next=session.workspaces[i].pages.first{$0.id == neighbour} ?? session.workspaces[i].pages.first{!second.contains($0.id)} ?? (closedSecond ? nil:session.workspaces[i].pages.first{$0.id == split?.pageID}) ?? visibleGroupPages(in:workspaceID).first ?? session.workspaces[i].pages[min(j,session.workspaces[i].pages.count-1)]
+            let pages=session.workspaces[i].pages
+            let neighbourPage=pages.first{$0.id == neighbour}
+            let firstPanePage=pages.first{!second.contains($0.id)}
+            let splitPage:BrowserPage?=closedSecond ? nil:pages.first{$0.id == split?.pageID}
+            let fallbackPage=visibleGroupPages(in:workspaceID).first ?? pages[min(j,pages.count-1)]
+            let next=neighbourPage ?? firstPanePage ?? splitPage ?? fallbackPage
             session.workspaces[i].selectedPageID=next.id;revealTabGroup(next.id,in:workspaceID)
             // The first pane's only tab was closed: end the Split and show the other pane's tab.
             if split?.pageID == next.id {split=nil}
