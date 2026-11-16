@@ -74,12 +74,7 @@ struct BrowserOnboarding:View {
     }
     @ViewBuilder private var appearanceStep:some View {
         Text(L("色とサイドバーを選ぶと、開いている環境を見分けやすくなります。")).font(.callout).foregroundStyle(.secondary)
-        HStack {ForEach(Palette.names,id:\.self) {value in
-            Button {color=value} label:{
-                Circle().fill(Palette.color(value)).frame(width:29,height:29)
-                    .overlay {if color == value {Image(systemName:"checkmark").font(.caption.bold()).foregroundStyle(Palette.ink(value))}}
-            }.buttonStyle(.plain).accessibilityLabel(value).accessibilityAddTraits(color == value ? .isSelected:[])
-        }}
+        PaletteSwatches(selection:$color,size:27)
         Picker(L("サイドバー"),selection:$sidebar) {
             Text(L("アイコン")).tag("icons");Text(L("名前付き")).tag("full");Text(L("ホバー")).tag("hover")
         }.pickerStyle(.segmented)

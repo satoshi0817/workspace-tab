@@ -447,10 +447,6 @@
     "en": "Choose Light, Dark or System.",
     "ko": "라이트, 다크, 시스템 모드를 지원합니다."
   },
-  "新しい環境の初期色はグレーです。色プリセットはグレー・青・紫・ローズ・アンバー・緑の順です。設定 → 表示でテーマとサイドバーの位置・表示方法を選びます。": {
-    "en": "New profiles start gray. Color presets are ordered gray, blue, purple, rose, amber and green. Choose the theme and sidebar layout in Settings → Appearance.",
-    "ko": "새 환경의 기본 색은 회색입니다. 프리셋은 회색, 파랑, 보라, 로즈, 앰버, 초록 순입니다. 설정 → 표시에서 테마와 사이드바 위치 및 표시 방식을 선택합니다."
-  },
   "アプリタブの編集で色や文字色を変更できます。Notionのサイドバー着色はトグルで切り替えます。": {
     "en": "Edit an app tab to change its background and text colors. Use the toggle to tint Notion’s sidebar.",
     "ko": "앱 탭 편집에서 배경색과 글자색을 변경합니다. 토글로 Notion 사이드바 착색을 켜고 끕니다."
@@ -3850,5 +3846,73 @@
   "アプリを開き直すと、ピン留めしたタブはそのURLで開きます。途中で別のページへ移動していても変わりません。変更するときは、ピン留めしたタブを右クリックして「ピン留めの設定…」を選びます。「ピン留めしたページに戻る」でいつでも戻れます。": {
     "en": "When the app starts, a pinned tab opens that URL, even if you browsed elsewhere in it. To change it, right-click the pinned tab and choose Pin settings…. Go back to the pinned page returns there at any time.",
     "ko": "앱을 다시 열면 고정한 탭은 그 URL로 열리며, 도중에 다른 페이지로 이동했어도 바뀌지 않습니다. 변경하려면 고정한 탭을 오른쪽 클릭하고 고정 설정…을 선택합니다. 고정한 페이지로 돌아가기로 언제든지 돌아갈 수 있습니다."
+  },
+  "新しい環境の初期色はグレーです。色プリセットは16色で、グレー・チャコールに続けて青から茶色まで色相順に並びます。設定 → 表示でテーマとサイドバーの位置・表示方法を選びます。": {
+    "en": "New profiles start gray. There are 16 color presets: gray and charcoal, then the hues from blue round to brown. Choose the theme and sidebar layout in Settings → Appearance.",
+    "ko": "새 환경의 기본 색은 회색입니다. 색 프리셋은 16가지로, 회색과 차콜 다음에 파랑부터 갈색까지 색상 순으로 놓입니다. 설정 → 표시에서 테마와 사이드바 위치 및 표시 방식을 선택합니다."
+  },
+  "グレー": {
+    "en": "Gray",
+    "ko": "회색"
+  },
+  "チャコール": {
+    "en": "Charcoal",
+    "ko": "차콜"
+  },
+  "青": {
+    "en": "Blue",
+    "ko": "파랑"
+  },
+  "インディゴ": {
+    "en": "Indigo",
+    "ko": "인디고"
+  },
+  "紫": {
+    "en": "Purple",
+    "ko": "보라"
+  },
+  "ピンク": {
+    "en": "Pink",
+    "ko": "분홍"
+  },
+  "ローズ": {
+    "en": "Rose",
+    "ko": "로즈"
+  },
+  "赤": {
+    "en": "Red",
+    "ko": "빨강"
+  },
+  "オレンジ": {
+    "en": "Orange",
+    "ko": "주황"
+  },
+  "アンバー": {
+    "en": "Amber",
+    "ko": "앰버"
+  },
+  "黄": {
+    "en": "Yellow",
+    "ko": "노랑"
+  },
+  "ライム": {
+    "en": "Lime",
+    "ko": "라임"
+  },
+  "緑": {
+    "en": "Green",
+    "ko": "초록"
+  },
+  "ティール": {
+    "en": "Teal",
+    "ko": "틸"
+  },
+  "シアン": {
+    "en": "Cyan",
+    "ko": "시안"
+  },
+  "ブラウン": {
+    "en": "Brown",
+    "ko": "갈색"
   }
 }

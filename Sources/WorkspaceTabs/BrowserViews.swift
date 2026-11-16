@@ -67,6 +67,7 @@ struct BrowserRoot: View {
             .alert("Workspace Tabs",isPresented:Binding(get:{store.error != nil},set:{if !$0 {store.error=nil}})) {
                 Button(L("閉じる")) {store.error=nil}
             } message: {Text(store.error ?? "")}
+            .background(TitlebarTint(color:activeColor,ink:activeInk))
             .alert(L("内蔵ブラウザへ移行しました"),isPresented:$store.migrationNotice) {
                 Button("OK") {}
             } message: {Text(L("タブの名前・アイコン・色を引き継ぎました。ログイン環境はタブごとに新しく作成しています。各サイトでログインしてください。元アプリのCookieやパスワードは取り込みません。旧設定ファイルも残しています。"))}

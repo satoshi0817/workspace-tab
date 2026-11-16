@@ -71,6 +71,7 @@ struct DetachedWorkspaceView: View {
                 BrowserPane(store:store,workspaceID:workspaceID,pageID:pageID,isRight:false,detached:true)
             }
         }.frame(minWidth:560,minHeight:400).overlay {RecentTabsOverlay(store:store)}
+            .background {if let workspace=store.workspace(workspaceID) {TitlebarTint(color:Palette.color(workspace.color),ink:Palette.ink(workspace.color,preference:workspace.textColor))}}
             .overlay(alignment:.bottom) {
                 if let notice=store.notice {
                     Text(notice).font(.callout).padding(12).background(.regularMaterial,in:Capsule())

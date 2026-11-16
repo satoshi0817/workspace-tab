@@ -375,6 +375,8 @@ import WorkspaceCore
             pin.pinnedDisplay="name";store.updateBrowserTab(pin,in:b)
             try expect(!store.workspace(b)!.pages[0].iconOnly && store.workspace(b)!.pages[0].displayTitle == "Pinned test", "Pinned tabs can display their custom name")
             try expect(Palette.ink("#000000") == .white && Palette.ink("#FFFFFF") == .black, "Browser tab foreground switches for dark and light colors")
+            try expect(Palette.names.count == 16 && Set(Palette.names).count == 16 && ["gray","blue","violet","rose","amber","green"].allSatisfy(Palette.names.contains), "Color presets add colors without dropping saved names")
+            try expect(Set(Palette.names.map{Palette.hex(Palette.color($0))}).count == Palette.names.count && Palette.names.allSatisfy{Palette.displayName($0) != $0}, "Every color preset is distinct and has a name")
             store.snapshot();store.save()
             let loaded = BrowserStore(directory:root)
             try expect(loaded.session.workspaces.map(\.profileID) == store.session.workspaces.map(\.profileID) && loaded.split == store.split, "Session and split ownership survive reload")

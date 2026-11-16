@@ -94,7 +94,10 @@ enum Palette {
         groupMenuLabels.countLimit=128;groupMenuLabels.setObject(image,forKey:key)
         return image
     }
-    static let names = ["gray", "blue", "violet", "rose", "amber", "green"]
+    /// Two rows of eight: neutrals, then the hue wheel from blue round to brown.
+    /// Saved names stay valid, so only add new names; never rename one.
+    static let names = ["gray", "charcoal", "blue", "indigo", "violet", "pink", "rose", "red",
+                        "orange", "amber", "yellow", "lime", "green", "teal", "cyan", "brown"]
     static func normalizedHex(_ input: String) -> String? {
         var value = input.trimmingCharacters(in: .whitespacesAndNewlines)
         if value.hasPrefix("#") { value.removeFirst() }
@@ -114,6 +117,27 @@ enum Palette {
         let luminance = 0.2126 * linear(c.redComponent) + 0.7152 * linear(c.greenComponent) + 0.0722 * linear(c.blueComponent)
         return luminance > 0.179 ? .black : .white
     }
+    static func displayName(_ name: String) -> String {
+        switch name {
+        case "gray": return L("グレー")
+        case "charcoal": return L("チャコール")
+        case "blue": return L("青")
+        case "indigo": return L("インディゴ")
+        case "violet": return L("紫")
+        case "pink": return L("ピンク")
+        case "rose": return L("ローズ")
+        case "red": return L("赤")
+        case "orange": return L("オレンジ")
+        case "amber": return L("アンバー")
+        case "yellow": return L("黄")
+        case "lime": return L("ライム")
+        case "green": return L("緑")
+        case "teal": return L("ティール")
+        case "cyan": return L("シアン")
+        case "brown": return L("ブラウン")
+        default: return name
+        }
+    }
     static func color(_ name: String) -> Color {
         if let hex = normalizedHex(name), let rgb = UInt32(hex.dropFirst(), radix: 16) {
             return Color(.sRGB, red: Double((rgb >> 16) & 255) / 255, green: Double((rgb >> 8) & 255) / 255, blue: Double(rgb & 255) / 255, opacity: 1)
@@ -124,6 +148,16 @@ enum Palette {
         case "amber": return Color(red: 0.88, green: 0.63, blue: 0.25)
         case "rose": return Color(red: 0.90, green: 0.41, blue: 0.53)
         case "violet": return Color(red: 0.58, green: 0.47, blue: 0.91)
+        case "charcoal": return Color(red: 0.24, green: 0.26, blue: 0.29)
+        case "indigo": return Color(red: 0.36, green: 0.41, blue: 0.86)
+        case "pink": return Color(red: 0.91, green: 0.49, blue: 0.76)
+        case "red": return Color(red: 0.88, green: 0.33, blue: 0.31)
+        case "orange": return Color(red: 0.94, green: 0.51, blue: 0.24)
+        case "yellow": return Color(red: 0.94, green: 0.79, blue: 0.27)
+        case "lime": return Color(red: 0.56, green: 0.75, blue: 0.27)
+        case "teal": return Color(red: 0.17, green: 0.62, blue: 0.62)
+        case "cyan": return Color(red: 0.27, green: 0.71, blue: 0.87)
+        case "brown": return Color(red: 0.60, green: 0.45, blue: 0.34)
         default: return Color(red: 0.48, green: 0.50, blue: 0.54)
         }
     }
@@ -136,14 +170,9 @@ struct ColorPickerRow: View {
     private var valid: Bool { Palette.normalizedHex(input) != nil }
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            HStack(alignment: .top) {
                 Text(L("プリセット")); Spacer()
-                ForEach(Palette.names, id: \.self) { name in
-                    Button { selection = name } label: {
-                        Circle().fill(Palette.color(name)).frame(width: 23, height: 23)
-                            .overlay { if selection == name { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Palette.ink(name)) } }
-                    }.buttonStyle(.plain).accessibilityLabel(name).accessibilityAddTraits(selection == name ? .isSelected : [])
-                }
+                PaletteSwatches(selection: $selection, size: 23)
             }
             HStack {
                 ColorPicker(L("カラー"), selection: Binding(get: { Palette.color(selection) }, set: { selection = Palette.hex($0) }), supportsOpacity: false)
@@ -159,6 +188,49 @@ struct ColorPickerRow: View {
         .onChange(of: selection) { _, value in
             let hex = Palette.hex(Palette.color(value))
             if Palette.normalizedHex(input) != hex { input = hex }
+        }
+    }
+}
+
+/// The preset colors in rows of eight, so the list can grow without widening forms.
+struct PaletteSwatches: View {
+    @ObservedObject private var localization = AppLocalization.shared
+    @Binding var selection: String
+    var size: CGFloat
+    var body: some View {
+        Grid(horizontalSpacing: size * 0.35, verticalSpacing: size * 0.35) {
+            ForEach(Array(stride(from: 0, to: Palette.names.count, by: 8)), id: \.self) { start in
+                GridRow {
+                    ForEach(Palette.names[start..<min(start + 8, Palette.names.count)], id: \.self) { name in
+                        Button { selection = name } label: {
+                            Circle().fill(Palette.color(name)).frame(width: size, height: size)
+                                .overlay { Circle().strokeBorder(.primary.opacity(0.12)) }
+                                .overlay { if selection == name { Image(systemName: "checkmark").font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(Palette.ink(name)) } }
+                        }.buttonStyle(.plain).help(Palette.displayName(name)).accessibilityLabel(Palette.displayName(name)).accessibilityAddTraits(selection == name ? .isSelected : [])
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Paints the window's title bar in the app tab color, so the traffic-light strip
+/// matches the tab bar below it instead of staying white.
+struct TitlebarTint: NSViewRepresentable {
+    let color: Color
+    let ink: Color
+    func makeNSView(context: Context) -> Tint { Tint() }
+    func updateNSView(_ view: Tint, context: Context) { view.tint = (NSColor(color), ink == .white); view.apply() }
+    final class Tint: NSView {
+        var tint: (NSColor, Bool)?
+        override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); apply() }
+        func apply() {
+            guard let window, let (color, dark) = tint else { return }
+            window.titlebarAppearsTransparent = true
+            window.backgroundColor = color
+            // Only the title bar follows the tint's lightness, so the title stays
+            // readable without changing the theme of the page or the tabs.
+            window.standardWindowButton(.closeButton)?.superview?.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         }
     }
 }
