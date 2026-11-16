@@ -22,6 +22,10 @@ import WorkspaceCore
         let choices=store.accountChoices(in:workspaceID)
         try expect(choices.compactMap(\.groupID) == [workspaceID,alpha.id,beta.id] && choices.filter(\.current).count == 1,"An app tab with several login environments offers each account once when opening Notion")
         let single=store.addWorkspace(name:"Single",url:"http://127.0.0.1:48761/")
+        let singleProfile=store.workspace(single)!.profileID
+        try expect(store.profileUsage(workspace.profileID).map{$0.workspace.id} == [workspaceID] && store.profileUsage(workspace.profileID).allSatisfy{$0.group == nil},"A login profile lists the app tab that uses it")
+        try expect(store.profileUsage(alphaProfile).map{$0.group?.id} == [alpha.id] && store.profileUsage(alphaProfile).first?.workspace.id == workspaceID,"A group's own login profile lists that group with its app tab")
+        try expect(store.profileUsage(singleProfile).map{$0.workspace.id} == [single],"Each app tab's profile lists only that app tab")
         try expect(store.accountChoices(in:single).isEmpty,"An app tab with one login environment opens Notion without asking for an account")
         store.selectWorkspace(workspaceID)
         let url="http://127.0.0.1:48761/?group-login=page"

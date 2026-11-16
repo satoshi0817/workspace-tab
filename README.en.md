@@ -123,7 +123,7 @@ See [storage, recovery, and performance details](docs/FEATURES.md) (Japanese).
 <details>
 <summary>Service-specific features and optional sync</summary>
 
-For Notion, the app provides a home URL, workspace ID routing, sidebar colors, and a creation menu. Press **⌘⇧N** to open the menu near the pointer and choose a new page, AI chat, meeting notes, database, or custom page in a new tab. Availability depends on your Notion features and permissions.
+For Notion, the app provides a home URL, workspace ID routing, sidebar colors, and a creation menu. Press **⌘⇧N** to show a new page and a new chat side by side, choose one with ← → and Return, and it opens in a new tab. Meeting notes, databases and custom pages are in the command search. Availability depends on your Notion features and permissions.
 
 For AI meeting-note transcription, allow microphone access in both macOS and the site. Check permission status under **Settings → Diagnostics → Microphone and meeting notes**. The app uses microphone input from the web page; it does not directly capture system audio from other apps such as Zoom.
 

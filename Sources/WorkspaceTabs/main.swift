@@ -63,6 +63,10 @@ import WorkspaceCore
         }
         (NSApp as? BrowserApplication)?.panelKeyAction={[weak self] in self?.store.handleDownloadKey($0) ?? false}
         (NSApp as? BrowserApplication)?.inputObserver={[weak self] in self?.store.handleWorkspaceHintEvent($0)}
+        ShortcutSequenceMonitor.notionFocused={[weak self] in
+            guard let self,let ref=self.store.commandPage,let url=self.store.engine(ref.workspaceID,ref.pageID)?.webView.url else{return false}
+            return BrowserAddress.isNotion(url)
+        }
         sequences.canHandleLocal={[weak self] in
             guard let key=NSApp.keyWindow as? BrowserWindow else{return false}
             return key.attachedSheet == nil && self?.store.anyPanelPresented != true
@@ -91,7 +95,6 @@ import WorkspaceCore
         for (title,action,key) in [(L("取り消す"),"undo:","z"),(L("カット"),"cut:","x"),(L("コピー"),"copy:","c"),(L("ペースト"),"paste:","v"),(L("すべて選択"),"selectAll:","a")] {edit.addItem(withTitle:title,action:Selector(action),keyEquivalent:key)}
         editItem.submenu=edit;menu.addItem(editItem)
         let windowItem=NSMenuItem();windowItem.title=L("ウインドウ");let windows=NSMenu(title:L("ウインドウ"))
-        windows.addItem(withTitle:L("ブラウザを表示"),action:#selector(show),keyEquivalent:"0").target=self
         let full=windows.addItem(withTitle:L("フルスクリーンを切り替える"),action:#selector(fullscreen),keyEquivalent:"f");full.keyEquivalentModifierMask=[.control,.command];full.target=self
         windows.addItem(.separator())
         windows.addItem(withTitle:L("前のアプリタブ"),action:#selector(previousWorkspace),keyEquivalent:"").target=self
@@ -123,7 +126,7 @@ import WorkspaceCore
         case "previousWorkspace":previousWorkspace();case "nextWorkspace":nextWorkspace()
         case "new":newTab();case "close":closeTab();case "reopen":reopenTab();case "location":location()
         case "reload":reload();case "favorites":favorites();case "copyURL":copyURL();case "settings":settings()
-        case "show":show();case "fullscreen":fullscreen();case "quit":NSApp.terminate(nil);default:store.runCommand(action.id)
+        case "fullscreen":fullscreen();case "quit":NSApp.terminate(nil);default:store.runCommand(action.id)
         }
     }
     func refreshShortcuts(){

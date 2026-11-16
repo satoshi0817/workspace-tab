@@ -49,7 +49,7 @@ struct ShortcutAction: Identifiable {
             ("reopen","閉じたタブを戻す","t",17,[.command,.shift]), ("location","URLを入力","l",37,.command),
             ("reload","再読み込み","r",15,.command), ("favorites","お気に入りランチャー","l",37,[.command,.shift]),
             ("copyURL","現在のURLをコピー","c",8,[.command,.shift]), ("settings","設定…",",",43,.command),
-            ("show","ブラウザを表示","0",29,.command), ("fullscreen","フルスクリーンを切り替える","f",3,[.control,.command]),
+            ("fullscreen","フルスクリーンを切り替える","f",3,[.control,.command]),
             ("quit","Workspace Tabsを終了…","q",12,.command),
             ("recentTabs","最近使ったタブを切り替える","\t",48,.control),
             ("notionCreateMenu","Notionで作成…","n",45,[.command,.shift]),
@@ -66,7 +66,12 @@ struct ShortcutAction: Identifiable {
             ("notionPage","Notion：新規ページ","n",45,[.command,.option]),
             ("notionMeeting","Notion：新規ミーティングノート","m",46,[.command,.option]),
             ("notionSearch","Notion内を検索","k",40,[.command,.option]),
-            ("notionSettings","Notion：設定を開く",",",43,[.command,.option])]
+            ("notionSettings","Notion：設定を開く",",",43,[.command,.option]),
+            ("notionDatabase","Notion：新規データベース","t",17,[.command,.option]),
+            ("notionCustomPage","Notion：カスタムページ","u",32,[.command,.option]),
+            ("zoomIn","拡大","=",24,.command),
+            ("zoomOut","縮小","-",27,.command),
+            ("zoomReset","実際のサイズ","0",29,.command)]
 
         var result = local.map { ShortcutAction(id:$0.0,title:$0.1,initial:ShortcutBinding(key:$0.2,code:UInt16($0.3),modifiers:$0.4.rawValue)) }
         result.append(ShortcutAction(id:"previousWorkspace",title:"前のアプリタブ",initial:ShortcutBinding(key:"\u{F702}",code:123,modifiers:NSEvent.ModifierFlags([.command,.option]).rawValue)))
@@ -157,14 +162,28 @@ final class ShortcutStrokeRecorder {
     init(preferences:ShortcutPreferences? = nil) {self.preferences=preferences ?? .shared}
     var action:((ShortcutAction)->Void)?
     var canHandleLocal:(()->Bool)?
+    /// True while the page that would take the key is Notion. Notion uses ⌘⇧; for a new
+    /// AI chat, which is the same key as ⌘+ on a JIS keyboard, so the shifted zoom
+    /// fallback steps aside there.
+    static var notionFocused:()->Bool={false}
     static func localAction(for event:NSEvent,preferences:ShortcutPreferences)->ShortcutAction? {
         guard event.type == .keyDown,!event.isARepeat else{return nil}
         let flags=event.modifierFlags.intersection([.command,.control,.option,.shift])
-        return ShortcutPreferences.actions.first { action in
+        let match=ShortcutPreferences.actions.first { action in
             let binding=preferences.binding(action)
             return action.globalID == nil && binding.sequence == nil &&
                 binding.code == event.keyCode && binding.flags == flags
         }
+        if let match {return match}
+        // ⌘+ needs Shift on US keyboards and sits on the ; key on JIS ones, so accept
+        // the typed character too while zoom keeps its default binding.
+        guard flags == .command || (flags == [.command,.shift] && !notionFocused()) else{return nil}
+        let typed=event.charactersIgnoringModifiers ?? "",shifted=event.characters ?? ""
+        let id:String?
+        if ["+","="].contains(shifted) || ["+","=",";"].contains(typed) {id="zoomIn"}
+        else if typed == "-" || shifted == "-" {id="zoomOut"}
+        else {id=nil}
+        return ShortcutPreferences.actions.first {$0.id == id && preferences.binding($0) == $0.initial}
     }
     func stop() {
         if let local {NSEvent.removeMonitor(local)};local=nil

@@ -53,6 +53,26 @@ import WorkspaceCore
             try expect(created["ok"] as? Bool == true && createdCount == 1,"\(action) opens the sidebar dropdown and activates its unique creation control")
         }
 
+        // Newer Notion: the compose button opens a menu of Page, Chat, Database…
+        for (action,item) in [("notionDatabase","データベース"),("notionPage","ページ")] {
+            _ = try await webView.evaluateJavaScript("""
+            document.body.innerHTML='<nav class="notion-sidebar-container"><button aria-label="新規ページ">✎</button></nav>';
+            window.picked='';window.opened=0;
+            document.querySelector('button').onclick=()=>{
+              window.opened++;
+              const menu=document.createElement('div');menu.setAttribute('role','menu');
+              for(const name of ['ページ','チャット','AI ミーティングノート','データベース','カスタムページ']){
+                const row=document.createElement('div');row.setAttribute('role','menuitem');row.textContent=name;row.onclick=()=>{window.picked=name;menu.remove()};menu.append(row);
+              }
+              setTimeout(()=>document.body.append(menu),60);
+            };void 0;
+            """)
+            let result=try await execute(script.replacingOccurrences(of:",80);",with:",2500);"),id:spaceID,action:action)
+            let picked=try await webView.evaluateJavaScript("window.picked") as? String
+            let opened=try await webView.evaluateJavaScript("window.opened") as? Int
+            try expect(result["ok"] as? Bool == true && picked == item && opened == 1,"\(action) picks \(item) from the compose menu instead of stalling")
+        }
+
         let directory=root.appendingPathComponent("workflow")
         let store=BrowserStore(directory:directory)
         store.session=BrowserSession()

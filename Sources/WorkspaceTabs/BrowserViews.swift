@@ -394,6 +394,7 @@ struct BrowserSurface:View {
                     .allowsHitTesting(engine.loadingState == .none)
                     .accessibilityHidden(engine.loadingState != .none)
                 NotionAccountWatermark(monitor:engine.notionAccount,enabled:showAccountEmail,color:store.workspace(engine.workspaceID).map{Palette.color($0.color)} ?? .gray,style:accountEmailStyle)
+                NotionActionVeil(action:engine.notionBusy,tint:store.workspace(engine.workspaceID).map{Palette.color($0.color)} ?? .gray)
                 if engine.loadingState == .loading {
                     if !engine.nativeLoadingPlaceholderVisible {
                         PageLoadingSkeleton(notion:BrowserAddress.url(engine.address).map(BrowserAddress.isNotion) ?? false,

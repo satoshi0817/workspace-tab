@@ -1,5 +1,6 @@
 import AppKit
 import WebKit
+import os
 import SwiftUI
 import WorkspaceCore
 
@@ -19,6 +20,17 @@ import WorkspaceCore
     @Published var failure: String?
     @Published private(set) var lastHTTPStatus:Int?
     @Published var detectedNotionSpaceID: String?
+    /// The Notion action now running in this page, shown as a calm veil over it while
+    /// the page opens menus and panels underneath.
+    @Published private(set) var notionBusy:String?
+    private var busyToken:UUID?
+    private func beginBusy(_ action:String)->UUID {
+        let token=UUID();busyToken=token;notionBusy=action
+        // Never leave the veil up if a page stops answering.
+        DispatchQueue.main.asyncAfter(deadline:.now()+15) { [weak self] in self?.endBusy(token) }
+        return token
+    }
+    private func endBusy(_ token:UUID?=nil) {if token == nil || token == busyToken {busyToken=nil;notionBusy=nil}}
     enum LoadingState:Equatable {case none, loading, failed}
     @Published private(set) var loadingState:LoadingState = .none
     @Published private(set) var nativeLoadingPlaceholderVisible=false
@@ -39,6 +51,7 @@ import WorkspaceCore
     private(set) var failedURL:URL?
     func acceptsDocumentResult(_ generation:UInt)->Bool {!disposed && documentGeneration == generation}
     func cancelNotionAction(clearPending:Bool=true) {
+        endBusy()
         if actionRunID != nil {
             actionRunID=nil
             webView.evaluateJavaScript("globalThis.__workspaceTabsCancelAction?.()",completionHandler:nil)
@@ -184,21 +197,69 @@ import WorkspaceCore
         cancelNotionAction(clearPending:false)
         let token=UUID(),generation=documentGeneration,url=webView.url
         actionRunID=token
+        let busy=beginBusy(action)
         webView.callAsyncJavaScript(NotionActions.script,arguments:["action":action,"waitForReady":waitForReady,"expectedSpaceID":NotionWorkspace.normalizedID(store?.workspace(workspaceID)?.notionSpaceID) ?? "","expectedEnvironment":store?.workspace(workspaceID).flatMap{BrowserAddress.url($0.homeURL)}.flatMap{NotionWorkspace.environment($0)} ?? ""],in:nil,in:.page) { [weak self] result in
             DispatchQueue.main.async {
+                self?.endBusy(busy)
                 guard let self,self.actionRunID == token else{return}
                 self.actionRunID=nil
                 guard self.acceptsDocumentResult(generation),self.webView.url == url else{return}
                 switch result {
                 case .success(let value):
                     let response=value as? [String:Any]
-                    self.store?.notify((response?["message"] as? String).map(NotionActions.localizedMessage) ?? L("操作対象を見つけられませんでした"),isError:response?["ok"] as? Bool != true)
+                    // The opened panel is the confirmation; only a failure needs words.
+                    if response?["ok"] as? Bool != true {
+                        self.store?.notify((response?["message"] as? String).map(NotionActions.localizedMessage) ?? L("操作対象を見つけられませんでした"),isError:true)
+                    }
                 case .failure:
                     self.store?.notify(L("Notionの操作を完了できませんでした。タブを確認してください"),isError:true)
                 }
             }
         }
     }
+    /// Search and Settings first try Notion's own keyboard shortcut, typed into the page
+    /// as a real key press, because it does not depend on button names or the sidebar.
+    /// The key goes out at once, with no page round trip first, and the check ends as
+    /// soon as a panel takes focus. When the key does nothing, the button is clicked,
+    /// and that outcome is remembered so later presses go straight to the button.
+    func runNotionShortcut(_ action:String) {
+        let keys:[String:(String,UInt16)]=["notionSearch":("p",35),"notionSettings":(",",43)]
+        guard let (key,code)=keys[action],let window=webView.window,NotionShortcutMemory.keyWorks(action) else {runNotionAction(action);return}
+        let started=ProcessInfo.processInfo.systemUptime
+        let url=webView.url,generation=documentGeneration
+        let busy=beginBusy(action)
+        window.makeFirstResponder(webView)
+        for type in [NSEvent.EventType.keyDown,.keyUp] {
+            guard let event=NSEvent.keyEvent(with:type,location:.zero,modifierFlags:.command,timestamp:started,windowNumber:window.windowNumber,context:nil,characters:key,charactersIgnoringModifiers:key,isARepeat:false,keyCode:code) else{continue}
+            BrowserApplication.syntheticKeyTimestamps.insert(started)
+            if type == .keyDown {if !webView.performKeyEquivalent(with:event) {webView.keyDown(with:event)}} else {webView.keyUp(with:event)}
+        }
+        // Resolves as soon as focus moves into a panel, or after 0.8 s.
+        let wait="""
+        const inPanel=()=>{const a=document.activeElement;return !!(a && a!==document.body && a.closest('[role=dialog],.notion-overlay-container > *'))};
+        const end=performance.now()+800;
+        while(performance.now()<end){if(inPanel())return true;await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)))}
+        return inPanel();
+        """
+        webView.callAsyncJavaScript(wait,arguments:[:],in:nil,in:.page) { [weak self] result in
+            DispatchQueue.main.async {
+                BrowserApplication.syntheticKeyTimestamps.remove(started)
+                guard let self else{return}
+                guard self.acceptsDocumentResult(generation),self.webView.url == url else{self.endBusy(busy);return}
+                if case .success(let value)=result,value as? Bool == true {
+                    self.endBusy(busy)
+                    NotionShortcutMemory.record(action,keyWorks:true)
+                    self.store?.recordTiming("Notionショートカット表示: "+action,since:started)
+                    Self.shortcutLog.notice("\(action,privacy:.public) opened by key shortcut")
+                } else {
+                    NotionShortcutMemory.record(action,keyWorks:false)
+                    Self.shortcutLog.notice("\(action,privacy:.public) key shortcut had no effect; clicking the button")
+                    self.runNotionAction(action)
+                }
+            }
+        }
+    }
+    private static let shortcutLog=Logger(subsystem:"com.ssuzuki.WorkspaceTabs",category:"NotionActions")
     private var faviconTask:Task<Void,Never>?
     private func discoverFavicon() {
         guard !disposed,let url=webView.url,FaviconCache.fallback(url.absoluteString) != nil else{return}
@@ -556,4 +617,19 @@ final class WebContainer: NSView {
     weak var engine:BrowserEngine?
     init(_ engine:BrowserEngine){self.engine=engine}
     func userContentController(_ userContentController:WKUserContentController,didReceive message:WKScriptMessage){engine?.notionDocumentReady(message)}
+}
+
+/// Remembers whether Notion answered its own shortcut, so a key that does nothing
+/// is not tried (and waited on) every time. It is tried again after a day, since
+/// Notion may change.
+@MainActor enum NotionShortcutMemory {
+    private static let defaults=UserDefaults.standard
+    private static func key(_ action:String)->String {"NotionShortcutKeyFailed."+action}
+    static func keyWorks(_ action:String)->Bool {
+        guard let failed=defaults.object(forKey:key(action)) as? Date else{return true}
+        return Date().timeIntervalSince(failed)>86_400
+    }
+    static func record(_ action:String,keyWorks:Bool) {
+        if keyWorks {defaults.removeObject(forKey:key(action))} else {defaults.set(Date(),forKey:key(action))}
+    }
 }

@@ -2,7 +2,7 @@ import WorkspaceCore
 import AppKit
 import SwiftUI
 
-/// A cursor-anchored creation picker. Kept separate from the browser responder chain
+/// A creation picker centered on the browser window. Kept separate from the browser responder chain
 /// so digits, arrows and Escape never reach the page or toggle fullscreen.
 @MainActor final class NotionCreationMenu:NSObject,ObservableObject,NSWindowDelegate {
     let source:PageReference
@@ -15,13 +15,14 @@ import SwiftUI
     private weak var previousResponder:NSResponder?
     private var monitor:Any?
     private var deactivateObserver:NSObjectProtocol?
-    static var choices:[(id:String,title:String,symbol:String)] { [
-        ("notionPage",L("新規ページ"),"doc"),
-        ("notionChat",L("新規チャット"),"bubble.left"),
-        ("notionMeeting",L("新規ミーティングノート"),"mic"),
-        ("notionDatabase",L("新規データベース"),"tablecells"),
-        ("notionCustomPage",L("カスタムページ"),"pencil.and.outline")
-    ] }
+    /// Page on the left, chat on the right: the two things almost always created from here.
+    /// Meeting notes, databases and custom pages stay in the command search and their own shortcuts.
+    static var choices:[(id:String,title:String,symbol:String)] {
+        [
+            ("notionPage",L("新規ページ"),"doc.text"),
+            ("notionChat",L("新規チャット"),"bubble.left.and.text.bubble.right")
+        ]
+    }
     init(source:PageReference,perform:@escaping(String,PageReference)->Void) {
         self.source=source;self.perform=perform
     }
@@ -29,20 +30,17 @@ import SwiftUI
         guard Self.choices.indices.contains(index) else{return}
         selectedIndex=index
     }
-    static func frame(at point:NSPoint,inside screen:NSRect)->NSRect {
-        let size=NSSize(width:300,height:200)
-        return NSRect(x:min(max(point.x,screen.minX+8),screen.maxX-size.width-8),
-                      y:min(max(point.y-size.height,screen.minY+8),screen.maxY-size.height-8),
-                      width:size.width,height:size.height)
+    static let size=NSSize(width:380,height:190)
+    /// Centered over the browser window, like the new tab choice.
+    static func frame(centeredIn window:NSRect,inside screen:NSRect)->NSRect {
+        let x=window.midX-size.width/2,y=window.midY-size.height/2+window.height*0.12
+        return NSRect(x:min(max(x,screen.minX+8),screen.maxX-size.width-8),y:min(max(y,screen.minY+8),screen.maxY-size.height-8),width:size.width,height:size.height)
     }
     func show(at point:NSPoint = NSEvent.mouseLocation) {
         guard !finished,let owner=NSApp.keyWindow else {dismiss(restoreFocus:false);return}
         self.owner=owner;previousResponder=owner.firstResponder
         let screen=owner.screen ?? NSScreen.screens.first{$0.frame.contains(point)} ?? NSScreen.main
-        // A keyboard invocation can occur while the pointer is on another display.
-        // Keep the menu on the browser's display/Space in that case.
-        let anchor=owner.frame.contains(point) ? point:NSPoint(x:owner.frame.midX-150,y:owner.frame.midY+100)
-        let popup=CreationPanel(contentRect:Self.frame(at:anchor,inside:screen?.visibleFrame ?? owner.frame),styleMask:[.borderless],backing:.buffered,defer:false)
+        let popup=CreationPanel(contentRect:Self.frame(centeredIn:owner.frame,inside:screen?.visibleFrame ?? owner.frame),styleMask:[.borderless],backing:.buffered,defer:false)
         popup.isReleasedWhenClosed=false;popup.isOpaque=false;popup.backgroundColor = .clear
         popup.title=L("Notionで作成");popup.hasShadow=true;popup.level = .floating;popup.hidesOnDeactivate=true
         popup.collectionBehavior=[.fullScreenAuxiliary,.transient];popup.appearance=owner.effectiveAppearance
@@ -67,8 +65,8 @@ import SwiftUI
         if event.keyCode == 53 {dismiss();return true}
         guard modifiers.isEmpty else{return false}
         switch event.keyCode {
-        case 125:highlight((selectedIndex+1)%Self.choices.count)
-        case 126:highlight((selectedIndex+Self.choices.count-1)%Self.choices.count)
+        case 124,125,48:highlight((selectedIndex+1)%Self.choices.count)
+        case 123,126:highlight((selectedIndex+Self.choices.count-1)%Self.choices.count)
         case 36,76:select(selectedIndex)
         default:
             guard let key=event.charactersIgnoringModifiers,let number=Int(key),Self.choices.indices.contains(number-1) else{return false}
@@ -104,24 +102,27 @@ private struct CreationPicker:View {
     private var ink:Color {scheme == .dark ? Color(white:0.9):Color(white:0.2)}
     private var background:Color {scheme == .dark ? Color(white:0.15):.white}
     var body:some View {
-        VStack(spacing:1) {
-            ForEach(Array(NotionCreationMenu.choices.enumerated()),id:\.element.id) { index,choice in
-                Button {menu.select(index)} label: {
-                    HStack(spacing:10) {
-                        Image(systemName:choice.symbol).font(.system(size:17,weight:.regular)).frame(width:20,height:20)
-                        Text(choice.title).font(.system(size:14)).lineLimit(1)
-                        Spacer(minLength:4)
-                        Text(L("\(index+1)を押す")).font(.system(size:12,weight:.medium))
-                            .foregroundStyle(ink.opacity(0.45)).padding(.horizontal,5).frame(height:20)
-                            .background(ink.opacity(0.035),in:RoundedRectangle(cornerRadius:4))
-                    }
-                    .foregroundStyle(ink).padding(.horizontal,10).frame(maxWidth:.infinity).frame(height:36)
-                    .background(menu.selectedIndex == index ? ink.opacity(0.055):.clear,in:RoundedRectangle(cornerRadius:8))
-                    .contentShape(Rectangle())
-                }.buttonStyle(.plain).onHover {inside in if inside {menu.highlight(index)}}
-                .accessibilityLabel(choice.title).accessibilityHint(L("\(index+1)を押す"))
+        VStack(spacing:12) {
+            Text(L("Notionで作成")).font(.headline).foregroundStyle(ink)
+            HStack(spacing:12) {
+                ForEach(Array(NotionCreationMenu.choices.enumerated()),id:\.element.id) { index,choice in
+                    let active=menu.selectedIndex == index
+                    Button {menu.select(index)} label: {
+                        VStack(spacing:10) {
+                            Image(systemName:choice.symbol).font(.system(size:30,weight:.regular)).frame(height:36)
+                            Text(choice.title).font(.system(size:14,weight:.semibold)).lineLimit(1)
+                            Text(index == 0 ? "←":"→").font(.system(size:12,weight:.medium).monospaced()).foregroundStyle(ink.opacity(0.45))
+                        }
+                        .foregroundStyle(ink).frame(maxWidth:.infinity).frame(height:118)
+                        .background(active ? Color.accentColor.opacity(0.14):ink.opacity(0.04),in:RoundedRectangle(cornerRadius:12,style:.continuous))
+                        .overlay(RoundedRectangle(cornerRadius:12,style:.continuous).strokeBorder(active ? Color.accentColor:ink.opacity(0.08),lineWidth:active ? 2:1))
+                        .contentShape(RoundedRectangle(cornerRadius:12))
+                    }.buttonStyle(.plain).onHover {inside in if inside {menu.highlight(index)}}
+                    .accessibilityLabel(choice.title).accessibilityAddTraits(active ? .isSelected:[])
+                }
             }
-        }.padding(8).frame(width:300,height:200)
+            Text(L("← → で選んで ⏎、Escで閉じる")).font(.caption).foregroundStyle(ink.opacity(0.5))
+        }.padding(14).frame(width:NotionCreationMenu.size.width,height:NotionCreationMenu.size.height)
         .background(background,in:RoundedRectangle(cornerRadius:16))
         .overlay(RoundedRectangle(cornerRadius:16).strokeBorder(ink.opacity(0.1),lineWidth:0.5))
     }

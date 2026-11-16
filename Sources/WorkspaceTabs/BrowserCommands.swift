@@ -3,7 +3,7 @@ import WebKit
 import WorkspaceCore
 
 @MainActor enum BrowserCommands {
-    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings"]
+    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","zoomIn","zoomOut","zoomReset"]
 }
 extension BrowserStore {
     func openCommands() {
@@ -87,7 +87,10 @@ extension BrowserStore {
             guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify(L("Notionを表示しているタブで実行してください"),isError:true);return}
             if NotionActions.creationIDs.contains(id) {
                 _=openNotionActionTab(id,from:ref)
-            } else {engine.runNotionAction(id)}
+            } else {engine.runNotionShortcut(id)}
+        case "zoomIn":zoomPage(ref,step:1)
+        case "zoomOut":zoomPage(ref,step:-1)
+        case "zoomReset":zoomPage(ref,step:0)
         default:break
         }
     }
@@ -121,7 +124,16 @@ enum NotionActions {
     const started=performance.now();
     const loadingNewTab=typeof waitForReady!=='undefined' && waitForReady;
     return await new Promise(resolve=>{
-      let finished=false,sidebarOpened=false,sectionOpened=false,menuOpened=false,frame=0;
+      let finished=false,sidebarOpened=false,sectionOpened=false,menuOpened=false,frame=0,openedAt=0;
+      // Notion's create buttons may open a short menu (Page, Chat, Database…) instead of
+      // creating at once. These are the item names in that menu.
+      const menuItems={notionPage:['Page','ページ'],notionChat:['Chat','チャット'],notionMeeting:['AI meeting notes','AI Meeting Notes','Meeting notes','AI ミーティングノート','ミーティングノート'],notionDatabase:['Database','データベース'],notionCustomPage:['Custom page','カスタムページ']};
+      const pickMenuItem=()=>{
+        const items=[...document.querySelectorAll('[role="menuitem"],[role="option"]')].filter(visible);
+        const hits=items.filter(e=>labels(e).some(t=>menuItems[action]?.some(n=>t===n || (action==='notionMeeting' && t.startsWith(n)))));
+        if(hits.length!==1)return false;
+        hits[0].click();return true;
+      };
       let observer,timer,fallback;
       globalThis.__workspaceTabsCancelAction?.();
       const cancel=()=>finish({ok:false,cancelled:true,message:'操作をキャンセルしました'});
@@ -129,6 +141,7 @@ enum NotionActions {
         if(finished)return;finished=true;
         if(globalThis.__workspaceTabsCancelAction===cancel)delete globalThis.__workspaceTabsCancelAction;
         observer?.disconnect();clearTimeout(timer);clearInterval(fallback);cancelAnimationFrame(frame);
+        if(!response.ok && menuOpened)document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',keyCode:27,bubbles:true,cancelable:true}));
         resolve({...response,elapsedMS:performance.now()-started});
       };
       globalThis.__workspaceTabsCancelAction=cancel;
@@ -140,6 +153,13 @@ enum NotionActions {
           if(!identity)return;
           if(identity.spaceID!==expectedSpaceID){finish({ok:false,message:'設定と異なるワークスペースのため作成を中止しました'});return;}
         }
+        // Only pick from a menu this run opened, never from one the user had open.
+        if(menuItems[action] && (openedAt || menuOpened) && pickMenuItem()){finish({ok:true,message:done[action]});return;}
+        if(openedAt){
+          // A create button was pressed. Give its menu a moment to appear before calling it done.
+          if(performance.now()-openedAt>700)finish({ok:true,message:done[action]});
+          return;
+        }
         const controls=[...document.querySelectorAll('button,[role="button"],[role="tab"],[role="menuitem"],a')];
         const indexed=controls.map(e=>({e,labels:labels(e)}));
         // Match labels before asking for layout: unrelated links need no visibility check.
@@ -148,7 +168,10 @@ enum NotionActions {
           for(const name of values){const found=matches.filter(x=>x.labels.includes(name));if(found.length===1){found[0].e.click();return true;}}
           return false;
         };
-        if(click(names[action])){finish({ok:true,message:done[action]});return;}
+        if(click(names[action])){
+          if(menuItems[action]){openedAt=performance.now();setTimeout(schedule,350);setTimeout(schedule,750);return;}
+          finish({ok:true,message:done[action]});return;
+        }
         if(!sidebarOpened && click(['Open sidebar','Show sidebar','サイドバーを開く','サイドバーを表示'])){sidebarOpened=true;return;}
         if((action==='notionDatabase' || action==='notionCustomPage') && !menuOpened){
           // Open only the sidebar's explicit creation dropdown. Never click a generic
@@ -157,8 +180,10 @@ enum NotionActions {
           if(sidebar){
             const candidates=[...sidebar.querySelectorAll('[data-inp-target="sidebar-create-page"] button,[data-inp-target="sidebar-create-page"] [role="button"],button[aria-haspopup],[role="button"][aria-haspopup]')]
               .filter(e=>labels(e).some(n=>['More options','その他のオプション','その他のオプションを表示','New…','新規…'].includes(n)) && visible(e));
-            if(candidates.length===1){menuOpened=true;candidates[0].click();return;}
+            if(candidates.length===1){menuOpened=true;candidates[0].click();setTimeout(schedule,350);return;}
           }
+          // Newer sidebars put Database and Custom page behind the compose button's menu.
+          if(!menuOpened && click(['New page','新規ページ','新しいページ','New','新規作成'])){menuOpened=true;setTimeout(schedule,350);return;}
         }
         if(action==='notionSettings' && !menuOpened){
           const sidebar=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
@@ -177,10 +202,22 @@ enum NotionActions {
       const schedule=()=>{if(!finished && !frame)frame=requestAnimationFrame(step);};
       observer=new MutationObserver(schedule);
       observer.observe(document,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden','disabled','aria-disabled','aria-label','title','role','aria-haspopup']});
-      timer=setTimeout(()=>finish({ok:false,message:({notionDatabase:'新規データベース',notionCustomPage:'カスタムページ',notionChat:'新規AIチャット',notionPage:'新規ページ',notionMeeting:'新規ミーティングノート',notionSearch:'Notion検索',notionSettings:'Notion設定'})[action]+(typeof expectedSpaceID==='string' && expectedSpaceID && !readWorkspaceIdentity() ? 'の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください':'のボタンが見つかりません。Notionのサイドバーを表示して再実行してください')}),loadingNewTab?12000:3500);
+      timer=setTimeout(()=>openedAt ? finish({ok:true,message:done[action]}):finish({ok:false,message:({notionDatabase:'新規データベース',notionCustomPage:'カスタムページ',notionChat:'新規AIチャット',notionPage:'新規ページ',notionMeeting:'新規ミーティングノート',notionSearch:'Notion検索',notionSettings:'Notion設定'})[action]+(typeof expectedSpaceID==='string' && expectedSpaceID && !readWorkspaceIdentity() ? 'の作成先を確認できません。Home URLを対象ワークスペースの通常ページに設定してください':'のボタンが見つかりません。Notionのサイドバーを表示して再実行してください')}),loadingNewTab?12000:3500);
       // Covers CSS/layout changes with no DOM mutation and background-tab rAF throttling.
       fallback=setInterval(step,250);
       step();
     });
     """#
+}
+
+extension BrowserStore {
+    /// Steps the page zoom through the site settings' levels and saves it for the site,
+    /// so the same site opens at that zoom again in this login profile.
+    func zoomPage(_ ref:PageReference,step:Int) {
+        guard let engine=engine(ref.workspaceID,ref.pageID),let url=engine.webView.url,let origin=SitePreference.origin(url) else {notify(L("このページはズームできません"),isError:true);return}
+        var preference=sites.preference(profileID:engine.profileID,url:url) ?? SitePreference(profileID:engine.profileID,origin:origin)
+        preference.zoom=SitePreference.zoom(after:preference.zoom,step:step)
+        updateSitePreference(preference)
+        notify(L("ズーム \(Int((preference.zoom*100).rounded()))%"))
+    }
 }

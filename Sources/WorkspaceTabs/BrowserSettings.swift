@@ -176,6 +176,7 @@ struct BrowserSettings:View {
                     } else if section == "診断" {
                         SafeStartupSettings(store:store)
                         MicrophoneSettings()
+                        NotionActionProbeSettings(store:store)
                         TimingSettings(log:store.timings,export:store.exportTimings)
                     } else {
                         HistorySettings(store:store)
@@ -208,11 +209,12 @@ struct ProfileEditor:View {
             Text(L("ログイン環境")).font(.title2.weight(.semibold))
             TextField(L("環境の名前"),text:$draft.name)
             TextField(L("アカウントのメモ（例：仕事用・name@example.com）"),text:$draft.accountNote)
+            ProfileUsage(store:store,profileID:draft.id)
             Text(L("保存データがあるサイト")).font(.headline)
             if loading {ProgressView()} else if sites.isEmpty {Text(L("まだ保存データはありません。")).foregroundStyle(.secondary)} else {ScrollView{VStack(alignment:.leading){ForEach(sites,id:\.self){Text($0).font(.callout)}}.frame(maxWidth:.infinity,alignment:.leading)}}
             Text(L("この一覧はサイトデータの存在を示します。現在ログイン中であることや、ログインしているユーザー名を示すものではありません。")).font(.caption).foregroundStyle(.secondary)
             HStack {Button(L("更新")){refresh()};Spacer();Button(L("キャンセル")){dismiss()}.keyboardShortcut(.cancelAction);Button(L("保存")){store.updateProfile(draft);dismiss()}.disabled(draft.name.isEmpty).keyboardShortcut(.defaultAction)}
-        }.padding(24).frame(width:500,height:370).onAppear{refresh()}
+        }.padding(24).frame(width:540).frame(minHeight:420).onAppear{refresh()}
     }
     private func refresh(){loading=true;store.dataStore(draft.id).fetchDataRecords(ofTypes:WKWebsiteDataStore.allWebsiteDataTypes()){records in sites=Array(Set(records.map(\.displayName))).sorted();loading=false}}
 }
@@ -272,3 +274,56 @@ extension BrowserStore {
     }
 }
 struct BrowserBackup:Codable {var session:BrowserSession;var icons:[String:Data]}
+
+/// The app tabs, and the groups inside other app tabs, that sign in with this profile,
+/// drawn as small chips in each app tab's own color and icon.
+struct ProfileUsage:View {
+    @ObservedObject private var localization = AppLocalization.shared
+    @ObservedObject var store:BrowserStore
+    let profileID:UUID
+    private struct Use:Identifiable {let id:String;let workspace:BrowserWorkspace;let group:String?}
+    private var uses:[Use] {store.profileUsage(profileID).map{Use(id:$0.workspace.id.uuidString+($0.group?.id.uuidString ?? ""),workspace:$0.workspace,group:$0.group?.name)}}
+    var body:some View {
+        VStack(alignment:.leading,spacing:8) {
+            Text(L("使っているアプリタブ")).font(.headline)
+            if uses.isEmpty {
+                Text(L("この環境を使っているアプリタブはありません。")).foregroundStyle(.secondary).font(.callout)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns:[GridItem(.adaptive(minimum:150),spacing:8,alignment:.leading)],alignment:.leading,spacing:8) {
+                        ForEach(uses) {use in chip(use)}
+                    }
+                }.frame(maxHeight:110)
+            }
+        }
+    }
+    private func chip(_ use:Use)->some View {
+        let ink=Palette.ink(use.workspace.color,preference:use.workspace.textColor)
+        return HStack(spacing:6) {
+            WorkspaceIcon(store:store,workspace:use.workspace,size:18)
+            VStack(alignment:.leading,spacing:0) {
+                Text(use.workspace.name).font(.callout.weight(.medium)).lineLimit(1)
+                if let group=use.group {Text(L("グループ「\(group)」のみ")).font(.caption2).opacity(0.8).lineLimit(1)}
+            }
+        }.padding(.horizontal,8).padding(.vertical,5).frame(maxWidth:.infinity,alignment:.leading)
+            .foregroundStyle(ink).background(Palette.color(use.workspace.color),in:RoundedRectangle(cornerRadius:7,style:.continuous))
+            .help(use.group.map{L("「\(use.workspace.name)」のグループ「\($0)」がこの環境を使っています")} ?? L("「\(use.workspace.name)」がこの環境を使っています"))
+            .accessibilityElement(children:.combine)
+    }
+}
+
+extension BrowserStore {
+    /// App tabs that sign in with a profile: the whole app tab when any of its groups
+    /// keeps the app tab's profile, otherwise each group in another app tab that picked it.
+    func profileUsage(_ profileID:UUID)->[(workspace:BrowserWorkspace,group:BrowserTabGroup?)] {
+        session.workspaces.flatMap {workspace->[(workspace:BrowserWorkspace,group:BrowserTabGroup?)] in
+            let groups=workspace.resolvedTabGroups
+            var result:[(workspace:BrowserWorkspace,group:BrowserTabGroup?)]=[]
+            if workspace.profileID == profileID,groups.isEmpty || groups.contains(where:{workspace.profileID(forGroup:$0.id) == profileID}) {result.append((workspace,nil))}
+            if workspace.profileID != profileID {
+                for group in groups where group.profileID == profileID {result.append((workspace,group))}
+            }
+            return result
+        }
+    }
+}

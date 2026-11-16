@@ -11,6 +11,13 @@ struct SitePreference:Codable,Identifiable {
     var microphone:Access = .ask
     var camera:Access = .ask
     var id:String {profileID.uuidString+" "+origin}
+    static let zoomLevels=[0.5,0.67,0.75,0.8,0.9,1,1.1,1.25,1.5,1.75,2,2.5,3]
+    /// The next level up or down from any zoom, or 100% for step 0.
+    static func zoom(after current:Double,step:Int)->Double {
+        if step == 0 {return 1}
+        if step>0 {return zoomLevels.first{$0>current+0.001} ?? zoomLevels.last!}
+        return zoomLevels.last{$0<current-0.001} ?? zoomLevels.first!
+    }
     static func origin(_ url:URL)->String? {
         guard ["http","https"].contains(url.scheme ?? ""),let host=url.host?.lowercased() else{return nil}
         let port=url.port.flatMap{($0 == 443 && url.scheme == "https") || ($0 == 80 && url.scheme == "http") ? nil:$0}
@@ -84,7 +91,7 @@ struct SiteSettingsSheet:View {
                     }
                     Section(L("このサイトの表示・権限")) {
                         Picker(L("ズーム"),selection:Binding(get:{preference.zoom},set:{var next=preference;next.zoom=$0;store.updateSitePreference(next)})) {
-                            ForEach([0.5,0.75,0.9,1,1.1,1.25,1.5,1.75,2,2.5,3],id:\.self){Text("\(Int($0*100))%").tag($0)}
+                            ForEach(SitePreference.zoomLevels,id:\.self){Text("\(Int($0*100))%").tag($0)}
                         }
                         accessPicker(L("マイク"),value:preference.microphone){var next=preference;next.microphone=$0;store.updateSitePreference(next)}
                         accessPicker(L("カメラ"),value:preference.camera){var next=preference;next.camera=$0;store.updateSitePreference(next)}

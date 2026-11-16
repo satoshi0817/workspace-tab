@@ -303,14 +303,6 @@
     "en": "Open pages, AI chats, meetings and databases in new tabs.",
     "ko": "페이지, AI 채팅, 회의록, 데이터베이스를 새 탭에서 여세요."
   },
-  "Notionを表示中に⌘⇧Nで、マウスカーソル付近に作成メニューを開きます。↑↓＋Enter、数字の1〜5、またはクリックで選べます。Escで閉じます。": {
-    "en": "While viewing Notion, press ⌘⇧N to open a creation menu near the pointer. Select with ↑↓ and Enter, digits 1–5, or a click. Esc closes it.",
-    "ko": "Notion을 보는 중 ⌘⇧N을 누르면 포인터 근처에 생성 메뉴가 열립니다. ↑↓와 Enter, 숫자 1~5 또는 클릭으로 선택하고 Esc로 닫습니다."
-  },
-  "新規ページ・AIチャット・ミーティングノート・データベース・カスタムページは新しいブラウザタブで開きます。データベースとカスタムページはNotionに作成ボタンがある場合に利用できます。録音は自動開始しません。": {
-    "en": "New pages, AI chats, meeting notes, databases and custom pages open in new browser tabs. Database and custom page actions require a corresponding Notion button. Recording never starts automatically.",
-    "ko": "새 페이지, AI 채팅, 회의록, 데이터베이스, 사용자 지정 페이지는 새 브라우저 탭에서 열립니다. 데이터베이스와 사용자 지정 페이지는 Notion에 생성 버튼이 있을 때 사용할 수 있습니다. 녹음은 자동으로 시작되지 않습니다."
-  },
   "Notion内の検索と設定は現在のタブで開きます。": {
     "en": "Notion search and settings open in the current tab.",
     "ko": "Notion 검색과 설정은 현재 탭에서 엽니다."
@@ -3914,5 +3906,105 @@
   "ブラウン": {
     "en": "Brown",
     "ko": "갈색"
+  },
+  "拡大": {
+    "en": "Zoom In",
+    "ko": "확대"
+  },
+  "縮小": {
+    "en": "Zoom Out",
+    "ko": "축소"
+  },
+  "実際のサイズ": {
+    "en": "Actual Size",
+    "ko": "실제 크기"
+  },
+  "このページはズームできません": {
+    "en": "This page can't be zoomed",
+    "ko": "이 페이지는 확대/축소할 수 없습니다"
+  },
+  "ズーム {0}%": {
+    "en": "Zoom {0}%",
+    "ko": "확대/축소 {0}%"
+  },
+  "⌘+で拡大、⌘-で縮小、⌘0で100%に戻します。変えたズームはこのサイトのズーム設定として保存します。": {
+    "en": "Press ⌘+ to zoom in, ⌘- to zoom out and ⌘0 to return to 100%. The zoom you set is saved as this site’s zoom setting.",
+    "ko": "⌘+로 확대, ⌘-로 축소, ⌘0으로 100%로 돌아갑니다. 바꾼 배율은 이 사이트의 확대/축소 설정으로 저장됩니다."
+  },
+  "Notion操作の検証": {
+    "en": "Notion action check",
+    "ko": "Notion 동작 검증"
+  },
+  "表示中のNotionタブで、検索と設定をJavaScriptだけで開く方法を順に試します。パネルが開いたかだけを記録し、ページの内容やURLは記録しません。途中でパネルが一瞬開閉します。": {
+    "en": "Tries each way to open search and settings with JavaScript alone on the Notion tab you are viewing. Only whether a panel opened is recorded, not page content or URLs. Panels briefly open and close while it runs.",
+    "ko": "표시 중인 Notion 탭에서 검색과 설정을 JavaScript만으로 여는 방법을 차례로 시도합니다. 패널이 열렸는지만 기록하며 페이지 내용이나 URL은 기록하지 않습니다. 실행 중 패널이 잠시 열리고 닫힙니다."
+  },
+  "検証中…": {
+    "en": "Checking…",
+    "ko": "검증 중…"
+  },
+  "検証を実行": {
+    "en": "Run check",
+    "ko": "검증 실행"
+  },
+  "結果をコピー": {
+    "en": "Copy results",
+    "ko": "결과 복사"
+  },
+  "Notionのタブを表示してから実行してください": {
+    "en": "Show a Notion tab, then run this.",
+    "ko": "Notion 탭을 표시한 뒤 실행하세요."
+  },
+  "使っているアプリタブ": {
+    "en": "App tabs using this profile",
+    "ko": "이 환경을 쓰는 앱 탭"
+  },
+  "この環境を使っているアプリタブはありません。": {
+    "en": "No app tab uses this profile.",
+    "ko": "이 환경을 쓰는 앱 탭이 없습니다."
+  },
+  "グループ「{0}」のみ": {
+    "en": "Only group “{0}”",
+    "ko": "“{0}” 그룹만"
+  },
+  "「{0}」のグループ「{1}」がこの環境を使っています": {
+    "en": "Group “{1}” in “{0}” uses this profile",
+    "ko": "“{0}”의 “{1}” 그룹이 이 환경을 사용합니다"
+  },
+  "「{0}」がこの環境を使っています": {
+    "en": "“{0}” uses this profile",
+    "ko": "“{0}”이(가) 이 환경을 사용합니다"
+  },
+  "Notionの検索を開いています…": {
+    "en": "Opening Notion search…",
+    "ko": "Notion 검색을 여는 중…"
+  },
+  "Notionの設定を開いています…": {
+    "en": "Opening Notion settings…",
+    "ko": "Notion 설정을 여는 중…"
+  },
+  "Notionで準備しています…": {
+    "en": "Getting things ready in Notion…",
+    "ko": "Notion에서 준비하는 중…"
+  },
+  "← → で選んで ⏎、Escで閉じる": {
+    "en": "Choose with ← →, press ⏎; Esc closes",
+    "ko": "← →로 고르고 ⏎, Esc로 닫기"
+  },
+  "Notionを表示中に⌘⇧Nで、「新規ページ」（左）と「新規チャット」（右）を並べた作成メニューを開きます。←→＋Enter、数字の1・2、またはクリックで選べます。Escで閉じます。": {
+    "en": "While Notion is showing, press ⌘⇧N to open the creation menu with New page (left) and New chat (right). Choose with ← → and Return, the digits 1 or 2, or a click. Esc closes it.",
+    "ko": "Notion을 표시 중일 때 ⌘⇧N을 누르면 새 페이지(왼쪽)와 새 채팅(오른쪽)이 나란히 있는 만들기 메뉴가 열립니다. ← →와 Return, 숫자 1·2 또는 클릭으로 고릅니다. Esc로 닫습니다."
+  },
+  "新規ページ・AIチャットは新しいブラウザタブで開きます。ミーティングノート・データベース・カスタムページはコマンド検索（⌘⇧P）から作成します。録音は自動開始しません。": {
+    "en": "New pages and AI chats open in a new browser tab. Create meeting notes, databases and custom pages from the command search (⌘⇧P). Recording never starts on its own.",
+    "ko": "새 페이지와 AI 채팅은 새 브라우저 탭에서 열립니다. 회의록, 데이터베이스, 사용자 지정 페이지는 명령 검색(⌘⇧P)에서 만듭니다. 녹음은 자동으로 시작되지 않습니다."
+  },
+  "Notion：新規データベース": {
+    "en": "Notion: New Database",
+    "ko": "Notion: 새 데이터베이스"
+  },
+  "Notion：カスタムページ": {
+    "en": "Notion: Custom Page",
+    "ko": "Notion: 사용자 지정 페이지"
   }
 }

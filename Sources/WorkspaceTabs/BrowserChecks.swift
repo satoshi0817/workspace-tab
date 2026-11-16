@@ -43,11 +43,11 @@ import WorkspaceCore
             let capturedSource=PageReference(workspaceID:UUID(),pageID:UUID())
             var menuSelections:[(String,PageReference)]=[]
             let creationMenu=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
-            try expect(NotionCreationMenu.choices.map{$0.id} == ["notionPage","notionChat","notionMeeting","notionDatabase","notionCustomPage"],"Creation picker presents all five Notion creation choices")
-            creationMenu.highlight(4)
-            try expect(creationMenu.selectedIndex == 4,"Creation picker moves its selection independently of creation")
-            let popupFrame=NotionCreationMenu.frame(at:NSPoint(x:999,y:1),inside:NSRect(x:0,y:0,width:1000,height:800))
-            try expect(popupFrame.minY >= 8 && popupFrame.maxX <= 992,"Creation picker stays within screen edges")
+            try expect(NotionCreationMenu.choices.map{$0.id} == ["notionPage","notionChat"],"Creation picker offers a new page on the left and a new chat on the right")
+            creationMenu.highlight(1)
+            try expect(creationMenu.selectedIndex == 1,"Creation picker moves its selection independently of creation")
+            let popupFrame=NotionCreationMenu.frame(centeredIn:NSRect(x:700,y:0,width:500,height:300),inside:NSRect(x:0,y:0,width:1000,height:800))
+            try expect(popupFrame.minY >= 8 && popupFrame.maxX <= 992 && abs(NotionCreationMenu.frame(centeredIn:NSRect(x:0,y:0,width:1000,height:800),inside:NSRect(x:0,y:0,width:1000,height:800)).midX-500)<1,"Creation picker centers on the window and stays within screen edges")
             creationMenu.select(1);creationMenu.select(1)
             try await wait {!menuSelections.isEmpty}
             try expect(menuSelections.count == 1 && menuSelections[0].0 == "notionChat" && menuSelections[0].1 == capturedSource,"Creation picker dispatches once to the captured source after dismissal")
@@ -55,11 +55,12 @@ import WorkspaceCore
                 NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:flags,timestamp:0,windowNumber:0,context:nil,characters:text,charactersIgnoringModifiers:text,isARepeat:false,keyCode:code)!
             }
             let keyboardPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
-            try expect(keyboardPicker.handleKey(pickerKey(125,"")) && keyboardPicker.selectedIndex == 1,"Picker Down moves selection without executing an action")
-            try expect(!keyboardPicker.handleKey(pickerKey(20,"3",flags:.command)),"Picker ignores modified digit shortcuts")
-            try expect(keyboardPicker.handleKey(pickerKey(23,"5")),"Picker accepts digit five")
+            try expect(keyboardPicker.handleKey(pickerKey(124,"")) && keyboardPicker.selectedIndex == 1 && keyboardPicker.handleKey(pickerKey(123,"")) && keyboardPicker.selectedIndex == 0,"Picker Right and Left move between page and chat without executing")
+            try expect(!keyboardPicker.handleKey(pickerKey(19,"2",flags:.command)),"Picker ignores modified digit shortcuts")
+            try expect(!keyboardPicker.handleKey(pickerKey(20,"3")),"Picker ignores digits past its two choices")
+            try expect(keyboardPicker.handleKey(pickerKey(124,"")) && keyboardPicker.handleKey(pickerKey(36,"\r")),"Picker Return creates the highlighted choice")
             try await wait {menuSelections.count == 2}
-            try expect(menuSelections.last?.0 == "notionCustomPage","Picker digit routes to its matching action")
+            try expect(menuSelections.last?.0 == "notionChat","Choosing right opens a new chat")
             let cancelledPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
             try expect(cancelledPicker.handleKey(pickerKey(53,"\u{1b}")),"Picker consumes Escape")
             cancelledPicker.select(0)
@@ -446,6 +447,13 @@ import WorkspaceCore
                 NSEvent.keyEvent(with:type,location:.zero,modifierFlags:flags,timestamp:0,windowNumber:0,context:nil,characters:key,charactersIgnoringModifiers:key,isARepeat:false,keyCode:code)!
             }
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"C",8),preferences:prefs)?.id == "copyURL","Local chord resolves on first keydown before WebKit")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,"=",24),preferences:prefs)?.id == "zoomIn" && ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"+",24),preferences:prefs)?.id == "zoomIn","Command-Plus zooms in on a US keyboard with or without Shift")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,";",41),preferences:prefs)?.id == "zoomIn" && ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,"-",27),preferences:prefs)?.id == "zoomOut","Command-Plus on the JIS ; key zooms in and Command-Minus zooms out")
+            ShortcutSequenceMonitor.notionFocused={true}
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"+",41),preferences:prefs) == nil && ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,";",41),preferences:prefs)?.id == "zoomIn" && ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,"=",24),preferences:prefs)?.id == "zoomIn","On Notion, Command-Shift-; reaches the page for a new AI chat while Command-; and Command-= still zoom")
+            ShortcutSequenceMonitor.notionFocused={false}
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,"0",29),preferences:prefs)?.id == "zoomReset" && !ShortcutPreferences.actions.contains{$0.id == "show"},"Command-0 resets zoom; the Show Browser shortcut is gone")
+            try expect(SitePreference.zoom(after:1,step:1) == 1.1 && SitePreference.zoom(after:1,step:-1) == 0.9 && SitePreference.zoom(after:3,step:1) == 3 && SitePreference.zoom(after:0.5,step:-1) == 0.5 && SitePreference.zoom(after:1.3,step:-1) == 1.25 && SitePreference.zoom(after:2,step:0) == 1,"Zoom steps through the site setting levels and stops at the ends")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"N",45),preferences:prefs)?.id == "notionCreateMenu","Command-Shift-N opens the creation menu before WebKit handles the key")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.option],"˚",40),preferences:prefs)?.id == "notionSearch","Local chord uses physical key despite Option-generated characters")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[],"c",8),preferences:prefs) == nil,"Normal text input is never intercepted as an app shortcut")

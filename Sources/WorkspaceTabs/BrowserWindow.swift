@@ -16,7 +16,11 @@ import os
         window.sendEvent(event)
         return true
     }
+    /// Keys the app types into a page itself. If the page ignores one, WebKit hands
+    /// it back here, and it must not then run an app shortcut such as ⌘, (Settings).
+    static var syntheticKeyTimestamps:Set<TimeInterval>=[]
     override func sendEvent(_ event:NSEvent) {
+        if [.keyDown,.keyUp].contains(event.type),Self.syntheticKeyTimestamps.contains(event.timestamp) {return}
         inputObserver?(event)
         if consumedPanelEvent === event {return}
         if panelKeyAction?(event) == true {consumedPanelEvent=event;return}

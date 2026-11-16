@@ -42,7 +42,7 @@ extension BrowserStore {
         do {try Data(token.utf8).write(to:file,options:.atomic);try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:file.path)} catch {return ""}
         return token
     }
-    static let launcherCommandIDs:Set<String> = BrowserCommands.ids.union(["favorites","show","search","previousWorkspace","nextWorkspace","copyURL","new","reopen"])
+    static let launcherCommandIDs:Set<String> = BrowserCommands.ids.union(["favorites","search","previousWorkspace","nextWorkspace","copyURL","new","reopen"])
     func exportLauncherIndex() {
         let token=launcherToken
         guard !token.isEmpty else{return}
