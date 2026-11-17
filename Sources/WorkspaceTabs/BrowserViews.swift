@@ -102,6 +102,9 @@ struct BrowserRoot: View {
             VStack(spacing:16) { Text(L("アプリタブを追加")).font(.title2); Button(L("Notionを追加")) {store.addWorkspace(name:"Notion")} }.frame(maxWidth:.infinity,maxHeight:.infinity)
         }
     }
+    private func appTabHandle(_ workspace:BrowserWorkspace,horizontal:Bool)->TabDragHandle {
+        TabDragHandle(payload:TabDragPayload(workspaceID:workspace.id),title:workspace.name,horizontal:horizontal,drop:{payload,after in if payload.pageID == nil {store.moveWorkspace(payload.workspaceID,before:workspace.id,after:after)}},pointing:true,click:{store.selectWorkspace(workspace.id)})
+    }
     private func appTabs(horizontal: Bool) -> some View {
         let layout = horizontal ? AnyLayout(HStackLayout(spacing:BrowserLayout.gap)) : AnyLayout(VStackLayout(spacing:BrowserLayout.gap))
         return layout {
@@ -114,7 +117,7 @@ struct BrowserRoot: View {
                     ForEach(Array(store.session.workspaces.enumerated()),id:\.element.id) { index,workspace in
                         appTabLabel(workspace,index:index,horizontal:horizontal)
                                 .contentShape(Rectangle())
-                                .overlay(TabDragHandle(payload:TabDragPayload(workspaceID:workspace.id),title:workspace.name,horizontal:horizontal,drop:{payload,after in if payload.pageID == nil {store.moveWorkspace(payload.workspaceID,before:workspace.id,after:after)}},click:{store.selectWorkspace(workspace.id)}))
+                                .overlay(appTabHandle(workspace,horizontal:horizontal))
                             .accessibilityElement(children:.ignore)
                             .accessibilityAddTraits(.isButton)
                             .accessibilityAction {store.selectWorkspace(workspace.id)}

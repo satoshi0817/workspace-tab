@@ -203,6 +203,7 @@ struct ProfileEditor:View {
     @State var draft:LoginProfile
     @State private var sites:[String]=[]
     @State private var loading=true
+    @State private var confirmingDelete=false
     @Environment(\.dismiss) private var dismiss
     var body:some View {
         VStack(alignment:.leading,spacing:14) {
@@ -210,11 +211,31 @@ struct ProfileEditor:View {
             TextField(L("環境の名前"),text:$draft.name)
             TextField(L("アカウントのメモ（例：仕事用・name@example.com）"),text:$draft.accountNote)
             ProfileUsage(store:store,profileID:draft.id)
-            Text(L("保存データがあるサイト")).font(.headline)
-            if loading {ProgressView()} else if sites.isEmpty {Text(L("まだ保存データはありません。")).foregroundStyle(.secondary)} else {ScrollView{VStack(alignment:.leading){ForEach(sites,id:\.self){Text($0).font(.callout)}}.frame(maxWidth:.infinity,alignment:.leading)}}
+            HStack(alignment:.firstTextBaseline) {
+                Text(L("保存データがあるサイト")).font(.headline)
+                if !loading,!sites.isEmpty {Text("\(sites.count)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)}
+            }
+            // A short, framed list: it can hold hundreds of hosts, so it never pushes the buttons away.
+            if loading {ProgressView()} else if sites.isEmpty {Text(L("まだ保存データはありません。")).foregroundStyle(.secondary)} else {
+                ScrollView {
+                    LazyVGrid(columns:[GridItem(.flexible(),alignment:.leading),GridItem(.flexible(),alignment:.leading)],alignment:.leading,spacing:4) {
+                        ForEach(sites,id:\.self){Text($0).font(.callout).lineLimit(1).truncationMode(.middle).help($0)}
+                    }.padding(10)
+                }.frame(height:150)
+                .background(Color.primary.opacity(0.04),in:RoundedRectangle(cornerRadius:8))
+                .overlay(RoundedRectangle(cornerRadius:8).strokeBorder(Color.primary.opacity(0.08)))
+            }
             Text(L("この一覧はサイトデータの存在を示します。現在ログイン中であることや、ログインしているユーザー名を示すものではありません。")).font(.caption).foregroundStyle(.secondary)
-            HStack {Button(L("更新")){refresh()};Spacer();Button(L("キャンセル")){dismiss()}.keyboardShortcut(.cancelAction);Button(L("保存")){store.updateProfile(draft);dismiss()}.disabled(draft.name.isEmpty).keyboardShortcut(.defaultAction)}
-        }.padding(24).frame(width:540).frame(minHeight:420).onAppear{refresh()}
+            HStack {
+                Button(L("更新")){refresh()}
+                Button(L("削除…"),role:.destructive){confirmingDelete=true}
+                    .disabled(!store.canDeleteProfile(draft.id))
+                    .help(store.canDeleteProfile(draft.id) ? L("このログイン環境と保存データを削除します"):L("使っているアプリタブがあるか、最後のログイン環境のため削除できません"))
+                Spacer();Button(L("キャンセル")){dismiss()}.keyboardShortcut(.cancelAction);Button(L("保存")){store.updateProfile(draft);dismiss()}.disabled(draft.name.isEmpty).keyboardShortcut(.defaultAction)}
+        }.padding(24).frame(width:540).onAppear{refresh()}
+        .confirmationDialog(L("ログイン環境「\(draft.name)」を削除しますか？"),isPresented:$confirmingDelete) {
+            Button(L("削除"),role:.destructive){store.deleteProfile(draft.id);dismiss()}
+        } message: {Text(L("この環境のCookieやサイトデータも削除され、元に戻せません。"))}
     }
     private func refresh(){loading=true;store.dataStore(draft.id).fetchDataRecords(ofTypes:WKWebsiteDataStore.allWebsiteDataTypes()){records in sites=Array(Set(records.map(\.displayName))).sorted();loading=false}}
 }

@@ -85,7 +85,16 @@ extension BrowserStore {
             NSPasteboard.general.clearContents();NSPasteboard.general.setString("[\(title)](\(url))",forType:.string);notify(L("タイトル付きリンクをコピーしました"))
         case "notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings":
             guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify(L("Notionを表示しているタブで実行してください"),isError:true);return}
-            if NotionActions.creationIDs.contains(id) {
+            if id == "notionPage" || id == "notionChat",!engine.workspaceMismatch {
+                // Notion's own /new and /chat addresses in this tab: no new tab and no button hunting.
+                // The page must belong to the configured workspace; when the load-time check could not
+                // tell (home, chat, or a page reached later), ask the page now instead of reloading.
+                guard let expected=NotionWorkspace.normalizedID(workspace.notionSpaceID),engine.detectedNotionSpaceID == nil else {engine.openNotionRoute(id);return}
+                engine.currentNotionSpaceID { [weak self,weak engine] current in
+                    if current == expected,let engine {engine.openNotionRoute(id)}
+                    else {_=self?.openNotionActionTab(id,from:ref)}
+                }
+            } else if NotionActions.creationIDs.contains(id) {
                 _=openNotionActionTab(id,from:ref)
             } else {engine.runNotionShortcut(id)}
         case "zoomIn":zoomPage(ref,step:1)
@@ -165,7 +174,9 @@ enum NotionActions {
         // Match labels before asking for layout: unrelated links need no visibility check.
         const click=values=>{
           const matches=indexed.filter(x=>values.some(n=>x.labels.includes(n)) && visible(x.e));
-          for(const name of values){const found=matches.filter(x=>x.labels.includes(name));if(found.length===1){found[0].e.click();return true;}}
+          // A page can also show New page in a database view; the sidebar's own button wins a tie.
+          const sidebarRoot=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
+          for(const name of values){let found=matches.filter(x=>x.labels.includes(name));if(found.length>1 && sidebarRoot)found=found.filter(x=>sidebarRoot.contains(x.e));if(found.length===1){found[0].e.click();return true;}}
           return false;
         };
         if(click(names[action])){

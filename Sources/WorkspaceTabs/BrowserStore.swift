@@ -452,6 +452,17 @@ struct PageReference: Codable, Equatable, Identifiable {
         for page in old.pages {engines[page.id]?.updateStyle(updated)}
         changed()
     }
+    /// A login environment no app tab or group uses can go, together with its cookies and site data.
+    /// The last one always stays, so a new app tab has somewhere to sign in.
+    func canDeleteProfile(_ id:UUID)->Bool {session.profiles.count>1 && profile(id) != nil && profileUsage(id).isEmpty}
+    func deleteProfile(_ id:UUID) {
+        guard canDeleteProfile(id) else{return}
+        session.profiles.removeAll{$0.id == id}
+        closedPageProfiles=closedPageProfiles.filter{$0.value != id}
+        dataStores[id]=nil
+        changed()
+        Task {try? await WKWebsiteDataStore.remove(forIdentifier:id)}
+    }
     func updateProfile(_ profile: LoginProfile) {
         guard let i = session.profiles.firstIndex(where: { $0.id == profile.id }) else { return }
         session.profiles[i] = profile; changed()

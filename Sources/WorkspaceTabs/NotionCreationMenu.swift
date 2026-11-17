@@ -65,8 +65,11 @@ import SwiftUI
         if event.keyCode == 53 {dismiss();return true}
         guard modifiers.isEmpty else{return false}
         switch event.keyCode {
-        case 124,125,48:highlight((selectedIndex+1)%Self.choices.count)
-        case 123,126:highlight((selectedIndex+Self.choices.count-1)%Self.choices.count)
+        // ← and → open their side at once, like the new tab choice; Tab and ↑↓ only move.
+        case 123:select(0)
+        case 124:select(Self.choices.count-1)
+        case 125,48:highlight((selectedIndex+1)%Self.choices.count)
+        case 126:highlight((selectedIndex+Self.choices.count-1)%Self.choices.count)
         case 36,76:select(selectedIndex)
         default:
             guard let key=event.charactersIgnoringModifiers,let number=Int(key),Self.choices.indices.contains(number-1) else{return false}
@@ -121,7 +124,7 @@ private struct CreationPicker:View {
                     .accessibilityLabel(choice.title).accessibilityAddTraits(active ? .isSelected:[])
                 }
             }
-            Text(L("← → で選んで ⏎、Escで閉じる")).font(.caption).foregroundStyle(ink.opacity(0.5))
+            Text(L("← か → ですぐ開く・Escで閉じる")).font(.caption).foregroundStyle(ink.opacity(0.5))
         }.padding(14).frame(width:NotionCreationMenu.size.width,height:NotionCreationMenu.size.height)
         .background(background,in:RoundedRectangle(cornerRadius:16))
         .overlay(RoundedRectangle(cornerRadius:16).strokeBorder(ink.opacity(0.1),lineWidth:0.5))

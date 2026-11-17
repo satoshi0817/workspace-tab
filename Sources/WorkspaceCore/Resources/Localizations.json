@@ -3987,17 +3987,17 @@
     "en": "Getting things ready in Notion…",
     "ko": "Notion에서 준비하는 중…"
   },
-  "← → で選んで ⏎、Escで閉じる": {
-    "en": "Choose with ← →, press ⏎; Esc closes",
-    "ko": "← →로 고르고 ⏎, Esc로 닫기"
+  "← か → ですぐ開く・Escで閉じる": {
+    "en": "← or → opens it at once; Esc closes",
+    "ko": "← 또는 →로 바로 열기, Esc로 닫기"
   },
-  "Notionを表示中に⌘⇧Nで、「新規ページ」（左）と「新規チャット」（右）を並べた作成メニューを開きます。←→＋Enter、数字の1・2、またはクリックで選べます。Escで閉じます。": {
-    "en": "While Notion is showing, press ⌘⇧N to open the creation menu with New page (left) and New chat (right). Choose with ← → and Return, the digits 1 or 2, or a click. Esc closes it.",
-    "ko": "Notion을 표시 중일 때 ⌘⇧N을 누르면 새 페이지(왼쪽)와 새 채팅(오른쪽)이 나란히 있는 만들기 메뉴가 열립니다. ← →와 Return, 숫자 1·2 또는 클릭으로 고릅니다. Esc로 닫습니다."
+  "Notionを表示中に⌘⇧Nで、「新規ページ」（左）と「新規チャット」（右）を並べた作成メニューを開きます。←で新規ページ、→で新規チャットがすぐ開きます。数字の1・2やクリックでも選べます。Escで閉じます。": {
+    "en": "While Notion is shown, ⌘⇧N opens a creation menu with New page (left) and New chat (right). ← opens a new page and → a new chat right away. You can also press 1 or 2, or click. Esc closes it.",
+    "ko": "Notion 표시 중 ⌘⇧N을 누르면 「새 페이지」(왼쪽)와 「새 채팅」(오른쪽)이 나란히 있는 작성 메뉴가 열립니다. ←는 새 페이지, →는 새 채팅을 바로 엽니다. 숫자 1·2나 클릭으로도 고를 수 있습니다. Esc로 닫습니다."
   },
-  "新規ページ・AIチャットは新しいブラウザタブで開きます。ミーティングノート・データベース・カスタムページはコマンド検索（⌘⇧P）から作成します。録音は自動開始しません。": {
-    "en": "New pages and AI chats open in a new browser tab. Create meeting notes, databases and custom pages from the command search (⌘⇧P). Recording never starts on its own.",
-    "ko": "새 페이지와 AI 채팅은 새 브라우저 탭에서 열립니다. 회의록, 데이터베이스, 사용자 지정 페이지는 명령 검색(⌘⇧P)에서 만듭니다. 녹음은 자동으로 시작되지 않습니다."
+  "新規ページと新規AIチャットは表示中のタブで開きます（「戻る」で元のページへ）。ミーティングノート・データベース・カスタムページはコマンド検索（⌘⇧P）から作成します。録音は自動開始しません。": {
+    "en": "New pages and new AI chats open in the current tab (Back returns to the page you were on). Create meeting notes, databases and custom pages from the command search (⌘⇧P). Recording never starts on its own.",
+    "ko": "새 페이지와 새 AI 채팅은 현재 탭에서 열립니다(뒤로 가기로 원래 페이지로 돌아갑니다). 회의록, 데이터베이스, 사용자 지정 페이지는 명령 검색(⌘⇧P)에서 만듭니다. 녹음은 자동으로 시작되지 않습니다."
   },
   "Notion：新規データベース": {
     "en": "Notion: New Database",
@@ -4006,5 +4006,21 @@
   "Notion：カスタムページ": {
     "en": "Notion: Custom Page",
     "ko": "Notion: 사용자 지정 페이지"
+  },
+  "このログイン環境と保存データを削除します": {
+    "en": "Deletes this login environment and its saved data",
+    "ko": "이 로그인 환경과 저장된 데이터를 삭제합니다"
+  },
+  "使っているアプリタブがあるか、最後のログイン環境のため削除できません": {
+    "en": "Can't delete: an app tab uses it, or it is the last login environment",
+    "ko": "사용 중인 앱 탭이 있거나 마지막 로그인 환경이라 삭제할 수 없습니다"
+  },
+  "この環境のCookieやサイトデータも削除され、元に戻せません。": {
+    "en": "Its cookies and site data are deleted too. This can't be undone.",
+    "ko": "이 환경의 쿠키와 사이트 데이터도 삭제되며 되돌릴 수 없습니다."
+  },
+  "ログイン環境「{0}」を削除しますか？": {
+    "en": "Delete the login environment “{0}”?",
+    "ko": "로그인 환경 「{0}」을(를) 삭제할까요?"
   }
 }

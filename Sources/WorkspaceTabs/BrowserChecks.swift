@@ -55,16 +55,23 @@ import WorkspaceCore
                 NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:flags,timestamp:0,windowNumber:0,context:nil,characters:text,charactersIgnoringModifiers:text,isARepeat:false,keyCode:code)!
             }
             let keyboardPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
-            try expect(keyboardPicker.handleKey(pickerKey(124,"")) && keyboardPicker.selectedIndex == 1 && keyboardPicker.handleKey(pickerKey(123,"")) && keyboardPicker.selectedIndex == 0,"Picker Right and Left move between page and chat without executing")
+            try expect(keyboardPicker.handleKey(pickerKey(125,"")) && keyboardPicker.selectedIndex == 1 && keyboardPicker.handleKey(pickerKey(126,"")) && keyboardPicker.selectedIndex == 0,"Picker Down and Up move between page and chat without executing")
             try expect(!keyboardPicker.handleKey(pickerKey(19,"2",flags:.command)),"Picker ignores modified digit shortcuts")
             try expect(!keyboardPicker.handleKey(pickerKey(20,"3")),"Picker ignores digits past its two choices")
-            try expect(keyboardPicker.handleKey(pickerKey(124,"")) && keyboardPicker.handleKey(pickerKey(36,"\r")),"Picker Return creates the highlighted choice")
+            try expect(keyboardPicker.handleKey(pickerKey(124,"")),"Picker Right opens its choice without Return")
             try await wait {menuSelections.count == 2}
             try expect(menuSelections.last?.0 == "notionChat","Choosing right opens a new chat")
+            let leftPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
+            try expect(leftPicker.handleKey(pickerKey(123,"")),"Picker Left opens its choice without Return")
+            try await wait {menuSelections.count == 3}
+            try expect(menuSelections.last?.0 == "notionPage","Choosing left opens a new page")
+            let returnPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
+            try expect(returnPicker.handleKey(pickerKey(48,"\t")) && returnPicker.handleKey(pickerKey(36,"\r")),"Picker Return creates the highlighted choice")
+            try await wait {menuSelections.count == 4}
             let cancelledPicker=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
             try expect(cancelledPicker.handleKey(pickerKey(53,"\u{1b}")),"Picker consumes Escape")
             cancelledPicker.select(0)
-            try expect(menuSelections.count == 2,"Dismissed picker cannot execute a stale action")
+            try expect(menuSelections.count == 4,"Dismissed picker cannot execute a stale action")
             let oldPreviews=root.appendingPathComponent("PagePreviews")
             try FileManager.default.createDirectory(at:oldPreviews,withIntermediateDirectories:true)
             try Data("obsolete image".utf8).write(to:oldPreviews.appendingPathComponent("old.preview"))

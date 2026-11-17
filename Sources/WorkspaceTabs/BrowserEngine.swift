@@ -259,6 +259,48 @@ import WorkspaceCore
             }
         }
     }
+    /// The workspace the loaded Notion app is in now, read from Notion's own last-visited record.
+    /// Unlike the load-time check it works on home, chat and any page, so creation can stay in this tab.
+    func currentNotionSpaceID(_ completion:@escaping(String?)->Void) {
+        guard !disposed,let url=webView.url,NotionWorkspace.environment(url) != nil else {completion(nil);return}
+        let generation=documentGeneration
+        let script="""
+        (()=>{try{const v=JSON.parse(localStorage.getItem('LRU:KeyValueStore2:lastVisitedRouteSpaceId')||'null')?.value;return typeof v==='string'?v.replace(/-/g,'').toLowerCase():null}catch(_){return null}})()
+        """
+        webView.evaluateJavaScript(script) { [weak self] result,_ in
+            guard let self,self.acceptsDocumentResult(generation) else {completion(nil);return}
+            completion(NotionWorkspace.normalizedID(result as? String))
+        }
+    }
+    /// New page and new chat through Notion's own entry addresses (`/new`, `/chat`) instead of
+    /// hunting for buttons. The loaded Notion app is told to route there in place, which it does
+    /// in a fraction of a second with no reload, so nothing waits on the result and no veil is
+    /// shown. Only a page without the Notion app (still loading, or an error page) loads the address.
+    func openNotionRoute(_ action:String) {
+        guard !disposed,let current=webView.url,var parts=URLComponents(url:current,resolvingAgainstBaseURL:false) else{return}
+        let path=action == "notionChat" ? "/chat":"/new"
+        parts.path=path;parts.query=nil;parts.fragment=nil
+        guard let target=parts.url else{return}
+        let started=ProcessInfo.processInfo.systemUptime,generation=documentGeneration
+        let script="""
+        if(!document.getElementById('notion-app'))return false;
+        history.pushState(history.state,'',path);
+        dispatchEvent(new PopStateEvent('popstate',{state:history.state}));
+        return true;
+        """
+        webView.callAsyncJavaScript(script,arguments:["path":path],in:nil,in:.page) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self,self.acceptsDocumentResult(generation) else{return}
+                if case .success(let value)=result,value as? Bool == true {
+                    self.store?.recordTiming("Notion直接表示: "+action,since:started)
+                    Self.shortcutLog.notice("\(action,privacy:.public) routed in place")
+                } else {
+                    Self.shortcutLog.notice("\(action,privacy:.public) no Notion app here; loading the address")
+                    self.navigate(target.absoluteString)
+                }
+            }
+        }
+    }
     private static let shortcutLog=Logger(subsystem:"com.ssuzuki.WorkspaceTabs",category:"NotionActions")
     private var faviconTask:Task<Void,Never>?
     private func discoverFavicon() {

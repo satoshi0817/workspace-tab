@@ -12,16 +12,21 @@ struct TabDragHandle:NSViewRepresentable {
     let title:String
     var horizontal:Bool = true
     var drop:((TabDragPayload,Bool)->Void)?
+    /// App tabs read as buttons, so they show the pointing hand.
+    var pointing=false
     let click:()->Void
     func makeNSView(context:Context)->Handle {Handle()}
     func updateNSView(_ view:Handle,context:Context) {
         view.payload=payload;view.horizontal=horizontal;view.drop=drop;view.click=click
+        if view.pointing != pointing {view.pointing=pointing;view.window?.invalidateCursorRects(for:view)}
     }
     final class Handle:NSView {
         var payload:TabDragPayload?
         var horizontal=true
         var drop:((TabDragPayload,Bool)->Void)?
         var click:(()->Void)?
+        var pointing=false
+        override func resetCursorRects() {if pointing {addCursorRect(visibleRect,cursor:.pointingHand)}}
         private var origin:NSPoint?
         private var moved=false
         private weak var destination:Handle?

@@ -26,6 +26,11 @@ import WorkspaceCore
         try expect(store.profileUsage(workspace.profileID).map{$0.workspace.id} == [workspaceID] && store.profileUsage(workspace.profileID).allSatisfy{$0.group == nil},"A login profile lists the app tab that uses it")
         try expect(store.profileUsage(alphaProfile).map{$0.group?.id} == [alpha.id] && store.profileUsage(alphaProfile).first?.workspace.id == workspaceID,"A group's own login profile lists that group with its app tab")
         try expect(store.profileUsage(singleProfile).map{$0.workspace.id} == [single],"Each app tab's profile lists only that app tab")
+        try expect(!store.canDeleteProfile(workspace.profileID) && !store.canDeleteProfile(alphaProfile),"A login profile in use cannot be deleted")
+        let spare=store.createProfile(name:"Spare")
+        try expect(store.canDeleteProfile(spare),"An unused login profile can be deleted")
+        store.deleteProfile(spare)
+        try expect(store.profile(spare) == nil,"Deleting an unused login profile removes it")
         try expect(store.accountChoices(in:single).isEmpty,"An app tab with one login environment opens Notion without asking for an account")
         store.selectWorkspace(workspaceID)
         let url="http://127.0.0.1:48761/?group-login=page"
