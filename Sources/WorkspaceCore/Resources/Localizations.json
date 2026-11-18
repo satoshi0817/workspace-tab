@@ -1319,6 +1319,14 @@
     "en": "App menu",
     "ko": "앱 메뉴"
   },
+  "前のタブを表示": {
+    "en": "Show previous tabs",
+    "ko": "이전 탭 표시"
+  },
+  "次のタブを表示": {
+    "en": "Show next tabs",
+    "ko": "다음 탭 표시"
+  },
   "この環境にブラウザタブを追加": {
     "en": "Add browser tab to this profile",
     "ko": "이 환경에 브라우저 탭 추가"
@@ -3991,13 +3999,13 @@
     "en": "← or → opens it at once; Esc closes",
     "ko": "← 또는 →로 바로 열기, Esc로 닫기"
   },
-  "Notionを表示中に⌘⇧Nで、「新規ページ」（左）と「新規チャット」（右）を並べた作成メニューを開きます。←で新規ページ、→で新規チャットがすぐ開きます。数字の1・2やクリックでも選べます。Escで閉じます。": {
-    "en": "While Notion is shown, ⌘⇧N opens a creation menu with New page (left) and New chat (right). ← opens a new page and → a new chat right away. You can also press 1 or 2, or click. Esc closes it.",
-    "ko": "Notion 표시 중 ⌘⇧N을 누르면 「새 페이지」(왼쪽)와 「새 채팅」(오른쪽)이 나란히 있는 작성 메뉴가 열립니다. ←는 새 페이지, →는 새 채팅을 바로 엽니다. 숫자 1·2나 클릭으로도 고를 수 있습니다. Esc로 닫습니다."
+  "Notionを表示中に⌘Nで、「新規ページ」（左）と「新規チャット」（右）を並べた作成メニューを開きます。←で新規ページ、→で新規チャットがすぐ開きます。数字の1・2やクリックでも選べます。Escで閉じます。": {
+    "en": "While Notion is shown, ⌘N opens a creation menu with New page (left) and New chat (right). ← opens a new page and → a new chat right away. You can also press 1 or 2, or click. Esc closes it.",
+    "ko": "Notion 표시 중 ⌘N을 누르면 「새 페이지」(왼쪽)와 「새 채팅」(오른쪽)이 나란히 있는 작성 메뉴가 열립니다. ←는 새 페이지, →는 새 채팅을 바로 엽니다. 숫자 1·2나 클릭으로도 고를 수 있습니다. Esc로 닫습니다."
   },
-  "新規ページと新規AIチャットは表示中のタブで開きます（「戻る」で元のページへ）。ミーティングノート・データベース・カスタムページはコマンド検索（⌘⇧P）から作成します。録音は自動開始しません。": {
-    "en": "New pages and new AI chats open in the current tab (Back returns to the page you were on). Create meeting notes, databases and custom pages from the command search (⌘⇧P). Recording never starts on its own.",
-    "ko": "새 페이지와 새 AI 채팅은 현재 탭에서 열립니다(뒤로 가기로 원래 페이지로 돌아갑니다). 회의록, 데이터베이스, 사용자 지정 페이지는 명령 검색(⌘⇧P)에서 만듭니다. 녹음은 자동으로 시작되지 않습니다."
+  "新規ページと新規AIチャットは、読み込み済みのNotionを右隣の新しいタブへ移してすぐ開きます（元の場所には同じページのタブが残ります）。ミーティングノート・データベース・カスタムページはコマンド検索（⌘⇧P）から作成します。録音は自動開始しません。": {
+    "en": "New pages and new AI chats open at once in a new tab on the right, which takes over the loaded Notion (a tab for the page you were on stays in its place). Create meeting notes, databases and custom pages from the command search (⌘⇧P). Recording never starts on its own.",
+    "ko": "새 페이지와 새 AI 채팅은 이미 로드된 Notion을 오른쪽 새 탭으로 옮겨 바로 엽니다(원래 자리에는 같은 페이지의 탭이 남습니다). 회의록, 데이터베이스, 사용자 지정 페이지는 명령 검색(⌘⇧P)에서 만듭니다. 녹음은 자동으로 시작되지 않습니다."
   },
   "Notion：新規データベース": {
     "en": "Notion: New Database",

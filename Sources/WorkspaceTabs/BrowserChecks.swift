@@ -461,7 +461,7 @@ import WorkspaceCore
             ShortcutSequenceMonitor.notionFocused={false}
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,"0",29),preferences:prefs)?.id == "zoomReset" && !ShortcutPreferences.actions.contains{$0.id == "show"},"Command-0 resets zoom; the Show Browser shortcut is gone")
             try expect(SitePreference.zoom(after:1,step:1) == 1.1 && SitePreference.zoom(after:1,step:-1) == 0.9 && SitePreference.zoom(after:3,step:1) == 3 && SitePreference.zoom(after:0.5,step:-1) == 0.5 && SitePreference.zoom(after:1.3,step:-1) == 1.25 && SitePreference.zoom(after:2,step:0) == 1,"Zoom steps through the site setting levels and stops at the ends")
-            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.shift],"N",45),preferences:prefs)?.id == "notionCreateMenu","Command-Shift-N opens the creation menu before WebKit handles the key")
+            try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,.command,"n",45),preferences:prefs)?.id == "notionCreateMenu","Command-N opens the creation menu before WebKit handles the key")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.command,.option],"˚",40),preferences:prefs)?.id == "notionSearch","Local chord uses physical key despite Option-generated characters")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[],"c",8),preferences:prefs) == nil,"Normal text input is never intercepted as an app shortcut")
             try expect(ShortcutSequenceMonitor.localAction(for:keyEvent(.keyDown,[.control,.option],"1",18),preferences:prefs) == nil,"Carbon global chords are not dispatched twice locally")

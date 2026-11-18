@@ -87,12 +87,24 @@ extension BrowserStore {
             guard let engine=engine(workspace.id,page.id),let url=engine.webView.url,NotionWorkspace.environment(url) != nil else {notify(L("Notionを表示しているタブで実行してください"),isError:true);return}
             if id == "notionPage" || id == "notionChat",!engine.workspaceMismatch {
                 // Notion's own /new and /chat addresses in this tab: no new tab and no button hunting.
-                // The page must belong to the configured workspace; when the load-time check could not
-                // tell (home, chat, or a page reached later), ask the page now instead of reloading.
-                guard let expected=NotionWorkspace.normalizedID(workspace.notionSpaceID),engine.detectedNotionSpaceID == nil else {engine.openNotionRoute(id);return}
-                engine.currentNotionSpaceID { [weak self,weak engine] current in
-                    if current == expected,let engine {engine.openNotionRoute(id)}
-                    else {_=self?.openNotionActionTab(id,from:ref)}
+                // The page must belong to the configured workspace. The workspace this document was last
+                // confirmed on is used first: it stays valid on /chat and home, where the load-time check
+                // cannot tell, and does not depend on Notion's last-visited record, which every tab of the
+                // same login shares and rewrites. Only with neither is the page asked, and only a real
+                // mismatch falls back to loading Notion in a new tab.
+                // It still opens as a new tab: the loaded page moves into it and the old tab reloads later.
+                let started=ProcessInfo.processInfo.systemUptime
+                let route={ [weak self] in
+                    guard let self else{return}
+                    if self.handLivePageToNewTab(ref) {engine.openNotionRoute(id,since:started)} else {_=self.openNotionActionTab(id,from:ref)}
+                }
+                guard let expected=NotionWorkspace.normalizedID(workspace.notionSpaceID) else {route();return}
+                if let known=engine.detectedNotionSpaceID ?? engine.confirmedNotionSpaceID {
+                    if known == expected {route()} else {_=openNotionActionTab(id,from:ref)}
+                    return
+                }
+                engine.currentNotionSpaceID { [weak self] current in
+                    if current == expected {route()} else {_=self?.openNotionActionTab(id,from:ref)}
                 }
             } else if NotionActions.creationIDs.contains(id) {
                 _=openNotionActionTab(id,from:ref)

@@ -198,21 +198,25 @@ struct BrowserPane: View {
         return EdgeInsets(top:0,leading:leading,bottom:BrowserLayout.inset,
                           trailing:splitPane && !isRight && !vertical ? BrowserLayout.small:BrowserLayout.inset)
     }
+    private func selectTab(_ page:BrowserPage,workspaceID:UUID) {
+        if isRight {store.setSplit(PageReference(workspaceID:workspaceID,pageID:page.id))}
+        else {store.selectPage(page.id,in:workspaceID)}
+        store.focusedPage=PageReference(workspaceID:workspaceID,pageID:page.id)
+    }
     var body:some View {
         if let engine=store.engine(workspaceID,pageID),let workspace=store.workspace(workspaceID) {
             VStack(spacing:0) {
                 HStack(spacing:BrowserLayout.gap) {
                     BrowserGroupPicker(store:store,workspace:workspace)
-                    ScrollView(.horizontal,showsIndicators:false) {
-                        HStack(spacing:BrowserLayout.small) {
-                            ForEach(store.paneTabs(in:workspaceID,second:isRight,detached:detached)) {page in
-                                BrowserTabButton(store:store,workspace:workspace,page:page,selected:page.id == pageID,isRight:isRight,detached:detached)
-                            }
-                            Button {
-                                store.newTabRequest=PageReference(workspaceID:workspaceID,pageID:pageID)
-                            } label:{Image(systemName:"plus").frame(width:BrowserLayout.control,height:BrowserLayout.control)}
-                                .help(L("この環境にブラウザタブを追加")).accessibilityLabel(L("ブラウザタブを追加"))
-                        }.padding(.vertical,BrowserLayout.gap)
+                    HStack(spacing:BrowserLayout.small) {
+                        TabOverflowStrip(pages:store.paneTabs(in:workspaceID,second:isRight,detached:detached),selectedID:pageID,select:{selectTab($0,workspaceID:workspaceID)}) {page in
+                            BrowserTabButton(store:store,workspace:workspace,page:page,selected:page.id == pageID,isRight:isRight,detached:detached)
+                        }.fixedSize(horizontal:false,vertical:true).layoutPriority(1)
+                        Button {
+                            store.newTabRequest=PageReference(workspaceID:workspaceID,pageID:pageID)
+                        } label:{Image(systemName:"plus").frame(width:BrowserLayout.control,height:BrowserLayout.control)}
+                            .help(L("この環境にブラウザタブを追加")).accessibilityLabel(L("ブラウザタブを追加"))
+                        Spacer(minLength:0)
                     }.frame(maxWidth:.infinity).layoutPriority(-1)
                     NotionAccountPill(monitor:engine.notionAccount) {engine.notionAccount.refresh(in:engine.webView,force:true)}
                     NotionAccountWatermarkToggle(monitor:engine.notionAccount,enabled:store.showsAccountEmail(pageID,in:workspaceID)) {store.toggleAccountEmail(pageID,in:workspaceID)}

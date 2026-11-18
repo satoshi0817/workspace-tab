@@ -52,7 +52,7 @@ struct ShortcutAction: Identifiable {
             ("fullscreen","フルスクリーンを切り替える","f",3,[.control,.command]),
             ("quit","Workspace Tabsを終了…","q",12,.command),
             ("recentTabs","最近使ったタブを切り替える","\t",48,.control),
-            ("notionCreateMenu","Notionで作成…","n",45,[.command,.shift]),
+            ("notionCreateMenu","Notionで作成…","n",45,.command),
             ("commands","コマンドを検索","p",35,[.command,.shift]),
             ("lastWorkspace","直前のアプリタブ","b",11,[.command,.option]),
             ("previousPage","前のブラウザタブ","[",33,[.command,.shift]),

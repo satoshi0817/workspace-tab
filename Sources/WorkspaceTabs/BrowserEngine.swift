@@ -20,6 +20,10 @@ import WorkspaceCore
     @Published var failure: String?
     @Published private(set) var lastHTTPStatus:Int?
     @Published var detectedNotionSpaceID: String?
+    /// The workspace this loaded Notion app was last confirmed to show. Unlike
+    /// `detectedNotionSpaceID` it survives moves to /chat, home and other non-page routes
+    /// inside the same document, so creation there need not re-check (only a real load clears it).
+    private(set) var confirmedNotionSpaceID: String?
     /// The Notion action now running in this page, shown as a calm veil over it while
     /// the page opens menus and panels underneath.
     @Published private(set) var notionBusy:String?
@@ -62,7 +66,7 @@ import WorkspaceCore
         notionAccount.invalidate()
         documentGeneration &+= 1;detectionRequest=nil
         if cancelAction {cancelNotionAction(clearPending:false)}
-        detectedNotionSpaceID=nil;detectedURL=nil
+        detectedNotionSpaceID=nil;detectedURL=nil;confirmedNotionSpaceID=nil
     }
     private func acceptsNavigation(_ navigation:WKNavigation?)->Bool {
         !disposed && (navigation == nil || currentNavigation == nil || navigation === currentNavigation)
@@ -223,7 +227,8 @@ import WorkspaceCore
     /// soon as a panel takes focus. When the key does nothing, the button is clicked,
     /// and that outcome is remembered so later presses go straight to the button.
     func runNotionShortcut(_ action:String) {
-        let keys:[String:(String,UInt16)]=["notionSearch":("p",35),"notionSettings":(",",43)]
+        // The web app answers ⌘K for search (⌘P is the desktop app's), and ⌘, for settings.
+        let keys:[String:(String,UInt16)]=["notionSearch":("k",40),"notionSettings":(",",43)]
         guard let (key,code)=keys[action],let window=webView.window,NotionShortcutMemory.keyWorks(action) else {runNotionAction(action);return}
         let started=ProcessInfo.processInfo.systemUptime
         let url=webView.url,generation=documentGeneration
@@ -276,12 +281,12 @@ import WorkspaceCore
     /// hunting for buttons. The loaded Notion app is told to route there in place, which it does
     /// in a fraction of a second with no reload, so nothing waits on the result and no veil is
     /// shown. Only a page without the Notion app (still loading, or an error page) loads the address.
-    func openNotionRoute(_ action:String) {
+    func openNotionRoute(_ action:String,since commandStarted:Double?=nil) {
         guard !disposed,let current=webView.url,var parts=URLComponents(url:current,resolvingAgainstBaseURL:false) else{return}
         let path=action == "notionChat" ? "/chat":"/new"
         parts.path=path;parts.query=nil;parts.fragment=nil
         guard let target=parts.url else{return}
-        let started=ProcessInfo.processInfo.systemUptime,generation=documentGeneration
+        let started=commandStarted ?? ProcessInfo.processInfo.systemUptime,generation=documentGeneration
         let script="""
         if(!document.getElementById('notion-app'))return false;
         history.pushState(history.state,'',path);
@@ -325,7 +330,7 @@ import WorkspaceCore
             self.detectionRequest=nil
             guard let result=result as? [String:String],result["url"] == self.webView.url?.absoluteString,
                   let id=NotionWorkspace.normalizedID(result["spaceID"]) else {if self.detectedNotionSpaceID != nil {self.detectedNotionSpaceID=nil};self.detectedURL=nil;completion?(nil);return}
-            if self.detectedNotionSpaceID != id {self.detectedNotionSpaceID=id};self.detectedURL=result["url"];completion?(id)
+            if self.detectedNotionSpaceID != id {self.detectedNotionSpaceID=id};self.detectedURL=result["url"];self.confirmedNotionSpaceID=id;completion?(id)
             if self.mayRoute, let url=self.webView.url {
                 self.mayRoute=false
                 _ = self.store?.routeNotion(url,detectedID:id,from:PageReference(workspaceID:self.workspaceID,pageID:self.pageID))

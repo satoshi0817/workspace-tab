@@ -314,6 +314,27 @@ struct PageReference: Codable, Equatable, Identifiable {
         changed()
         return engine(id, page.id, configuration: configuration, load: configuration == nil && load)
     }
+    /// Opens a new tab without loading a second copy of the site: the live page (and its WebView)
+    /// becomes the new tab on the right, and a copy of where it was takes its place, loading again
+    /// only when it is selected. A pinned tab's copy keeps the pin and its place, so the pinned
+    /// Notion home tab stays fast too. Start pages and Split View tabs decline.
+    @discardableResult func handLivePageToNewTab(_ ref:PageReference)->Bool {
+        guard split != ref,!secondPanePageIDs().contains(ref.pageID),
+              let i=session.workspaces.firstIndex(where:{$0.id == ref.workspaceID}),
+              let j=session.workspaces[i].pages.firstIndex(where:{$0.id == ref.pageID}) else{return false}
+        let page=session.workspaces[i].pages[j]
+        guard page.isStartPage != true else{return false}
+        defer {selectionChanged()}
+        var original=page;original.id=UUID()
+        var live=BrowserPage(url:page.url);live.id=page.id;live.title=page.title
+        live.groupID=page.groupID;live.showAccountEmail=page.showAccountEmail
+        session.workspaces[i].pages[j]=original
+        session.workspaces[i].pages.insert(live,at:j+1)
+        session.workspaces[i].selectedPageID=live.id
+        selectionBeforeNewPage=(live.id,original.id)
+        changed()
+        return true
+    }
     func leaveStartPage(_ workspaceID:UUID,_ pageID:UUID,url:URL) {
         guard let i=session.workspaces.firstIndex(where:{$0.id == workspaceID}),
               let j=session.workspaces[i].pages.firstIndex(where:{$0.id == pageID}),

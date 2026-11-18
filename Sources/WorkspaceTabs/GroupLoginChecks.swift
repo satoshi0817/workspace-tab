@@ -27,6 +27,16 @@ import WorkspaceCore
         try expect(store.profileUsage(alphaProfile).map{$0.group?.id} == [alpha.id] && store.profileUsage(alphaProfile).first?.workspace.id == workspaceID,"A group's own login profile lists that group with its app tab")
         try expect(store.profileUsage(singleProfile).map{$0.workspace.id} == [single],"Each app tab's profile lists only that app tab")
         try expect(!store.canDeleteProfile(workspace.profileID) && !store.canDeleteProfile(alphaProfile),"A login profile in use cannot be deleted")
+        let host=store.workspace(single)!,livePage=host.pages[0]
+        try expect(store.handLivePageToNewTab(PageReference(workspaceID:single,pageID:livePage.id)),"A live page can be handed to a new tab")
+        let handed=store.workspace(single)!.pages
+        try expect(handed.count == 2 && handed[1].id == livePage.id && handed[0].id != livePage.id && handed[0].url == livePage.url && store.workspace(single)!.selectedPageID == livePage.id,"The live page opens as the new tab on the right and a copy keeps the old place")
+        store.closePage(handed[0].id,in:single)
+        var pinnedHost=store.workspace(single)!.pages[0];pinnedHost.pinned=true;store.updateBrowserTab(pinnedHost,in:single)
+        try expect(store.handLivePageToNewTab(PageReference(workspaceID:single,pageID:pinnedHost.id)),"A pinned live page can be handed to a new tab")
+        let pinnedHanded=store.workspace(single)!.pages
+        try expect(pinnedHanded.count == 2 && pinnedHanded[0].pinned == true && pinnedHanded[0].id != pinnedHost.id && pinnedHanded[1].id == pinnedHost.id && pinnedHanded[1].pinned != true,"The pinned place keeps a pinned copy and the live page opens unpinned")
+        var unpin=pinnedHanded[0];unpin.pinned=nil;store.updateBrowserTab(unpin,in:single);store.closePage(unpin.id,in:single)
         let spare=store.createProfile(name:"Spare")
         try expect(store.canDeleteProfile(spare),"An unused login profile can be deleted")
         store.deleteProfile(spare)
