@@ -97,6 +97,9 @@ struct PageReference: Codable, Equatable, Identifiable {
     /// The app tab whose cache the user asked to clear, awaiting confirmation.
     @Published var cacheClearWorkspace:UUID?
     @Published var accountSwitch:AccountSwitchRequest?
+    /// The chat list page, shown in place of the selected app tab.
+    @Published var agentChatsPresented=false
+    let agentChats=AgentChatHub()
     var workspaceHintsSuspended=false
     @Published var focusedPage: PageReference?
     private var noticeID=UUID()
@@ -264,6 +267,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         return engine
     }
     func selectWorkspace(_ id: UUID) {
+        if agentChatsPresented {agentChatsPresented=false}
         defer {selectionChanged()}
         if let pid=workspace(id)?.selectedPageID {beginDisplay(pid)}
         guard workspace(id) != nil else { return }

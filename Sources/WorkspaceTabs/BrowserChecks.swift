@@ -769,6 +769,7 @@ import WorkspaceCore
             try await ProductivityChecks.run(root:root)
             try await NotionAccountChecks.run()
             try await GroupLoginChecks.run(root:root)
+            try await AgentChatChecks.run()
             reordered.shutdown()
             exited.shutdown();loaded.shutdown();store.shutdown()
             for id in profiles { try? await WKWebsiteDataStore.remove(forIdentifier:id) }

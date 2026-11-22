@@ -8,7 +8,7 @@ import WorkspaceCore
     static let groups:[(title:String,ids:[String])]=[
         ("タブ",["new","close","reopen","previousPage","nextPage","recentTabs","home","toggleSplit","focusSplit"]),
         ("移動・検索",["location","reload","commands","search","favorites","addFavorite","copyURL","copyTitleLink","lastWorkspace","previousWorkspace","nextWorkspace"]),
-        ("Notion",["notionCreateMenu","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","notionSwitchAccount"]),
+        ("Notion",["notionCreateMenu","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","notionSwitchAccount","agentChats"]),
         ("表示",["zoomIn","zoomOut","zoomReset","fullscreen","settings"])
     ]
     /// Three columns; the short Notion and view groups share the last one.

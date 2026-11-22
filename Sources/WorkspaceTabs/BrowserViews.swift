@@ -80,7 +80,9 @@ struct BrowserRoot: View {
     private var activeInk: Color { Palette.ink(store.selected?.color ?? "gray", preference:store.selected?.textColor) }
     private var icons: Bool { store.session.sidebarMode == "icons" && store.session.sidebarPosition == "left" }
     @ViewBuilder private var content: some View {
-        if let workspace = store.selected, let page = store.selectedPage {
+        if store.agentChatsPresented {
+            AgentChatPage(store:store,hub:store.agentChats).clipShape(RoundedRectangle(cornerRadius:BrowserLayout.pageRadius,style:.continuous)).padding(BrowserLayout.gap)
+        } else if let workspace = store.selected, let page = store.selectedPage {
             if store.detachedWorkspaceIDs.contains(workspace.id) {
                 VStack(spacing:12) {
                     Image(systemName:"macwindow.on.rectangle").font(.largeTitle).foregroundStyle(.secondary)
@@ -147,6 +149,7 @@ struct BrowserRoot: View {
             buttons {
                 if horizontal {DownloadsButton(store:store,downloads:store.downloads,compact:true)}
                 Button {let id=store.addWorkspace();store.editingWorkspace=id} label:{Image(systemName:"plus").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("アプリタブを追加"))
+                Button {store.toggleAgentChats()} label:{Image(systemName:store.agentChatsPresented ? "bubble.left.and.bubble.right.fill":"bubble.left.and.bubble.right").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("Notion AIのチャット一覧")).accessibilityLabel(L("Notion AIのチャット一覧"))
                 Button {store.favoritesPresented=true} label:{Image(systemName:"star").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("お気に入りランチャー")).accessibilityLabel(L("お気に入り"))
                 Button {store.searchForSplit=false;store.searchPresented=true} label:{Image(systemName:"magnifyingglass").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("タブ・お気に入り・操作を検索"))
                 Button {store.helpPresented=true} label:{Image(systemName:"questionmark.circle").frame(width:BrowserLayout.control,height:BrowserLayout.control)}.help(L("使い方とショートカット")).accessibilityLabel(L("使い方とショートカット"))
@@ -179,6 +182,7 @@ struct BrowserRoot: View {
             Button(L("すべてのタブ…")) {store.searchForSplit=false;store.searchPresented=true}
             Button(L("コマンド…")) {store.openCommands()}
             Button(L("お気に入り…")) {store.favoritesPresented=true}
+            Button(L("Notion AIのチャット一覧")) {store.toggleAgentChats()}
             Button(L("使い方とショートカット…")) {store.helpPresented=true}
             Button(L("設定…")) {store.showSettings=true}
             Button(L("ウインドウを全画面表示")) {store.window?.toggleFullScreen(nil)}

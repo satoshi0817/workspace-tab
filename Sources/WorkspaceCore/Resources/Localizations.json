@@ -4146,5 +4146,193 @@
   "クリックするとアカウントを切り替えます。": {
     "en": "Click to switch accounts.",
     "ko": "클릭하면 계정을 전환합니다."
+  },
+  "更新: ": {
+    "en": "Updated: ",
+    "ko": "업데이트: "
+  },
+  "新しいチャット": {
+    "en": "New chat",
+    "ko": "새 채팅"
+  },
+  "アカウント": {
+    "en": "Accounts",
+    "ko": "계정"
+  },
+  "Notionのアカウントを登録すると、すべてのワークスペースのチャットをここで確認できます": {
+    "en": "Register your Notion accounts to see the chats of every workspace here",
+    "ko": "Notion 계정을 등록하면 모든 워크스페이스의 채팅을 여기에서 확인할 수 있습니다"
+  },
+  "ワークスペースごとに、Notionの個人アクセストークンを1つ登録します。": {
+    "en": "Register one Notion personal access token per workspace.",
+    "ko": "워크스페이스마다 Notion 개인 액세스 토큰을 하나씩 등록합니다."
+  },
+  "アカウントを登録…": {
+    "en": "Register an account…",
+    "ko": "계정 등록…"
+  },
+  "すべてのワークスペース": {
+    "en": "All workspaces",
+    "ko": "모든 워크스페이스"
+  },
+  "読み込んでいます…": {
+    "en": "Loading…",
+    "ko": "불러오는 중…"
+  },
+  "該当するチャットはありません": {
+    "en": "No matching chats",
+    "ko": "해당하는 채팅이 없습니다"
+  },
+  "さらに読み込む": {
+    "en": "Load more",
+    "ko": "더 불러오기"
+  },
+  "チャットを選ぶと、ここに内容が表示されます": {
+    "en": "Select a chat to see it here",
+    "ko": "채팅을 선택하면 여기에 내용이 표시됩니다"
+  },
+  "停止": {
+    "en": "Stop",
+    "ko": "중지"
+  },
+  "エージェントが作業しています…": {
+    "en": "The agent is working…",
+    "ko": "에이전트가 작업 중입니다…"
+  },
+  "エージェントが確認を求めています": {
+    "en": "The agent is asking for confirmation",
+    "ko": "에이전트가 확인을 요청하고 있습니다"
+  },
+  "追加の指示を入力（⌘Enterで送信）": {
+    "en": "Type a follow-up instruction (⌘Return to send)",
+    "ko": "추가 지시 입력(⌘Return으로 전송)"
+  },
+  "送信": {
+    "en": "Send",
+    "ko": "전송"
+  },
+  "エージェントの作業が終わると、追加の指示を送れます。": {
+    "en": "You can send a follow-up once the agent finishes.",
+    "ko": "에이전트 작업이 끝나면 추가 지시를 보낼 수 있습니다."
+  },
+  "このチャットは自分が始めたものではないため、ここからは返信できません。": {
+    "en": "You did not start this chat, so you cannot reply from here.",
+    "ko": "내가 시작한 채팅이 아니어서 여기에서는 답장할 수 없습니다."
+  },
+  "ワークスペース": {
+    "en": "Workspace",
+    "ko": "워크스페이스"
+  },
+  "Notion AIへの指示": {
+    "en": "Instruction for Notion AI",
+    "ko": "Notion AI에 보낼 지시"
+  },
+  "そのアカウントのNotion AIとのチャットを始めます。": {
+    "en": "Starts a chat with that account's Notion AI.",
+    "ko": "해당 계정의 Notion AI와 채팅을 시작합니다."
+  },
+  "チャットを表示するアカウント": {
+    "en": "Accounts whose chats are shown",
+    "ko": "채팅을 표시할 계정"
+  },
+  "ワークスペースごとに、Notionの個人アクセストークン（「Notion API」の権限付き）を登録します。トークンはこのMacのキーチェーンにだけ保存します。": {
+    "en": "Register a Notion personal access token (with the “Notion API” capability) for each workspace. Tokens are stored only in this Mac's Keychain.",
+    "ko": "워크스페이스마다 Notion 개인 액세스 토큰('Notion API' 권한 포함)을 등록합니다. 토큰은 이 Mac의 키체인에만 저장됩니다."
+  },
+  "アカウントを追加": {
+    "en": "Add an account",
+    "ko": "계정 추가"
+  },
+  "個人アクセストークン（ntn_…）": {
+    "en": "Personal access token (ntn_…)",
+    "ko": "개인 액세스 토큰(ntn_…)"
+  },
+  "追加": {
+    "en": "Add",
+    "ko": "추가"
+  },
+  "Notionで個人アクセストークンを作成…": {
+    "en": "Create a personal access token in Notion…",
+    "ko": "Notion에서 개인 액세스 토큰 만들기…"
+  },
+  "作成するときに、対象のワークスペースを選んでください。ワークスペース名とユーザー名は自動で取得します。": {
+    "en": "Choose the workspace when you create it. The workspace and user names are read automatically.",
+    "ko": "만들 때 대상 워크스페이스를 선택하세요. 워크스페이스 이름과 사용자 이름은 자동으로 가져옵니다."
+  },
+  "このアカウントを削除しますか？": {
+    "en": "Remove this account?",
+    "ko": "이 계정을 삭제할까요?"
+  },
+  "保存したトークンも消去します。Notion側のチャットは消えません。": {
+    "en": "The saved token is erased too. Chats in Notion are not deleted.",
+    "ko": "저장한 토큰도 지웁니다. Notion의 채팅은 삭제되지 않습니다."
+  },
+  "Notionから予期しない応答が返されました": {
+    "en": "Notion returned an unexpected response",
+    "ko": "Notion에서 예상치 못한 응답이 반환되었습니다"
+  },
+  "Notionワークスペース": {
+    "en": "Notion workspace",
+    "ko": "Notion 워크스페이스"
+  },
+  "「{0}」を開くアプリタブがありません。アプリタブの設定でNotionワークスペースを指定してください": {
+    "en": "No app tab opens “{0}”. Set the Notion workspace in an app tab's settings.",
+    "ko": "'{0}'을(를) 여는 앱 탭이 없습니다. 앱 탭 설정에서 Notion 워크스페이스를 지정하세요."
+  },
+  "カスタムエージェント": {
+    "en": "Custom agent",
+    "ko": "커스텀 에이전트"
+  },
+  "トークンが無効か期限切れです。新しい個人アクセストークンを登録してください": {
+    "en": "The token is invalid or expired. Register a new personal access token.",
+    "ko": "토큰이 유효하지 않거나 만료되었습니다. 새 개인 액세스 토큰을 등록하세요."
+  },
+  "トークンをキーチェーンから読み取れません。もう一度登録してください": {
+    "en": "The token could not be read from the Keychain. Register it again.",
+    "ko": "키체인에서 토큰을 읽을 수 없습니다. 다시 등록하세요."
+  },
+  "メッセージは10,000文字以内にしてください": {
+    "en": "Keep the message within 10,000 characters",
+    "ko": "메시지는 10,000자 이내로 입력하세요"
+  },
+  "対応待ち": {
+    "en": "Needs you",
+    "ko": "확인 필요"
+  },
+  "実行中": {
+    "en": "Running",
+    "ko": "실행 중"
+  },
+  "待機中": {
+    "en": "Queued",
+    "ko": "대기 중"
+  },
+  "失敗": {
+    "en": "Failed",
+    "ko": "실패"
+  },
+  "中断": {
+    "en": "Terminated",
+    "ko": "중단됨"
+  },
+  "個人アクセストークンを入力してください": {
+    "en": "Enter a personal access token",
+    "ko": "개인 액세스 토큰을 입력하세요"
+  },
+  "個人アクセストークンではありません。Notionの開発者ポータルで「個人アクセストークン」を作成してください": {
+    "en": "This is not a personal access token. Create a “Personal access token” in Notion's developer portal.",
+    "ko": "개인 액세스 토큰이 아닙니다. Notion 개발자 포털에서 '개인 액세스 토큰'을 만드세요."
+  },
+  "タイトルで絞り込み": {
+    "en": "Filter by title",
+    "ko": "제목으로 필터"
+  },
+  "Notion AIのチャット": {
+    "en": "Notion AI chats",
+    "ko": "Notion AI 채팅"
+  },
+  "Notion AIのチャット一覧": {
+    "en": "Notion AI chat list",
+    "ko": "Notion AI 채팅 목록"
   }
 }

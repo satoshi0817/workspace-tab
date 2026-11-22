@@ -3,7 +3,7 @@ import WebKit
 import WorkspaceCore
 
 @MainActor enum BrowserCommands {
-    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","notionSwitchAccount","zoomIn","zoomOut","zoomReset"]
+    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","notionSwitchAccount","agentChats","zoomIn","zoomOut","zoomReset"]
 }
 extension BrowserStore {
     func openCommands() {
@@ -50,6 +50,7 @@ extension BrowserStore {
         if id == "commands" {openCommands();return}
         if id == "notionCreateMenu" {openNotionCreationMenu();return}
         if id == "notionSwitchAccount" {openAccountSwitcher(ref);return}
+        if id == "agentChats" {toggleAgentChats();return}
         if id == "allTabs" {searchForSplit=false;searchPresented=true;return}
         if id == "lastWorkspace" {
             guard let previousWorkspaceID,workspace(previousWorkspaceID) != nil else {notify(L("直前のアプリタブはありません"));return}

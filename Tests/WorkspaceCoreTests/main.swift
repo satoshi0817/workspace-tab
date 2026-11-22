@@ -192,6 +192,26 @@ let checks: [(String, () throws -> Void)] = [
         try expectThrows({ _ = try state.validated() }, "Negative sizes must be rejected")
         var newer = SavedState(groups: []); newer.version = 42
         try expectThrows({ _ = try newer.validated() }, "Newer schemas must not be silently overwritten")
+    }),
+    ("Agent chats are read from the session API without trusting missing fields", {
+        let session=AgentChat.session(["object":"session","id":"3fb528c5-00f1-8093-a00d-00a927f6eb24","agent_id":"notion_ai","title":" ","status":"requires_action",
+            "created_by":["id":"27dd872b-594c-81a9-aaaf-0002696d8001","type":"user"],"created_at":"2026-10-16T01:34:53.849Z","updated_at":"2026-10-16T01:35:01.300Z",
+            "required_actions":[["action_id":"a1","title":"Send email","options":[["id":"approve","label":"Approve"],["id":"other","label":"x"]]]]])
+        try expect(session?.title == "Untitled" && session?.createdByUser == true && session?.needsAction == true && session?.active == false, "A session keeps its status and falls back to a title")
+        try expect(session?.actions.first?.options.map(\.id) == ["approve"], "Only approve and reject are offered for a required action")
+        try expect(session.map{$0.updatedAt > $0.createdAt} == true, "Fractional timestamps are read")
+        try expect(AgentChat.session(["object":"session","id":"x","agent_id":"a","status":"completed"]) == nil, "A session without a timestamp is skipped")
+        try expect(AgentChat.session(["object":"session","id":"x","agent_id":"a","status":"queued","created_at":"2026-10-16T01:34:53Z"])?.active == true, "The short response after sending is still read")
+        let event=AgentChat.event(["id":"e","type":"agent.message","sequence":102,"content":[["type":"text","text":" Hello "],["type":"file","name":"a.pdf","url":"https://example.test/a"],["type":"text","text":"World"]]])
+        try expect(event?.text == "Hello \nWorld" && event?.files.first?.name == "a.pdf", "Message text parts are joined and files kept")
+        try expect(AgentChat.event(["id":"e","type":"agent.tool_use","sequence":3,"tool_name":"search"])?.toolName == "search", "Tool events keep the tool name")
+        let me:[String:Any]=["object":"user","type":"bot","bot":["workspace_id":"w1","workspace_name":"Lumi","owner":["type":"user","user":["id":"u1","name":"Alice","person":["email":"alice@example.test"]]]]]
+        try expect(AgentChat.identity(me)?.workspaceName == "Lumi" && AgentChat.identity(me)?.email == "alice@example.test", "A personal access token names its workspace and user")
+        try expect(AgentChat.identity(["type":"bot","bot":["workspace_id":"w1","owner":["type":"workspace","workspace":true]]]) == nil, "An integration token is not accepted as a person")
+        try expect(AgentChat.chatURL(host:"app.notion.com",sessionID:"3fb528c5-00f1-8093-a00d-00a927f6eb24") == "https://app.notion.com/chat?t=3fb528c500f18093a00d00a927f6eb24", "A chat address uses the app tab's Notion host")
+        try expect(AgentChat.chatURL(host:"evil.example",sessionID:"3fb528c500f18093a00d00a927f6eb24")?.hasPrefix("https://www.notion.so/") == true && AgentChat.chatURL(host:nil,sessionID:"../x") == nil, "Only Notion hosts and real IDs make a chat address")
+        try expect(AgentChat.rank("requires_action") < AgentChat.rank("queued") && AgentChat.rank("in_progress") < AgentChat.rank("completed"), "Sessions waiting on the user sort first")
+        try expect(AgentChat.agent(["id":"notion_ai","name":"Notion AI","agent_type":"notion_ai","icon":["type":"emoji","emoji":"✨"]])?.personal == true, "The personal agent is recognised")
     })
 ]
 do {
