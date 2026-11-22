@@ -36,6 +36,17 @@ public struct NotionAccount:Equatable {
     const current = () => compact(read('current-user-id'));
     const active = () => routeUser() ?? perTab() ?? current();
     """#
+    /// Makes this tab use another signed-in account. The caller reloads the page afterwards.
+    public static func switchScript(_ userID:String)->String? {
+        guard let id=NotionWorkspace.normalizedID(userID) else{return nil}
+        let c=Array(id),dashed=[c[0..<8],c[8..<12],c[12..<16],c[16..<20],c[20..<32]].map{String($0)}.joined(separator:"-")
+        return """
+        (()=>{try{
+          if(location.protocol!=='https:'||!['app.notion.com','app.dev.notion.com','notion.so','www.notion.so'].includes(location.hostname))return false;
+          sessionStorage.setItem('workspaceTabsAccountSeed','1');sessionStorage.setItem('activeUserId','\(dashed)');return true;
+        }catch(_){return false}})()
+        """
+    }
     /// Runs before Notion boots in a new tab so it starts as the chosen account.
     /// Seeds once per tab; later account switches inside Notion are left alone.
     public static func seedScript(_ userID:String)->String? {
@@ -79,7 +90,23 @@ public struct NotionAccount:Equatable {
           const record = entry.value?.value ?? entry.value;
           if (compact(record?.id) !== userID || typeof record.email !== 'string') return null;
           const name = typeof record.name === 'string' ? record.name : [record.given_name,record.family_name].filter(v => typeof v === 'string').join(' ');
-          return {id:userID,name,email:record.email};
+          // The photo is only for the account list. Any failure leaves the initial in its place.
+          let avatar = null;
+          const photo = record.profile_photo;
+          if (typeof photo === 'string' && photo.length > 0 && photo.length <= 2000) {
+            try {
+              const source = photo.startsWith('/') ? photo : '/image/' + encodeURIComponent(photo) + '?table=notion_user&id=' + dashed + '&userId=' + dashed + '&width=96&cache=v2';
+              const image = await fetch(source, {credentials:'same-origin',signal:abort.signal});
+              const blob = image.ok ? await image.blob() : null;
+              if (blob && blob.size > 0 && blob.size <= 300000 && /^image\/(png|jpeg|gif|webp)$/.test(blob.type)) {
+                const bytes = new Uint8Array(await blob.arrayBuffer());
+                let binary = '';
+                for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+                avatar = btoa(binary);
+              }
+            } catch (_) {avatar = null;}
+          }
+          return {id:userID,name,email:record.email,avatar};
         } catch (_) {return null;}
       }))).filter(Boolean);
     } finally {clearTimeout(timeout);}

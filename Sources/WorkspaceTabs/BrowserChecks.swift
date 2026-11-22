@@ -44,6 +44,13 @@ import WorkspaceCore
             var menuSelections:[(String,PageReference)]=[]
             let creationMenu=NotionCreationMenu(source:capturedSource) {menuSelections.append(($0,$1))}
             try expect(NotionCreationMenu.choices.map{$0.id} == ["notionPage","notionChat"],"Creation picker offers a new page on the left and a new chat on the right")
+            let sheetCounts=ShortcutCheatSheet.columns().map(\.count)
+            try expect(sheetCounts.count == 3 && sheetCounts.allSatisfy{$0 > 0},"The shortcut list fills its three columns")
+            try expect(Set(ShortcutCheatSheet.groups.flatMap(\.ids)).isSubset(of:Set(ShortcutPreferences.actions.map(\.id))),"Every listed shortcut is a real action")
+            try expect(ShortcutCheatSheet.move((0,0),keyCode:125,counts:[2,3,1]) == (0,1) && ShortcutCheatSheet.move((0,1),keyCode:125,counts:[2,3,1]) == (1,0),"Down walks a column and then moves to the next")
+            try expect(ShortcutCheatSheet.move((0,0),keyCode:126,counts:[2,3,1]) == (2,0) && ShortcutCheatSheet.move((2,0),keyCode:125,counts:[2,3,1]) == (0,0),"Up and down wrap around the list")
+            try expect(ShortcutCheatSheet.move((1,2),keyCode:124,counts:[2,3,1]) == (2,0) && ShortcutCheatSheet.move((1,2),keyCode:123,counts:[2,3,1]) == (0,1),"Left and right keep the row where the column allows")
+            try expect(ShortcutCheatSheet.move((0,0),keyCode:124,counts:[2,0,1]) == (2,0),"An empty column is skipped")
             creationMenu.highlight(1)
             try expect(creationMenu.selectedIndex == 1,"Creation picker moves its selection independently of creation")
             let popupFrame=NotionCreationMenu.frame(centeredIn:NSRect(x:700,y:0,width:500,height:300),inside:NSRect(x:0,y:0,width:1000,height:800))
@@ -579,6 +586,18 @@ import WorkspaceCore
             }
             let settingsClicks=try await ea.webView.evaluateJavaScript("window.actionClicks") as? Int
             try expect((settingsResult as? [String:Any])?["ok"] as? Bool == true && settingsClicks == 1,"Notion settings opens through the workspace switcher, ignoring Library")
+            _ = try await ea.webView.evaluateJavaScript(#"document.body.innerHTML='<nav aria-label="Sidebar"><button onclick="window.sidebarClicks++">Search</button></nav><div class="notion-frame"><button onclick="window.actionClicks++">Search</button><button onclick="window.actionClicks++">Settings</button></div>';window.actionClicks=0;window.sidebarClicks=0;true"#)
+            let _:Any = try await withCheckedThrowingContinuation { continuation in
+                ea.webView.callAsyncJavaScript(actionScript,arguments:["action":"notionSearch"],in:nil,in:.page) {continuation.resume(with:$0)}
+            }
+            let sidebarSearch=try await ea.webView.evaluateJavaScript("window.sidebarClicks*10+window.actionClicks") as? Int
+            try expect(sidebarSearch == 10,"Workspace search presses the sidebar's Search, never a database's")
+            _ = try await ea.webView.evaluateJavaScript(#"document.body.innerHTML='<div class="notion-frame"><button onclick="window.actionClicks++">Search</button><button onclick="window.actionClicks++">Settings</button></div>';window.actionClicks=0;true"#)
+            let pageOnly:Any = try await withCheckedThrowingContinuation { continuation in
+                ea.webView.callAsyncJavaScript(actionScript,arguments:["action":"notionSettings"],in:nil,in:.page) {continuation.resume(with:$0)}
+            }
+            let pageOnlyClicks=try await ea.webView.evaluateJavaScript("window.actionClicks") as? Int
+            try expect((pageOnly as? [String:Any])?["ok"] as? Bool == false && pageOnlyClicks == 0,"A database's own Search and Settings buttons are never pressed for the workspace ones")
             let settingsElapsed=(settingsResult as? [String:Any])?["elapsedMS"] as? Double ?? .infinity
             print("METRIC Settings workspace-menu traversal: \(settingsElapsed) ms (previous fixed wait: at least 1200 ms)")
             try expect(settingsElapsed < 1000,"Visible Notion settings no longer waits for the old fixed delay")

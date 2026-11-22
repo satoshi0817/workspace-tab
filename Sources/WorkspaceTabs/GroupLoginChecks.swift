@@ -37,6 +37,9 @@ import WorkspaceCore
         let pinnedHanded=store.workspace(single)!.pages
         try expect(pinnedHanded.count == 2 && pinnedHanded[0].pinned == true && pinnedHanded[0].id != pinnedHost.id && pinnedHanded[1].id == pinnedHost.id && pinnedHanded[1].pinned != true,"The pinned place keeps a pinned copy and the live page opens unpinned")
         var unpin=pinnedHanded[0];unpin.pinned=nil;store.updateBrowserTab(unpin,in:single);store.closePage(unpin.id,in:single)
+        try expect(store.cacheProfileIDs(single) == [singleProfile],"An app tab with one login environment clears only that cache")
+        try expect(Set(store.cacheProfileIDs(workspaceID)).isSuperset(of:[workspace.profileID,alphaProfile]),"Clearing an app tab's cache covers every login environment its groups use")
+        try expect(!store.cacheSharingWorkspaces(single).contains{$0.id == single},"An app tab is not listed as sharing with itself")
         let spare=store.createProfile(name:"Spare")
         try expect(store.canDeleteProfile(spare),"An unused login profile can be deleted")
         store.deleteProfile(spare)

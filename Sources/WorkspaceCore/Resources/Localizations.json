@@ -1327,6 +1327,54 @@
     "en": "Show next tabs",
     "ko": "다음 탭 표시"
   },
+  "「{0}」のキャッシュを消去しました": {
+    "en": "Cleared the cache for “{0}”",
+    "ko": "“{0}”의 캐시를 지웠습니다"
+  },
+  "「{0}」のキャッシュを消去しますか？": {
+    "en": "Clear the cache for “{0}”?",
+    "ko": "“{0}”의 캐시를 지울까요?"
+  },
+  "消去して再読み込み": {
+    "en": "Clear and Reload",
+    "ko": "지우고 새로고침"
+  },
+  "消去のみ": {
+    "en": "Clear Only",
+    "ko": "지우기만"
+  },
+  "保存済みのページ・画像・スクリプトを消去します。ログイン状態は残ります。": {
+    "en": "Removes stored pages, images and scripts. You stay signed in.",
+    "ko": "저장된 페이지, 이미지, 스크립트를 지웁니다. 로그인 상태는 유지됩니다."
+  },
+  "同じログイン環境を使う「{0}」のキャッシュも消去されます。": {
+    "en": "The cache for “{0}”, which shares this login profile, is cleared too.",
+    "ko": "같은 로그인 환경을 쓰는 “{0}”의 캐시도 지워집니다."
+  },
+  "↑↓←→ で選択・Enterで実行・Escで閉じる": {
+    "en": "↑↓←→ to choose, Return to run, Esc to close",
+    "ko": "↑↓←→로 선택, Enter로 실행, Esc로 닫기"
+  },
+  "⌘を押したまま ↑ か ↓ を押すと、選んで実行できます": {
+    "en": "Keep ⌘ down and press ↑ or ↓ to choose and run one",
+    "ko": "⌘를 누른 채 ↑ 또는 ↓를 누르면 선택해서 실행할 수 있습니다"
+  },
+  "ショートカット一覧": {
+    "en": "Shortcuts",
+    "ko": "단축키 목록"
+  },
+  "キャッシュを消去…": {
+    "en": "Clear Cache…",
+    "ko": "캐시 지우기…"
+  },
+  "移動・検索": {
+    "en": "Navigate & Search",
+    "ko": "이동 및 검색"
+  },
+  "Notion": {
+    "en": "Notion",
+    "ko": "Notion"
+  },
   "この環境にブラウザタブを追加": {
     "en": "Add browser tab to this profile",
     "ko": "이 환경에 브라우저 탭 추가"
@@ -4030,5 +4078,73 @@
   "ログイン環境「{0}」を削除しますか？": {
     "en": "Delete the login environment “{0}”?",
     "ko": "로그인 환경 「{0}」을(를) 삭제할까요?"
+  },
+  "Notionタブにアカウントのアバターを表示": {
+    "en": "Show the account avatar on Notion tabs",
+    "ko": "Notion 탭에 계정 아바타 표시"
+  },
+  "全体の設定に従う": {
+    "en": "Follow the app-wide setting",
+    "ko": "전체 설정을 따름"
+  },
+  "表示する": {
+    "en": "Show",
+    "ko": "표시"
+  },
+  "表示しない": {
+    "en": "Hide",
+    "ko": "표시 안 함"
+  },
+  "ここで「表示する」「表示しない」を選ぶと、全体の設定より優先されます。": {
+    "en": "Choosing Show or Hide here takes priority over the app-wide setting.",
+    "ko": "여기에서 '표시' 또는 '표시 안 함'을 선택하면 전체 설정보다 우선합니다."
+  },
+  "アプリタブごとの設定（アプリタブの設定 → 表示）で選んだ内容が、この設定より優先されます。": {
+    "en": "A choice made for an app tab (app tab settings → Display) takes priority over this setting.",
+    "ko": "앱 탭별 설정(앱 탭 설정 → 표시)에서 선택한 내용이 이 설정보다 우선합니다."
+  },
+  "Notion：アカウントを切り替え": {
+    "en": "Notion: Switch account",
+    "ko": "Notion: 계정 전환"
+  },
+  "アカウントを切り替え": {
+    "en": "Switch account",
+    "ko": "계정 전환"
+  },
+  "アカウントを切り替え…": {
+    "en": "Switch account…",
+    "ko": "계정 전환…"
+  },
+  "今のページを、選んだアカウントで開き直します。入力途中の内容は失われることがあります。": {
+    "en": "Reopens the current page as the account you choose. Unsaved input may be lost.",
+    "ko": "현재 페이지를 선택한 계정으로 다시 엽니다. 입력 중인 내용은 사라질 수 있습니다."
+  },
+  "使用中": {
+    "en": "In use",
+    "ko": "사용 중"
+  },
+  "別のログイン環境 · 新しいタブで開きます": {
+    "en": "Another login environment · opens in a new tab",
+    "ko": "다른 로그인 환경 · 새 탭에서 엽니다"
+  },
+  "{0} に切り替えています": {
+    "en": "Switching to {0}",
+    "ko": "{0}(으)로 전환하는 중"
+  },
+  "{0} のタブで同じページを開きました": {
+    "en": "Opened the same page in a {0} tab",
+    "ko": "{0} 탭에서 같은 페이지를 열었습니다"
+  },
+  "アカウントを切り替えられませんでした": {
+    "en": "Could not switch accounts",
+    "ko": "계정을 전환하지 못했습니다"
+  },
+  "切り替えられる別のアカウントがありません。同じログイン環境に別のNotionアカウントでログインするか、別のログイン環境のグループを作成してください": {
+    "en": "There is no other account to switch to. Sign in to another Notion account in this login environment, or create a group with a different login environment.",
+    "ko": "전환할 다른 계정이 없습니다. 이 로그인 환경에서 다른 Notion 계정으로 로그인하거나, 다른 로그인 환경의 그룹을 만드세요."
+  },
+  "クリックするとアカウントを切り替えます。": {
+    "en": "Click to switch accounts.",
+    "ko": "클릭하면 계정을 전환합니다."
   }
 }

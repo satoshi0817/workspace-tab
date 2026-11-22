@@ -83,7 +83,20 @@ struct PageReference: Codable, Equatable, Identifiable {
     lazy var workspaceShortcutHints=WorkspaceShortcutHintsController(
         canShow:{[weak self] in self?.canShowWorkspaceHints == true},
         modifiers:{NSEvent.modifierFlags},
-        publish:{[weak self] visible in self?.workspaceHintsVisible=visible})
+        publish:{[weak self] visible in
+            self?.workspaceHintsVisible=visible
+            // The shortcut list belongs to ⌘ alone; the app-tab modifiers show only their own keys.
+            self?.cheatSheetHeld=visible && NSEvent.modifierFlags.intersection([.command,.control,.option,.shift]) == .command
+        })
+    /// The shortcut list is showing because ⌘ is held (released ⌘ hides it again).
+    @Published var cheatSheetHeld=false
+    /// The shortcut list was kept open with ⌘↑ / ⌘↓ and now takes arrows and Return.
+    @Published var cheatSheetPinned=false
+    @Published var cheatSheetSelection:(column:Int,row:Int)=(0,0)
+    var runShortcutAction:((ShortcutAction)->Void)?
+    /// The app tab whose cache the user asked to clear, awaiting confirmation.
+    @Published var cacheClearWorkspace:UUID?
+    @Published var accountSwitch:AccountSwitchRequest?
     var workspaceHintsSuspended=false
     @Published var focusedPage: PageReference?
     private var noticeID=UUID()

@@ -3,7 +3,7 @@ import WebKit
 import WorkspaceCore
 
 @MainActor enum BrowserCommands {
-    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","zoomIn","zoomOut","zoomReset"]
+    static let ids:Set<String>=["notionCreateMenu","commands","recentTabs","lastWorkspace","previousPage","nextPage","home","focusSplit","toggleSplit","addFavorite","copyTitleLink","notionChat","notionPage","notionMeeting","notionDatabase","notionCustomPage","notionSearch","notionSettings","notionSwitchAccount","zoomIn","zoomOut","zoomReset"]
 }
 extension BrowserStore {
     func openCommands() {
@@ -49,6 +49,7 @@ extension BrowserStore {
         if id == "recentTabs" {cycleRecentTabs();return}
         if id == "commands" {openCommands();return}
         if id == "notionCreateMenu" {openNotionCreationMenu();return}
+        if id == "notionSwitchAccount" {openAccountSwitcher(ref);return}
         if id == "allTabs" {searchForSplit=false;searchPresented=true;return}
         if id == "lastWorkspace" {
             guard let previousWorkspaceID,workspace(previousWorkspaceID) != nil else {notify(L("直前のアプリタブはありません"));return}
@@ -184,10 +185,14 @@ enum NotionActions {
         const controls=[...document.querySelectorAll('button,[role="button"],[role="tab"],[role="menuitem"],a')];
         const indexed=controls.map(e=>({e,labels:labels(e)}));
         // Match labels before asking for layout: unrelated links need no visibility check.
-        const click=values=>{
-          const matches=indexed.filter(x=>values.some(n=>x.labels.includes(n)) && visible(x.e));
+        const sidebarRoot=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
+        // A database has its own Search and Settings buttons. Workspace search and settings
+        // are only ever taken from the sidebar, or from the menu this run opened there.
+        const scoped=action==='notionSearch' || action==='notionSettings';
+        const inScope=e=>!scoped || !!(sidebarRoot && sidebarRoot.contains(e)) || (menuOpened && !e.closest('.notion-frame,.notion-peek-renderer,.notion-collection_view-block,.notion-page-content,main'));
+        const click=(values,anywhere=false)=>{
+          const matches=indexed.filter(x=>values.some(n=>x.labels.includes(n)) && (anywhere || inScope(x.e)) && visible(x.e));
           // A page can also show New page in a database view; the sidebar's own button wins a tie.
-          const sidebarRoot=document.querySelector('.notion-sidebar-container,[aria-label="Sidebar"],[aria-label="サイドバー"]');
           for(const name of values){let found=matches.filter(x=>x.labels.includes(name));if(found.length>1 && sidebarRoot)found=found.filter(x=>sidebarRoot.contains(x.e));if(found.length===1){found[0].e.click();return true;}}
           return false;
         };
@@ -195,7 +200,7 @@ enum NotionActions {
           if(menuItems[action]){openedAt=performance.now();setTimeout(schedule,350);setTimeout(schedule,750);return;}
           finish({ok:true,message:done[action]});return;
         }
-        if(!sidebarOpened && click(['Open sidebar','Show sidebar','サイドバーを開く','サイドバーを表示'])){sidebarOpened=true;return;}
+        if(!sidebarOpened && click(['Open sidebar','Show sidebar','サイドバーを開く','サイドバーを表示'],true)){sidebarOpened=true;return;}
         if((action==='notionDatabase' || action==='notionCustomPage') && !menuOpened){
           // Open only the sidebar's explicit creation dropdown. Never click a generic
           // page-creation button or synthesize private routes before identity checks.

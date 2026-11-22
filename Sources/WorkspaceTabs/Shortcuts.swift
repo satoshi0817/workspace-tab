@@ -67,6 +67,7 @@ struct ShortcutAction: Identifiable {
             ("notionMeeting","Notion：新規ミーティングノート","m",46,[.command,.option]),
             ("notionSearch","Notion内を検索","k",40,[.command,.option]),
             ("notionSettings","Notion：設定を開く",",",43,[.command,.option]),
+            ("notionSwitchAccount","Notion：アカウントを切り替え","s",1,[.command,.shift]),
             ("notionDatabase","Notion：新規データベース","t",17,[.command,.option]),
             ("notionCustomPage","Notion：カスタムページ","u",32,[.command,.option]),
             ("zoomIn","拡大","=",24,.command),

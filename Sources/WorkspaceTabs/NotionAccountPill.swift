@@ -83,7 +83,7 @@ struct NotionAccountPill:View {
             if monitor.checking {return L("このタブで使用中のNotionアカウントを確認できると、ユーザー名を表示します。")}
             return monitor.identified ? L("Notionからユーザー情報を取得できませんでした。クリックすると再確認します。"):L("このタブでログイン中のNotionアカウントを特定できません。Notionにログインしてからクリックすると再確認します。")
         }
-        return (account.name.isEmpty ? account.email:account.name+"\n"+account.email)+"\n"+L("クリックすると再確認します。")
+        return (account.name.isEmpty ? account.email:account.name+"\n"+account.email)+"\n"+L("クリックするとアカウントを切り替えます。")
     }
     @ViewBuilder private var avatar:some View {
         if let account=monitor.account {
@@ -150,6 +150,25 @@ struct NotionAccountWatermark:View {
                 .padding(.horizontal,style.centered ? 32:20).padding(.bottom,style.centered ? 0:14)
                 .frame(maxWidth:.infinity,maxHeight:.infinity,alignment:style.centered ? .center:.bottomTrailing)
                 .allowsHitTesting(false).accessibilityHidden(true)
+        }
+    }
+}
+
+/// The signed-in Notion account's photo, shown before a browser tab's icon so tabs on
+/// different logins can be told apart. Nothing is shown until the account is known.
+struct NotionTabAvatar:View {
+    @ObservedObject var monitor:NotionAccountMonitor
+    var body:some View {
+        if let account=monitor.account {
+            Group {
+                if let data=account.avatar,let image=NSImage(data:data),image.isValid {
+                    Image(nsImage:image).resizable().interpolation(.high).aspectRatio(contentMode:.fill)
+                } else {
+                    Text(String(account.displayName.prefix(1)).uppercased()).font(.system(size:9,weight:.semibold))
+                        .frame(maxWidth:.infinity,maxHeight:.infinity).background(.primary.opacity(0.18))
+                }
+            }.frame(width:16,height:16).clipShape(Circle()).overlay(Circle().strokeBorder(.primary.opacity(0.18)))
+                .accessibilityLabel(account.displayName)
         }
     }
 }

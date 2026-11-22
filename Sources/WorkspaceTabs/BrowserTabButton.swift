@@ -19,6 +19,7 @@ struct BrowserTabButton: View {
     var body:some View {
         HStack(spacing:BrowserLayout.gap) {
                 HStack(spacing:BrowserLayout.gap) {
+                    if workspace.showsNotionAvatar(default:store.session.showNotionAvatars),let engine=store.engineIfLoaded(page.id) {NotionTabAvatar(monitor:engine.notionAccount)}
                     if let file=page.tabIconFile,let image=store.iconCache.image(directory:store.directory,name:file) {Image(nsImage:image).renderingMode(image.isTemplate ? .template:.original).resizable().scaledToFit().frame(width:18,height:18)}
                     else if let emoji=page.tabEmoji,!emoji.isEmpty {Text(emoji).font(.system(size:16))}
                     else {BrowserFavicon(cache:store.faviconCache,profile:workspace.profileID(for:page),pageURL:page.url)}
@@ -67,6 +68,9 @@ struct BrowserTabButton: View {
                             if workspace.groupID(for:page) == group.id {Label(group.name,systemImage:"checkmark")} else {Text(group.name)}
                         }
                     }
+                }
+                if BrowserAddress.url(page.url).flatMap({NotionWorkspace.environment($0)}) != nil {
+                    Button(L("アカウントを切り替え…")) {store.openAccountSwitcher(PageReference(workspaceID:workspace.id,pageID:page.id))}
                 }
                 Button(L("表示名・アイコンを編集…")) {
                     store.window?.makeKeyAndOrderFront(nil)

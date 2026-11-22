@@ -54,6 +54,10 @@ struct WorkspaceEditor:View {
                     }
                 case .display:
                     Section {
+                        Picker(L("Notionタブにアカウントのアバターを表示"),selection:Binding(get:{draft.showNotionAvatar.map{$0 ? "on":"off"} ?? "default"},set:{draft.showNotionAvatar=$0 == "default" ? nil:$0 == "on"})) {
+                            Text(L("全体の設定に従う")).tag("default");Text(L("表示する")).tag("on");Text(L("表示しない")).tag("off")
+                        }
+                        Text(L("ここで「表示する」「表示しない」を選ぶと、全体の設定より優先されます。")).font(.caption).foregroundStyle(.secondary)
                         Toggle(L("メールアドレスをページ上に大きく表示"),isOn:Binding(get:{draft.showAccountEmail ?? false},set:{draft.showAccountEmail=$0 ? true:nil}))
                         Picker(L("表示位置"),selection:Binding(get:{draft.accountEmailStyle.centered ? "center":"bottomTrailing"},set:{draft.accountEmailPosition=$0 == "center" ? "center":nil})) {
                             Text(L("右下")).tag("bottomTrailing");Text(L("中央")).tag("center")
@@ -157,6 +161,8 @@ struct BrowserSettings:View {
                             Picker(L("テーマ"),selection:$store.session.theme){Text(L("システム")).tag("system");Text(L("ライト")).tag("light");Text(L("ダーク")).tag("dark")}
                             Picker(L("アプリタブの位置"),selection:$store.session.sidebarPosition){Text(L("左側")).tag("left");Text(L("上部")).tag("top")}
                             Picker(L("サイドバー"),selection:$store.session.sidebarMode){Text(L("通常")).tag("full");Text(L("アイコンのみ")).tag("icons");Text(L("左端で展開")).tag("hover")}.disabled(store.session.sidebarPosition != "left")
+                            Toggle(L("Notionタブにアカウントのアバターを表示"),isOn:Binding(get:{store.session.showNotionAvatars ?? true},set:{store.session.showNotionAvatars=$0 ? nil:false;store.changed()}))
+                            Text(L("アプリタブごとの設定（アプリタブの設定 → 表示）で選んだ内容が、この設定より優先されます。")).font(.caption).foregroundStyle(.secondary)
                         }
                     } else if section == "リンクの受け取り" {
                         NotionLinkRoutingSettings(routing:store.linkRouting)

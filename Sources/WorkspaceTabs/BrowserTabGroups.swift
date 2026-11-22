@@ -22,11 +22,12 @@ extension BrowserStore {
     }
     /// Accounts to offer when opening Notion: separate login environments if the app tab
     /// has them, otherwise the Notion accounts signed in to its one environment.
-    func notionAccountChoices(in workspaceID:UUID,from pageID:UUID?=nil) async->[AccountChoice] {
-        let groups=accountChoices(in:workspaceID)
+    func notionAccountChoices(in workspaceID:UUID,from pageID:UUID?=nil,profileID only:UUID?=nil) async->[AccountChoice] {
+        // Asked about one login environment, only the Notion accounts inside it are listed.
+        let groups=only == nil ? accountChoices(in:workspaceID):[]
         guard groups.isEmpty,let w=workspace(workspaceID),let home=BrowserAddress.url(w.homeURL),
               let environment=NotionWorkspace.environment(home),let host=home.host?.lowercased() else{return groups}
-        let profileID=w.profileID(forGroup:w.visibleGroupID)
+        let profileID=only ?? w.profileID(forGroup:w.visibleGroupID)
         let cookies=await dataStore(profileID).httpCookieStore.allCookies()
         let match=cookies.filter{cookie in
             let domain=cookie.domain.lowercased().trimmingCharacters(in:CharacterSet(charactersIn:"."))

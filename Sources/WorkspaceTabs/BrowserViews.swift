@@ -13,13 +13,14 @@ struct BrowserRoot: View {
           VStack(spacing:0) {
             if store.safeMode {SafeModeBanner(store:store)}
             if store.session.sidebarPosition == "top" {
-                VStack(spacing: 0) { appTabs(horizontal: true); content }
+                VStack(spacing: 0) { appTabs(horizontal: true); content.overlay {ShortcutCheatSheetCard(store:store)} }
             } else {
                 HStack(spacing: 0) {
                     if store.session.sidebarMode == "hover" {
                         Rectangle().fill(activeColor).frame(width: 8).contentShape(Rectangle()).onHover { if $0 { store.hovered = true } }
                     } else { appTabs(horizontal: false).frame(width: store.session.sidebarMode == "icons" ? BrowserLayout.iconSidebar : BrowserLayout.sidebar) }
-                    content
+                    // The list stays clear of the app tabs, including the ones that slide in on hover.
+                    content.overlay {ShortcutCheatSheetCard(store:store).padding(.leading,store.session.sidebarMode == "hover" ? BrowserLayout.sidebar-8:0)}
                 }.overlay(alignment: .leading) {
                     if store.session.sidebarMode == "hover" && (store.hovered || store.workspaceHintsVisible || store.downloadsPresented) {
                         appTabs(horizontal: false).frame(width:BrowserLayout.sidebar).clipShape(RoundedRectangle(cornerRadius:BrowserLayout.pageRadius,style:.continuous)).shadow(color:.black.opacity(0.15),radius:10,x:3,y:2)
@@ -33,6 +34,9 @@ struct BrowserRoot: View {
           }
         }.environment(\.locale,localization.locale).background(activeColor).frame(minWidth: 800, minHeight: 520)
             .overlay {RecentTabsOverlay(store:store)}
+            .overlay {ShortcutCheatSheetOverlay(store:store)}
+            .modifier(CacheClearDialog(store:store))
+            .sheet(item:$store.accountSwitch,onDismiss:store.restorePanelFocus) {AccountSwitchSheet(store:store,request:$0)}
             .overlay(alignment:.topTrailing) {if store.networkOffline {Label(L("オフライン"),systemImage:"wifi.slash").font(.caption).padding(8).background(.regularMaterial,in:Capsule()).padding(8).allowsHitTesting(false)}}
             .overlay(alignment: .bottom) {
                 if store.workspaceHintsVisible {
@@ -130,6 +134,7 @@ struct BrowserRoot: View {
                                 Button(L("名前・色・ログイン環境…")) {store.editingWorkspace=workspace.id}
                                 if let pageID=workspace.selectedPageID { Button(L("分割して表示")) {store.setSplit(PageReference(workspaceID:workspace.id,pageID:pageID))}.disabled(pageID == store.selectedPage?.id) }
                                 Button(workspace.pinned ? L("固定を解除"):L("タブを固定")) {var w=workspace;w.pinned.toggle();store.updateWorkspace(w)}
+                                Button(L("キャッシュを消去…")) {store.window?.makeKeyAndOrderFront(nil);store.cacheClearWorkspace=workspace.id}
                                 Divider(); Button(L("アプリタブを閉じる…"),role:.destructive) {store.removeWorkspace(workspace.id)}.disabled(workspace.pinned)
                             }
 
@@ -218,7 +223,11 @@ struct BrowserPane: View {
                             .help(L("この環境にブラウザタブを追加")).accessibilityLabel(L("ブラウザタブを追加"))
                         Spacer(minLength:0)
                     }.frame(maxWidth:.infinity).layoutPriority(-1)
-                    NotionAccountPill(monitor:engine.notionAccount) {engine.notionAccount.refresh(in:engine.webView,force:true)}
+                    NotionAccountPill(monitor:engine.notionAccount) {
+                        // A known account opens the switcher; an unknown one is looked up again.
+                        if engine.notionAccount.account == nil {engine.notionAccount.refresh(in:engine.webView,force:true)}
+                        else {store.openAccountSwitcher(PageReference(workspaceID:workspaceID,pageID:pageID))}
+                    }
                     NotionAccountWatermarkToggle(monitor:engine.notionAccount,enabled:store.showsAccountEmail(pageID,in:workspaceID)) {store.toggleAccountEmail(pageID,in:workspaceID)}
                     if !detached,let split=store.split,store.page(split) != nil,split.pageID != store.selectedPage?.id {
                         Button {store.setSplit(nil)} label:{

@@ -49,6 +49,10 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     /// Default for every browser tab in this app tab; a tab's own choice wins.
     public var showAccountEmail: Bool?
     public func showsAccountEmail(for page:BrowserPage)->Bool {page.showAccountEmail ?? showAccountEmail ?? false}
+    /// Whether Notion browser tabs here show the signed-in account's photo. nil follows
+    /// the app-wide setting; a choice made here always wins over it.
+    public var showNotionAvatar: Bool?
+    public func showsNotionAvatar(default appWide:Bool?)->Bool {showNotionAvatar ?? appWide ?? true}
     /// Look of the account email over the page, per app tab. nil uses the default.
     public var accountEmailOpacity: Double?
     public var accountEmailSize: Double?
@@ -116,6 +120,8 @@ public struct BrowserSession: Codable, Equatable {
     public var theme = "system"
     public var sidebarMode = "full"
     public var sidebarPosition = "left"
+    /// App-wide default for the account photo on Notion browser tabs. nil means shown.
+    public var showNotionAvatars: Bool?
     public var windowFrame: WindowRect?
     public var migratedFromNative = false
     public init() {}

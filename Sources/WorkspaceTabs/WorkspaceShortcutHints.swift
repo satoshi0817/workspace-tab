@@ -81,6 +81,8 @@ extension BrowserStore {
     }
     func handleWorkspaceHintEvent(_ event:NSEvent) {
         guard [.flagsChanged,.keyDown,.leftMouseDown,.rightMouseDown,.leftMouseDragged,.scrollWheel].contains(event.type) else{return}
+        // ⌘↑ / ⌘↓ over the held shortcut list keeps it open; it is handled as a panel key.
+        if cheatSheetWantsPin(event) {return}
         let bindings=workspaceHintBindings()
         let flags=event.modifierFlags.intersection([.command,.control,.option,.shift])
         let switching=event.type == .keyDown && bindings.contains{$0.code == event.keyCode && $0.flags == flags}

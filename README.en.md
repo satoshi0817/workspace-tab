@@ -70,6 +70,8 @@ Choose **Presets…** to search by name or category, or **Image…** to select a
 
 Hold **⌘ or the app-tab switching modifier for about 0.5 seconds** to show the corresponding keys on app tabs. The hints stay visible while you use the modifier and number keys, and disappear when you release the modifier. The assigned shortcuts do not change.
 
+Holding **⌘ alone** also shows a list of the main shortcuts. Press ↑ or ↓ with ⌘ still down to keep it open, then choose with the arrow keys and press Return to run one (Esc closes it).
+
 In the creation menu, select an item with ↑↓ and Return, keys 1–5, or a click. Press Esc or click outside to close it.
 
 These are the default shortcuts. Use **Settings → Shortcuts** to record a key combination or sequence, change an action, or reset it.

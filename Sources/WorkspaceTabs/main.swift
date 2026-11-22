@@ -61,7 +61,11 @@ import WorkspaceCore
             if self?.store.downloadsPresented == true {self?.store.downloadsPresented=false;return true}
             return false
         }
-        (NSApp as? BrowserApplication)?.panelKeyAction={[weak self] in self?.store.handleDownloadKey($0) ?? false}
+        (NSApp as? BrowserApplication)?.panelKeyAction={[weak self] in
+            guard let store=self?.store else{return false}
+            return store.handleCheatSheetKey($0) || store.handleDownloadKey($0)
+        }
+        store.runShortcutAction={[weak self] in self?.performShortcut($0)}
         (NSApp as? BrowserApplication)?.inputObserver={[weak self] in self?.store.handleWorkspaceHintEvent($0)}
         ShortcutSequenceMonitor.notionFocused={[weak self] in
             guard let self,let ref=self.store.commandPage,let url=self.store.engine(ref.workspaceID,ref.pageID)?.webView.url else{return false}
@@ -165,8 +169,8 @@ import WorkspaceCore
     func applicationWillTerminate(_ notification:Notification){sequences.stop();hotkeys.unregister();store.shutdown()}
     func windowDidEnterFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("entered-fullscreen")}
     func windowDidExitFullScreen(_ notification:Notification){(notification.object as? BrowserWindow)?.trace("exited-fullscreen")}
-    func applicationDidResignActive(_ notification:Notification){store.resetWorkspaceHints()}
-    func windowDidResignKey(_ notification:Notification){store.resetWorkspaceHints()}
+    func applicationDidResignActive(_ notification:Notification){store.resetWorkspaceHints();store.dismissCheatSheet()}
+    func windowDidResignKey(_ notification:Notification){store.resetWorkspaceHints();store.dismissCheatSheet()}
     func windowDidBecomeKey(_ notification:Notification){store.focusedPage=nil}
     func windowWillClose(_ notification:Notification){store.resetWorkspaceHints();store.saveBeforeExit()}
     func windowDidResize(_ notification:Notification){store.snapshot();store.changed()}
