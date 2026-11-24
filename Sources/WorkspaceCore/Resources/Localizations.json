@@ -4171,10 +4171,6 @@
     "en": "Register an account…",
     "ko": "계정 등록…"
   },
-  "すべてのワークスペース": {
-    "en": "All workspaces",
-    "ko": "모든 워크스페이스"
-  },
   "読み込んでいます…": {
     "en": "Loading…",
     "ko": "불러오는 중…"
@@ -4334,5 +4330,249 @@
   "Notion AIのチャット一覧": {
     "en": "Notion AI chat list",
     "ko": "Notion AI 채팅 목록"
+  },
+  "表示名": {
+    "en": "Display name",
+    "ko": "표시 이름"
+  },
+  "色をつける": {
+    "en": "Use a color",
+    "ko": "색 사용"
+  },
+  "アカウントの表示": {
+    "en": "Account appearance",
+    "ko": "계정 표시"
+  },
+  "表示を編集…": {
+    "en": "Edit Appearance…",
+    "ko": "표시 편집…"
+  },
+  "すべてのアカウント": {
+    "en": "All Accounts",
+    "ko": "모든 계정"
+  },
+  "Notionの表示に戻す": {
+    "en": "Use Notion's Name and Photo",
+    "ko": "Notion 이름과 사진으로 되돌리기"
+  },
+  "アイコンは画像、絵文字・文字、色、Notionの写真の順に使います。空欄の項目はNotionの名前と写真のままです。トークンを登録し直しても、ここで変えた表示は残ります。": {
+    "en": "The icon uses the image, then the emoji or letters, then the color, then the Notion photo. Empty fields keep Notion's name and photo. These choices stay when you register the token again.",
+    "ko": "아이콘은 이미지, 이모지·문자, 색, Notion 사진 순서로 사용합니다. 비어 있는 항목은 Notion의 이름과 사진을 그대로 씁니다. 토큰을 다시 등록해도 여기서 바꾼 표시는 유지됩니다."
+  },
+  "それより前のやり取りは「Notionで開く」から確認できます": {
+    "en": "Open in Notion to see earlier messages",
+    "ko": "이전 대화는 「Notion에서 열기」로 확인할 수 있습니다"
+  },
+  "コンピューター": {
+    "en": "Computer",
+    "ko": "컴퓨터"
+  },
+  "画像": {
+    "en": "Image",
+    "ko": "이미지"
+  },
+  "カレンダー": {
+    "en": "Calendar",
+    "ko": "캘린더"
+  },
+  "スキル": {
+    "en": "Skill",
+    "ko": "스킬"
+  },
+  "読み込み": {
+    "en": "Read",
+    "ko": "읽기"
+  },
+  "作成": {
+    "en": "Create",
+    "ko": "만들기"
+  },
+  "生成": {
+    "en": "Generate",
+    "ko": "생성"
+  },
+  "実行": {
+    "en": "Run",
+    "ko": "실행"
+  },
+  "アップロード": {
+    "en": "Upload",
+    "ko": "업로드"
+  },
+  "{0}を読み込み": {
+    "en": "Read {0}",
+    "ko": "{0} 읽기"
+  },
+  "{0}を検索": {
+    "en": "Search {0}",
+    "ko": "{0} 검색"
+  },
+  "{0}に作成": {
+    "en": "Create in {0}",
+    "ko": "{0}에 만들기"
+  },
+  "{0}を更新": {
+    "en": "Update {0}",
+    "ko": "{0} 업데이트"
+  },
+  "{0}から削除": {
+    "en": "Delete from {0}",
+    "ko": "{0}에서 삭제"
+  },
+  "{0}を生成": {
+    "en": "Generate {0}",
+    "ko": "{0} 생성"
+  },
+  "{0}で実行": {
+    "en": "Run on {0}",
+    "ko": "{0}에서 실행"
+  },
+  "{0}にアップロード": {
+    "en": "Upload to {0}",
+    "ko": "{0}에 업로드"
+  },
+  "{0}件の操作": {
+    "en": "{0} steps",
+    "ko": "작업 {0}개"
+  },
+  "{0}件失敗": {
+    "en": "{0} failed",
+    "ko": "{0}개 실패"
+  },
+  "展開": {
+    "en": "Expanded",
+    "ko": "펼침"
+  },
+  "折りたたみ": {
+    "en": "Collapsed",
+    "ko": "접힘"
+  },
+  "Notionワーカー": {
+    "en": "Notion Worker",
+    "ko": "Notion 워커"
+  },
+  "Notionの名前に戻す": {
+    "en": "Use Notion's Name",
+    "ko": "Notion 이름으로 되돌리기"
+  },
+  "Notion側の名前": {
+    "en": "Name in Notion",
+    "ko": "Notion의 이름"
+  },
+  "{0}件に送信": {
+    "en": "Send to {0}",
+    "ko": "{0}곳에 보내기"
+  },
+  "{0}件のチャット": {
+    "en": "{0} chats",
+    "ko": "채팅 {0}개"
+  },
+  "{0}件のチャットに同じ指示を送ります。": {
+    "en": "Sends the same instruction to {0} chats.",
+    "ko": "채팅 {0}개에 같은 지시를 보냅니다."
+  },
+  "{0}件のチャットに同じ指示を送ります。作業中のチャットには送りません。": {
+    "en": "Sends the same instruction to {0} chats. Chats where the agent is working are skipped.",
+    "ko": "채팅 {0}개에 같은 지시를 보냅니다. 작업 중인 채팅에는 보내지 않습니다."
+  },
+  "このグループにはチャットがありません。一覧のチャットを右クリックして追加できます。": {
+    "en": "This group has no chats. Right-click a chat in the list to add it.",
+    "ko": "이 그룹에는 채팅이 없습니다. 목록의 채팅을 오른쪽 클릭해 추가할 수 있습니다."
+  },
+  "このチャットだけを開く": {
+    "en": "Open This Chat Only",
+    "ko": "이 채팅만 열기"
+  },
+  "この名前はこのアプリの中だけで使います。Notion側のチャット名は変わりません。": {
+    "en": "This name is used only in this app. The chat's name in Notion does not change.",
+    "ko": "이 이름은 이 앱에서만 사용합니다. Notion의 채팅 이름은 바뀌지 않습니다."
+  },
+  "グループから外す": {
+    "en": "Remove from Group",
+    "ko": "그룹에서 빼기"
+  },
+  "グループに追加": {
+    "en": "Add to Group",
+    "ko": "그룹에 추가"
+  },
+  "グループのすべてのチャットに送る指示（⌘Enterで送信）": {
+    "en": "Instruction for every chat in the group (⌘Enter to send)",
+    "ko": "그룹의 모든 채팅에 보낼 지시 (⌘Enter로 보내기)"
+  },
+  "グループの名前": {
+    "en": "Group Name",
+    "ko": "그룹 이름"
+  },
+  "グループを解除": {
+    "en": "Ungroup",
+    "ko": "그룹 해제"
+  },
+  "グループを開く": {
+    "en": "Open Group",
+    "ko": "그룹 열기"
+  },
+  "グループ名（空欄なら指示の1行目）": {
+    "en": "Group name (first line of the prompt if empty)",
+    "ko": "그룹 이름 (비워 두면 지시의 첫 줄)"
+  },
+  "タブで表示": {
+    "en": "Show as Tabs",
+    "ko": "탭으로 보기"
+  },
+  "チャット": {
+    "en": "Chats",
+    "ko": "채팅"
+  },
+  "チャットの名前": {
+    "en": "Chat Name",
+    "ko": "채팅 이름"
+  },
+  "チャットを読み込んでいます…": {
+    "en": "Loading chats…",
+    "ko": "채팅을 불러오는 중…"
+  },
+  "ピン留めを外す": {
+    "en": "Unpin",
+    "ko": "고정 해제"
+  },
+  "一部のアカウントでチャットを始められませんでした": {
+    "en": "Some accounts could not start the chat",
+    "ko": "일부 계정에서 채팅을 시작하지 못했습니다"
+  },
+  "並べて表示": {
+    "en": "Side by Side",
+    "ko": "나란히 보기"
+  },
+  "名前を変更…": {
+    "en": "Rename…",
+    "ko": "이름 변경…"
+  },
+  "新しいグループ": {
+    "en": "New Group",
+    "ko": "새 그룹"
+  },
+  "表示方法": {
+    "en": "Layout",
+    "ko": "표시 방식"
+  },
+  "送信先": {
+    "en": "Send To",
+    "ko": "보낼 곳"
+  },
+  "選んだアカウントで同時にチャットを始め、1つのグループにまとめます。": {
+    "en": "Starts a chat in each chosen account at once and puts them in one group.",
+    "ko": "선택한 계정에서 동시에 채팅을 시작하고 하나의 그룹으로 묶습니다."
+  },
+  "選択を解除": {
+    "en": "Deselect All",
+    "ko": "선택 해제"
+  },
+  "ピン留めする": {
+    "en": "Pin",
+    "ko": "고정하기"
+  },
+  "その他の操作": {
+    "en": "More",
+    "ko": "더 보기"
   }
 }

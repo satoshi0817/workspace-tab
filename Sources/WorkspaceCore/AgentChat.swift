@@ -3,16 +3,16 @@ import Foundation
 /// Display models for Notion agent sessions (chats), read from the public Agent API.
 /// Nothing here is persisted: sessions and events are fetched again on every launch.
 public enum AgentChat {
-    public struct Option:Equatable,Identifiable {
+    public struct Option:Equatable,Identifiable,Codable {
         public let id:String
         public let label:String
     }
-    public struct Action:Equatable,Identifiable {
+    public struct Action:Equatable,Identifiable,Codable {
         public let id:String
         public let title:String
         public let options:[Option]
     }
-    public struct Session:Equatable {
+    public struct Session:Equatable,Codable {
         public let id:String
         public let agentID:String
         public let title:String
@@ -32,11 +32,11 @@ public enum AgentChat {
         public var active:Bool {status == "queued" || status == "in_progress"}
         public var needsAction:Bool {status == "requires_action"}
     }
-    public struct File:Equatable {
+    public struct File:Equatable,Codable {
         public let name:String
         public let url:String
     }
-    public struct Event:Equatable,Identifiable {
+    public struct Event:Equatable,Identifiable,Codable {
         public let id:String
         public let sequence:Int
         public let type:String
@@ -45,6 +45,11 @@ public enum AgentChat {
         public let toolName:String?
         public let status:String?
         public let createdAt:Date?
+        /// On a tool result: the tool call it answers, and whether that call failed.
+        public var toolUseID:String?=nil
+        public var failed=false
+        /// Notion also sends replies with no text while the agent works; those are not shown.
+        public var visible:Bool {(type == "user.message" || type == "agent.message") && (!text.isEmpty || !files.isEmpty)}
     }
     /// Who and where a personal access token acts as.
     public struct Identity:Equatable {
@@ -103,7 +108,8 @@ public enum AgentChat {
             else if part["type"] as? String == "file",let url=part["url"] as? String {files.append(File(name:part["name"] as? String ?? "file",url:url))}
         }
         return Event(id:id,sequence:sequence,type:type,text:text.joined(separator:"\n").trimmingCharacters(in:.whitespacesAndNewlines),files:files,
-            toolName:json["tool_name"] as? String,status:json["status"] as? String,createdAt:date(json["created_at"]))
+            toolName:json["tool_name"] as? String,status:json["status"] as? String,createdAt:date(json["created_at"]),
+            toolUseID:json["tool_use_id"] as? String,failed:json["is_error"] as? Bool ?? false)
     }
     /// From GET /v1/users/me. A token that is not a person's (an integration) has no owner user and is refused.
     public static func identity(_ json:[String:Any])->Identity? {

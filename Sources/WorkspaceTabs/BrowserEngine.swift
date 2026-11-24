@@ -390,7 +390,7 @@ import WorkspaceCore
                     self.detectedNotionSpaceID=nil;self.detectedURL=nil
                     if self.firstLoadFinished {self.mayRoute=true}
                 }
-                if self.address != url.absoluteString {self.address = url.absoluteString}
+                if self.address != url.absoluteString {self.address = url.absoluteString;self.store?.noteAgentChat(in:self.workspaceID,url:url)}
             }
             let title=self.webView.title ?? ""
             if self.title != title {self.title=title;if !self.webView.isLoading {self.discoverFavicon()}}
