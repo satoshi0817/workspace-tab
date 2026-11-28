@@ -17,6 +17,7 @@ info = {
     "CFBundleURLTypes": [{"CFBundleURLName": "Workspace Tabs Launcher", "CFBundleURLSchemes": ["workspacetabs"]}, {"CFBundleURLName": "Web Links", "CFBundleTypeRole": "Viewer", "CFBundleURLSchemes": ["http", "https"]}],
     "CFBundleIconFile": "AppIcon",
     "LSMinimumSystemVersion": "14.0",
+    "LSMultipleInstancesProhibited": True,
     "NSHighResolutionCapable": True,
     "NSMicrophoneUsageDescription": "NotionのAIミーティングノートなど、ページ上で開始した音声入力にマイクを使用します。",
     "NSCameraUsageDescription": "ページ上で開始したビデオ通話などにカメラを使用します。",

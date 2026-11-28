@@ -33,8 +33,10 @@ import Carbon
             guard binding.sequence == nil else{continue}
             let key=binding.code, id=action.globalID!, name=binding.label
             var ref: EventHotKeyRef?
+            // A second copy must not bring its own window forward for the same numbered shortcut.
+            let options = action.id.hasPrefix("workspace") ? OptionBits(kEventHotKeyExclusive) : 0
             let result = RegisterEventHotKey(UInt32(key), binding.carbon, EventHotKeyID(signature: 0x57535442, id: UInt32(id)),
-                                            GetApplicationEventTarget(), 0, &ref)
+                                            GetApplicationEventTarget(), options, &ref)
             if result == noErr, let ref { refs.append(ref) }
             else { failures.append(L("\(name) は他のアプリと競合しているため使用できません（\(result)）。")) }
         }

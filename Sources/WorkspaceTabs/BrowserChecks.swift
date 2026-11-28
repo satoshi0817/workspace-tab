@@ -436,6 +436,20 @@ import WorkspaceCore
             store.reattachWorkspace(a,activate:false)
             try expect(!store.detachedWorkspaceIDs.contains(a) && store.detachedControllers[a] == nil && store.engine(a,wa.pages[0].id) === engineBeforeDetach, "Reattach preserves the original WebView without reloading")
             store.detachWorkspace(a,show:false)
+            let previousWindow = store.window
+            store.window = testWindow
+            testWindow.orderOut(nil)
+            let detachedWindow = store.detachedControllers[a]!.window
+            let aIndex = store.session.workspaces.firstIndex { $0.id == a }!
+            let bIndex = store.session.workspaces.firstIndex { $0.id == b }!
+            try expect(store.selectNumberedWorkspace(at:aIndex) && detachedWindow.isVisible && !testWindow.isVisible,
+                       "A numbered shortcut to a detached app tab shows only its existing window")
+            try expect(store.selectNumberedWorkspace(at:bIndex) && testWindow.isVisible && store.selected?.id == b,
+                       "A numbered shortcut to an attached app tab selects it in the existing main window")
+            try expect(!store.selectNumberedWorkspace(at:store.session.workspaces.count) && store.selected?.id == b,
+                       "An unassigned number leaves the active app tab alone")
+            testWindow.orderOut(nil)
+            store.window = previousWindow
             store.detachedControllers[a]!.window.close()
             try expect(!store.detachedWorkspaceIDs.contains(a) && Set(store.workspace(a)!.pages.map(\.id)) == Set(pageIDsBeforeDetach), "Closing a detached window returns its app tab without deleting pages")
             testWindow.contentView=nil

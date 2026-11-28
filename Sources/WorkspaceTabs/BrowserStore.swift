@@ -293,6 +293,17 @@ struct PageReference: Codable, Equatable, Identifiable {
         if split?.workspaceID == id && split?.pageID == selectedPage?.id { split = nil }
         changed()
     }
+    func selectNumberedWorkspace(at index: Int) -> Bool {
+        guard session.workspaces.indices.contains(index) else { return false }
+        let id = session.workspaces[index].id
+        let target = detachedControllers[id]?.window ?? window
+        if let target, target.isMiniaturized { target.deminiaturize(nil) }
+        selectWorkspace(id)
+        // selectWorkspace already focuses a detached tab's window.
+        if let window, target === window, !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
+        preserveWorkspaceHintsAfterSwitch()
+        return true
+    }
     func cycleWorkspace(_ offset:Int) {
         let workspaces=session.workspaces
         guard !workspaces.isEmpty else{return}

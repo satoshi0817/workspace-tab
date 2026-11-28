@@ -49,7 +49,10 @@ import WorkspaceCore
         hotkeys.action={[weak self] code in
             guard let self else{return}
             if code==3 {self.show();self.store.searchForSplit=false;self.store.searchPresented=true}
-            else if (11...19).contains(code),self.store.session.workspaces.indices.contains(Int(code-11)){self.show();self.store.selectWorkspace(self.store.session.workspaces[Int(code-11)].id);self.store.preserveWorkspaceHintsAfterSwitch()}
+            else if (11...19).contains(code) {
+                guard self.store.selectNumberedWorkspace(at:Int(code-11)) else{return}
+                if !NSApp.isActive {NSApp.activate(ignoringOtherApps:true)}
+            }
         }
         shortcutObservers.append(NotificationCenter.default.addObserver(forName:AppLocalization.changed,object:nil,queue:.main){[weak self] _ in MainActor.assumeIsolated {
             self?.createMenu();self?.store.exportLauncherIndex()
