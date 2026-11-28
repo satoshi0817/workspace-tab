@@ -13,8 +13,8 @@ enum BrowserLayout {
     static let iconSidebar:CGFloat = appTab + inset * 2
     static let sidebar:CGFloat = 220
     static let tabRadius:CGFloat = 8
-    static let appRadius:CGFloat = 12
-    static let pageRadius:CGFloat = 16
+    static let appRadius:CGFloat = 10
+    static let pageRadius:CGFloat = 12
 }
 
 /// A persistent outline makes every browser tab visible, including inactive tabs.
@@ -23,7 +23,7 @@ struct BrowserStripChip:ViewModifier {
     var selected=false
     var hovered=false
     func body(content:Content)->some View {
-        let shape=RoundedRectangle(cornerRadius:10,style:.continuous)
+        let shape=RoundedRectangle(cornerRadius:BrowserLayout.tabRadius,style:.continuous)
         content.frame(height:BrowserLayout.control)
             .background(ink.opacity(selected ? 0.18:hovered ? 0.10:0.045),in:shape)
             .overlay(shape.strokeBorder(ink.opacity(selected ? 0.65:hovered ? 0.38:0.22),lineWidth:selected ? 1.25:1))
