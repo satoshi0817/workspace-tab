@@ -72,11 +72,21 @@ struct FavoriteSection:Identifiable {
 extension BrowserStore {
     func favoriteSections(_ input:[FavoriteLink]? = nil)->[FavoriteSection] {
         let grouped=Dictionary(grouping:input ?? favorites,by:{$0.category.trimmingCharacters(in:.whitespacesAndNewlines)})
-        let categories=notion.state.cache?.sources.flatMap(\.categories) ?? []
-        func rank(_ name:String)->Double {categories.filter{$0.name.trimmingCharacters(in:.whitespacesAndNewlines) == name}.compactMap(\.order).min() ?? .infinity}
+        var categoryOrders: [String: Double] = [:]
+        if grouped.count > 1 {
+            for source in notion.state.cache?.sources ?? [] {
+                for category in source.categories {
+                    guard let order = category.order else { continue }
+                    let name = category.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    categoryOrders[name] = min(categoryOrders[name] ?? order, order)
+                }
+            }
+        }
         let names=grouped.keys.sorted {a,b in
             if a.isEmpty != b.isEmpty {return !a.isEmpty}
-            if rank(a) != rank(b) {return rank(a)<rank(b)}
+            let rankA = categoryOrders[a] ?? .infinity
+            let rankB = categoryOrders[b] ?? .infinity
+            if rankA != rankB {return rankA < rankB}
             return a.localizedStandardCompare(b) == .orderedAscending
         }
         return names.map {name in FavoriteSection(category:name,links:grouped[name]!.sorted {a,b in

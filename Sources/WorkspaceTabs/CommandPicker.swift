@@ -8,13 +8,18 @@ struct TabSearchRow:Identifiable {
     var ref:PageReference {PageReference(workspaceID:workspace.id,pageID:page.id)}
 }
 extension BrowserStore {
+    var allTabRows: some Sequence<TabSearchRow> {
+        session.workspaces.lazy.flatMap { workspace in
+            workspace.orderedPages.lazy.map { TabSearchRow(workspace: workspace, page: $0) }
+        }
+    }
+
     func tabSearchRows(_ query:String)->[TabSearchRow] {
         let words=query.split(whereSeparator:{$0.isWhitespace}).map(String.init)
-        return session.workspaces.flatMap { w in
-            orderedPages(in:w.id).filter { p in
-                let text=[w.name,p.displayTitle,p.title,p.url].joined(separator:" ")
-                return words.allSatisfy{text.localizedCaseInsensitiveContains($0)}
-            }.map {TabSearchRow(workspace:w,page:$0)}
+        guard !words.isEmpty else { return Array(allTabRows) }
+        return allTabRows.filter { row in
+            let text = [row.workspace.name, row.page.displayTitle, row.page.title, row.page.url].joined(separator: " ")
+            return words.allSatisfy { text.localizedCaseInsensitiveContains($0) }
         }
     }
 }

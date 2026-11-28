@@ -47,7 +47,7 @@ extension BrowserStore {
         let token=launcherToken
         guard !token.isEmpty else{return}
         let workspaces=session.workspaces.map{LauncherEntry(id:$0.id.uuidString,title:$0.name,subtitle:L("アプリタブ"),emoji:$0.emoji,iconPath:launcherIconPath($0.iconFile))}
-        let tabs=tabSearchRows("").map{LauncherEntry(id:$0.id.uuidString,title:$0.page.displayTitle,subtitle:$0.workspace.name,emoji:$0.page.tabEmoji ?? $0.workspace.emoji,workspaceID:$0.workspace.id.uuidString,iconPath:launcherIconPath($0.workspace.iconFile))}
+        let tabs=allTabRows.map{LauncherEntry(id:$0.id.uuidString,title:$0.page.displayTitle,subtitle:$0.workspace.name,emoji:$0.page.tabEmoji ?? $0.workspace.emoji,workspaceID:$0.workspace.id.uuidString,iconPath:launcherIconPath($0.workspace.iconFile))}
         let favorites=favoriteSections().flatMap {section in section.links.map {link in
             LauncherEntry(id:link.id.uuidString,title:link.title,subtitle:favoriteWorkspace(link)?.name ?? L("開く先が未設定"),emoji:link.emoji,workspaceID:favoriteWorkspace(link)?.id.uuidString,category:section.title,iconPath:launcherIconPath(link.iconFile))
         }}

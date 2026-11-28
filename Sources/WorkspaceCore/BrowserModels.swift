@@ -62,6 +62,9 @@ public struct BrowserWorkspace: Codable, Identifiable, Equatable {
     }
     public var cssStrength: Double = 0.18
     public var pages: [BrowserPage]
+    public var orderedPages: [BrowserPage] {
+        pages.filter { $0.pinned == true } + pages.filter { $0.pinned != true }
+    }
     public var selectedPageID: UUID?
     public var tabGroups: [BrowserTabGroup]?
     public var visibleTabGroupID: UUID?

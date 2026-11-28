@@ -706,7 +706,10 @@ import WorkspaceCore
             var pinned=FavoriteLink(title:"Pinned",url:"https://example.com",workspaceID:a);pinned.category="Alpha";pinned.order=99;pinned.pinned=true;pinned.iconFile="fixture.png"
             let unclassified=FavoriteLink(title:"Unclassified",url:"https://example.com",workspaceID:a)
             store.session.favorites=[unclassified,z,x,pinned]
-            store.notion.state.cache=LinkData(syncedAt:"",sources:[SourceMeta(id:"fixture",categories:[Category(id:"a",name:"Alpha",order:1),Category(id:"b",name:"Beta",order:0)],tags:[])],links:[])
+            store.notion.state.cache=LinkData(syncedAt:"",sources:[
+                SourceMeta(id:"first",categories:[Category(id:"a",name:"Alpha",order:1),Category(id:"b",name:"Beta",order:5)],tags:[]),
+                SourceMeta(id:"second",categories:[Category(id:"b2",name:" Beta ",order:0),Category(id:"b3",name:"Beta",order:8)],tags:[])
+            ],links:[])
             let sections=store.favoriteSections()
             try expect(sections.map(\.title) == ["Beta","Alpha","未分類"] && sections[1].links.map(\.title) == ["Pinned","Alpha"],"Favorites use category Order, then pinned and link Order; uncategorized is last")
             store.exportLauncherIndex()

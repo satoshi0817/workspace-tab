@@ -67,11 +67,19 @@ public enum AgentChat {
         public let personal:Bool
     }
 
-    public static func date(_ value:Any?)->Date? {
-        guard let text=value as? String else{return nil}
-        let fractional=ISO8601DateFormatter();fractional.formatOptions=[.withInternetDateTime,.withFractionalSeconds]
-        if let date=fractional.date(from:text) {return date}
-        return ISO8601DateFormatter().date(from:text)
+    private static let dateLock = NSLock()
+    private static let fractionalDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    private static let dateFormatter = ISO8601DateFormatter()
+
+    public static func date(_ value: Any?) -> Date? {
+        guard let text = value as? String else { return nil }
+        return dateLock.withLock {
+            fractionalDateFormatter.date(from: text) ?? dateFormatter.date(from: text)
+        }
     }
     /// IDs compare without dashes or case: the API mixes both spellings.
     public static func compact(_ id:String?)->String? {

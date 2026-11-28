@@ -442,8 +442,7 @@ struct PageReference: Codable, Equatable, Identifiable {
         changed()
     }
     func orderedPages(in workspaceID:UUID) -> [BrowserPage] {
-        let pages=workspace(workspaceID)?.pages ?? []
-        return pages.filter {$0.pinned == true} + pages.filter {$0.pinned != true}
+        workspace(workspaceID)?.orderedPages ?? []
     }
     func reopenPage() {
         if let page=closedPages.last?.1 {_=restoreClosedPage(page.id)}

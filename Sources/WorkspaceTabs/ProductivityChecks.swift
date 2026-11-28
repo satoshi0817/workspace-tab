@@ -43,6 +43,20 @@ import WorkspaceCore
         try expect(store.universalResults("closed",scope:.closed).contains{$0.id == "closed:"+closed.uuidString},"Unified search includes individual closed tabs")
         try expect(store.restoreClosedPage(closed) && store.page(PageReference(workspaceID:a,pageID:closed)) != nil,"Search can restore a specific closed tab")
         try expect(store.universalResults("",scope:.commands).allSatisfy{$0.scope == .commands} && store.universalResults("",scope:.commands).contains{$0.id == "command:downloads"},"Search scopes keep command identities independent of language")
+        let manyFavorites = (0..<260).map { index in
+            var link = FavoriteLink(title: "Search fixture \(index)", url: url.absoluteString, workspaceID: b)
+            link.order = Double(index)
+            return link
+        }
+        store.session.favorites = manyFavorites
+        let ids = manyFavorites.map { "favorite:" + $0.id.uuidString }
+        let all = store.universalResults("", scope: .all).filter { $0.scope == .favorites }
+        try expect(all.map(\.id) == Array(ids.prefix(50)) &&
+                   store.universalResults("", scope: .favorites).map(\.id) == Array(ids.prefix(250)),
+                   "Search keeps the first 50 matches per category or 250 in a single category")
+        try expect(store.universalResults("fixture 259", scope: .favorites).map(\.id) == [ids[259]],
+                   "Search can find a match beyond the unfiltered result cap")
+        store.session.favorites = [favorite]
         let sample=root.appendingPathComponent("preview.txt");try Data("Local preview fixture".utf8).write(to:sample)
         let provider=NSItemProvider(object:sample as NSURL)
         try expect(provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier),"Downloaded file drag advertises a real file URL")

@@ -14,6 +14,8 @@ if [ "${WORKSPACE_TABS_UNIVERSAL:-0}" = 1 ]; then
 else
     cp "$task_bin/WorkspaceTabs" "$task_app/Contents/MacOS/WorkspaceTabs"
 fi
+# Strip only the bundled copy. SwiftPM keeps the executable and matching dSYM for each architecture.
+xcrun strip -S -x "$task_app/Contents/MacOS/WorkspaceTabs"
 python3 scripts/make_bundle.py "$task_app"
 if [ ! -f "$task_app/Contents/Resources/AppIcon.icns" ] || [ ! -f "$task_app/Contents/Resources/AppMark.pdf" ] || [ scripts/make_icon.swift -nt "$task_app/Contents/Resources/AppIcon.icns" ]; then
     swift scripts/make_icon.swift "$task_app/Contents/Resources"

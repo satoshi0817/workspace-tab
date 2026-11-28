@@ -6,13 +6,13 @@ import WorkspaceCore
 
 @MainActor final class FaviconCache:ObservableObject {
     @Published private var revision=0
-    private let images=NSCache<NSString,NSImage>()
+    private let images=NSCache<NSData,NSImage>()
     private let directory:URL
     private let session:URLSession
-    private var sources:[String:String]=[:]
+    private var sources:[Data:String]=[:]
     private(set) var networkFetches=0
-    private var pending:[String:Task<Void,Never>]=[:]
-    private var attempted=Set<String>()
+    private var pending:[Data:Task<Void,Never>]=[:]
+    private var attempted=Set<Data>()
     init(directory:URL) {
         self.directory=directory.appendingPathComponent("Favicons",isDirectory:true)
         images.countLimit=256;images.totalCostLimit=4*1024*1024
@@ -22,12 +22,12 @@ import WorkspaceCore
         config.urlCache=URLCache(memoryCapacity:4*1024*1024,diskCapacity:0)
         session=URLSession(configuration:config)
     }
-    private func key(profile:UUID,pageURL:String)->String {
-        SHA256.hash(data:Data((profile.uuidString+"|"+pageURL).utf8)).map{String(format:"%02x",$0)}.joined()
+    private func key(profile:UUID,pageURL:String)->Data {
+        Data(SHA256.hash(data: Data((profile.uuidString + "|" + pageURL).utf8)))
     }
     func image(profile:UUID,pageURL:String)->NSImage? {
         _=revision
-        return images.object(forKey:key(profile:profile,pageURL:pageURL) as NSString)
+        return images.object(forKey:key(profile:profile,pageURL:pageURL) as NSData)
     }
     static func fallback(_ pageURL:String)->URL? {
         guard let url=BrowserAddress.url(pageURL),["https","http"].contains(url.scheme),
@@ -41,7 +41,7 @@ import WorkspaceCore
         let source=declared ?? sources[key] ?? fallback.absoluteString
         if let task=pending[key],declared == nil || sources[key] == source {await task.value;return}
         if sources[key] == source {
-            if images.object(forKey:key as NSString) != nil {return}
+            if images.object(forKey:key as NSData) != nil {return}
             if declared == nil && attempted.contains(key) {return}
         }
         if sources.count>512 {
@@ -50,8 +50,10 @@ import WorkspaceCore
         }
         sources[key]=source;attempted.insert(key)
         pending[key]?.cancel()
-        let file=directory.appendingPathComponent(key+".png")
-        let sourceFile=directory.appendingPathComponent(key+".source")
+        // Existing disk entries use lowercase hex. Rendering a tab only needs the digest.
+        let filename = key.map { String(format: "%02x", $0) }.joined()
+        let file=directory.appendingPathComponent(filename+".png")
+        let sourceFile=directory.appendingPathComponent(filename+".source")
         let sourceDigest=Data(SHA256.hash(data:Data(source.utf8)))
         let task=Task { [weak self] in
             guard let self else{return}
@@ -87,7 +89,7 @@ import WorkspaceCore
                 }
             }
             guard !Task.isCancelled,self.sources[key] == source,let icon=decoded else{return}
-            self.images.setObject(icon,forKey:key as NSString,cost:64*64*4);self.attempted.remove(key);self.revision &+= 1
+            self.images.setObject(icon,forKey:key as NSData,cost:64*64*4);self.attempted.remove(key);self.revision &+= 1
             if !loadedFromDisk,let tiff=icon.tiffRepresentation,let rep=NSBitmapImageRep(data:tiff),let png=rep.representation(using:.png,properties:[:]) {
                 let directory=self.directory
                 await Task.detached(priority:.utility) {
@@ -98,9 +100,11 @@ import WorkspaceCore
                     try? metadata.write(to:sourceFile,options:.atomic)
                     let files=((try? FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])) ?? [])
                         .filter{$0.pathExtension == "png"}
+                    guard files.count > 256 else { return }
+                    let newestFirst = files
                         .map{($0,(try? $0.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate) ?? .distantPast)}
                         .sorted{$0.1>$1.1}
-                    for (old,_) in files.dropFirst(256) {
+                    for (old,_) in newestFirst.dropFirst(256) {
                         try? FileManager.default.removeItem(at:old)
                         try? FileManager.default.removeItem(at:old.deletingPathExtension().appendingPathExtension("source"))
                     }

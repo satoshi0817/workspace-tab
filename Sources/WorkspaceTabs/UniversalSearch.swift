@@ -28,27 +28,56 @@ struct UniversalResult:Identifiable {
 extension BrowserStore {
     func universalResults(_ query:String,scope:SearchScope)->[UniversalResult] {
         let words=query.split(whereSeparator:{$0.isWhitespace}).map(String.init)
-        func matches(_ value:String)->Bool {words.allSatisfy{value.localizedStandardContains($0)}}
-        var result:[UniversalResult]=[]
-        func append(_ rows:[UniversalResult],for category:SearchScope) {
-            guard scope == .all || scope == category else{return}
-            result += rows.filter{matches($0.title+" "+$0.subtitle)}.prefix(scope == .all ? 50:250)
+        let limit = scope == .all ? 50 : 250
+        var result: [UniversalResult] = []
+        func includes(_ category: SearchScope) -> Bool { scope == .all || scope == category }
+        func appendMatches<Rows: Sequence>(_ rows: Rows) where Rows.Element == UniversalResult {
+            let end = result.count + limit
+            for row in rows {
+                if !words.isEmpty {
+                    let text = row.title + " " + row.subtitle
+                    guard words.allSatisfy({ text.localizedStandardContains($0) }) else { continue }
+                }
+                result.append(row)
+                if result.count == end { break }
+            }
         }
-        append(tabSearchRows("").map{UniversalResult(id:"tab:"+$0.id.uuidString,title:$0.page.displayTitle,subtitle:$0.workspace.name+" · "+$0.page.url,icon:"rectangle.on.rectangle",scope:.tabs,target:.tab($0.ref))},for:.tabs)
-        append(favoriteSections().flatMap(\.links).map{UniversalResult(id:"favorite:"+$0.id.uuidString,title:$0.title,subtitle:$0.category+" · "+(favoriteWorkspace($0)?.name ?? "")+" · "+$0.url,icon:"star",scope:.favorites,target:.favorite($0.id))},for:.favorites)
-        append(closedPages.reversed().compactMap {wid,page in
-            guard let workspace=workspace(wid) else{return nil}
-            return UniversalResult(id:"closed:"+page.id.uuidString,title:page.displayTitle,subtitle:workspace.name+" · "+page.url,icon:"clock.arrow.circlepath",scope:.closed,target:.closed(page.id))
-        },for:.closed)
-        append(downloads.records.map {record in
-            UniversalResult(id:"download:"+record.id.uuidString,title:record.name.isEmpty ? L("ファイル"):record.name,
-                            subtitle:record.state == .completed ? (downloads.file(for:record) == nil ? L("ファイルが見つかりません"):L("保存済み")) : (record.isActive ? L("ダウンロード中…"):L("未完了")),
-                            icon:"arrow.down.circle",scope:.downloads,target:.download(record.id))
-        },for:.downloads)
-        var actions=ShortcutPreferences.actions.filter{(BrowserCommands.ids.contains($0.id) && $0.id != "commands") || $0.id == "settings"}
-            .map{UniversalResult(id:"command:"+$0.id,title:$0.title,subtitle:ShortcutPreferences.shared.binding($0).label,icon:"command",scope:.commands,target:.command($0.id))}
-        actions.append(UniversalResult(id:"command:downloads",title:L("ダウンロードを表示"),subtitle:"",icon:"arrow.down.circle",scope:.commands,target:.command("downloads")))
-        append(actions,for:.commands)
+
+        if includes(.tabs) {
+            appendMatches(allTabRows.lazy.map { row in
+                UniversalResult(id: "tab:" + row.id.uuidString, title: row.page.displayTitle,
+                                subtitle: row.workspace.name + " · " + row.page.url, icon: "rectangle.on.rectangle",
+                                scope: .tabs, target: .tab(row.ref))
+            })
+        }
+        if includes(.favorites) {
+            appendMatches(favoriteSections().lazy.flatMap(\.links).map { link in
+                UniversalResult(id: "favorite:" + link.id.uuidString, title: link.title,
+                                subtitle: link.category + " · " + (self.favoriteWorkspace(link)?.name ?? "") + " · " + link.url,
+                                icon: "star", scope: .favorites, target: .favorite(link.id))
+            })
+        }
+        if includes(.closed) {
+            appendMatches(closedPages.reversed().lazy.compactMap { workspaceID, page in
+                guard let workspace = self.workspace(workspaceID) else { return nil }
+                return UniversalResult(id: "closed:" + page.id.uuidString, title: page.displayTitle,
+                                       subtitle: workspace.name + " · " + page.url, icon: "clock.arrow.circlepath",
+                                       scope: .closed, target: .closed(page.id))
+            })
+        }
+        if includes(.downloads) {
+            appendMatches(downloads.records.lazy.map { record in
+                UniversalResult(id: "download:" + record.id.uuidString, title: record.name.isEmpty ? L("ファイル") : record.name,
+                                subtitle: record.state == .completed ? (self.downloads.file(for: record) == nil ? L("ファイルが見つかりません") : L("保存済み")) : (record.isActive ? L("ダウンロード中…") : L("未完了")),
+                                icon: "arrow.down.circle", scope: .downloads, target: .download(record.id))
+            })
+        }
+        if includes(.commands) {
+            var actions=ShortcutPreferences.actions.filter{(BrowserCommands.ids.contains($0.id) && $0.id != "commands") || $0.id == "settings"}
+                .map{UniversalResult(id:"command:"+$0.id,title:$0.title,subtitle:ShortcutPreferences.shared.binding($0).label,icon:"command",scope:.commands,target:.command($0.id))}
+            actions.append(UniversalResult(id:"command:downloads",title:L("ダウンロードを表示"),subtitle:"",icon:"arrow.down.circle",scope:.commands,target:.command("downloads")))
+            appendMatches(actions)
+        }
         return result
     }
     @discardableResult func restoreClosedPage(_ pageID:UUID)->Bool {
@@ -95,13 +124,18 @@ struct UniversalSearch:View {
     @State private var target:PageReference?
     @FocusState private var searchFocused:Bool
     @FocusState private var listFocused:Bool
-    private var results:[UniversalResult] {store.universalResults(query,scope:scope)}
-    private func run(_ reveal:Bool=false) {if let row=results.first(where:{$0.id == selection}) ?? results.first {store.executeUniversal(row,target:target,reveal:reveal)}}
+    private func run(reveal: Bool = false) {
+        let results = store.universalResults(query, scope: scope)
+        if let row = results.first(where: { $0.id == selection }) ?? results.first {
+            store.executeUniversal(row, target: target, reveal: reveal)
+        }
+    }
     private func cycle(_ offset:Int) {
         let all=SearchScope.allCases,index=all.firstIndex(of:scope) ?? 0
         scope=all[(index+offset+all.count)%all.count]
     }
     var body:some View {
+        let results = store.universalResults(query, scope: scope)
         VStack(alignment:.leading,spacing:12) {
             HStack {Text(L("検索")).font(.title2.bold());Spacer();Button(L("閉じる")){store.searchPresented=false;store.commandsPresented=false}.keyboardShortcut(.cancelAction)}
             TextField(L("タブ・お気に入り・ファイル・操作を検索"),text:$query)
@@ -131,7 +165,7 @@ struct UniversalSearch:View {
                             }
                     }
                 }.listStyle(.inset).focused($listFocused)
-                    .onKeyPress(.return,phases:.down){press in run(press.modifiers.contains(.command));return .handled}
+                    .onKeyPress(.return,phases:.down){press in run(reveal: press.modifiers.contains(.command));return .handled}
                     .onKeyPress(.leftArrow){cycle(-1);return .handled}.onKeyPress(.rightArrow){cycle(1);return .handled}
             }
             Text(L("↑↓ 選択 · Enter 実行 · ←→ 分類 · ⌘F 検索")).font(.caption).foregroundStyle(.secondary)
