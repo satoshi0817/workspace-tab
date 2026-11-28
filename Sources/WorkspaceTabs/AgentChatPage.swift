@@ -109,27 +109,41 @@ private struct AgentChatAvatar:View {
     let store:BrowserStore
     let account:AgentChatAccount
     var size:CGFloat=22
+
+    /// A centered rectangle touches the surrounding circle at all four corners when its diagonal equals the diameter.
+    private func inscribedImage(_ image: Image) -> some View {
+        image.resizable().scaledToFit()
+            .visualEffect { [diameter = size] content, geometry in
+                let bounds = geometry.size
+                let diagonal = hypot(bounds.width, bounds.height)
+                return content.scaleEffect(diagonal > 0 ? diameter / diagonal : 1)
+            }
+            .frame(width:size,height:size)
+    }
+
     var body:some View {
         let tint=account.color.map(Palette.color)
         let ink=account.color.map{Palette.ink($0)} ?? Color.primary
         let fill=tint ?? Color.primary.opacity(0.16)
+        let outline=Circle().strokeBorder(Color.primary.opacity(0.18))
+        let filledCircle=Circle().fill(fill).overlay(outline)
         let letter=account.nickname.flatMap(AgentChatAccount.clean) ?? account.person
         let initial=Text(String(letter.prefix(1)).uppercased()).font(.system(size:size*0.48,weight:.semibold))
-            .foregroundStyle(ink).frame(width:size,height:size).background(fill)
+            .foregroundStyle(ink).frame(width:size,height:size).background(fill).clipShape(Circle()).overlay(outline)
         Group {
             if let file=account.iconFile,let image=store.iconCache.image(directory:store.directory,name:file) {
-                Image(nsImage:image).renderingMode(image.isTemplate ? .template:.original).resizable()
-                    .aspectRatio(contentMode:image.isTemplate ? .fit:.fill).padding(image.isTemplate ? size*0.2:0)
-                    .foregroundStyle(ink).frame(width:size,height:size).background(image.isTemplate ? fill:.clear)
+                inscribedImage(Image(nsImage:image).renderingMode(image.isTemplate ? .template:.original))
+                    .foregroundStyle(ink)
+                    .background { if image.isTemplate {filledCircle} else {outline} }
             } else if let emoji=account.emoji.flatMap(AgentChatAccount.clean) {
                 Text(emoji).font(.system(size:size*0.55,weight:.semibold)).lineLimit(1).minimumScaleFactor(0.4)
-                    .foregroundStyle(ink).frame(width:size,height:size).background(fill)
+                    .foregroundStyle(ink).frame(width:size,height:size).background(fill).clipShape(Circle()).overlay(outline)
             } else if account.color == nil,let url=account.avatarURL.flatMap(URL.init(string:)),url.scheme == "https" {
                 AsyncImage(url:url) {phase in
-                    if let image=phase.image {image.resizable().aspectRatio(contentMode:.fill)} else {initial}
+                    if let image=phase.image {inscribedImage(image).background(outline)} else {initial}
                 }
             } else {initial}
-        }.frame(width:size,height:size).clipShape(Circle()).overlay(Circle().strokeBorder(.primary.opacity(0.18)))
+        }.frame(width:size,height:size)
             .accessibilityHidden(true)
     }
 }
@@ -320,25 +334,27 @@ struct AgentChatPage:View {
         let selected=hub.selection == row.id
         let groups=hub.groups(of:row)
         return Button {hub.select(row.id)} label:{
-            VStack(alignment:.leading,spacing:8) {
-                HStack(alignment:.top,spacing:8) {
-                    if hub.isPinned(row) {Image(systemName:"pin.fill").font(.system(size:10)).foregroundStyle(.orange).padding(.top,3).accessibilityLabel(L("ピン留め"))}
-                    Text(hub.title(row)).font(.system(size:13,weight:.semibold)).lineLimit(2).multilineTextAlignment(.leading)
-                    Spacer(minLength:8)
-                    AgentChatStatusBadge(status:row.session.status)
-                }
-                HStack(spacing:6) {
-                    AgentChatAvatar(store:store,account:row.account,size:16)
-                    Text(row.account.title).lineLimit(1)
-                    Text("·").foregroundStyle(.tertiary)
-                    Text(row.account.person).lineLimit(1)
-                    if let group=groups.first {
-                        Label(group.name+(groups.count>1 ? " +\(groups.count-1)":""),systemImage:"square.stack").lineLimit(1)
-                            .padding(.horizontal,6).padding(.vertical,1).background(.primary.opacity(0.07),in:Capsule())
+            HStack(spacing:10) {
+                AgentChatAvatar(store:store,account:row.account,size:40)
+                VStack(alignment:.leading,spacing:6) {
+                    HStack(alignment:.top,spacing:6) {
+                        Text(hub.title(row)).font(.system(size:13,weight:.semibold)).lineLimit(2).multilineTextAlignment(.leading)
+                            .frame(maxWidth:.infinity,alignment:.leading)
+                        if hub.isPinned(row) {Image(systemName:"pin.fill").font(.system(size:10)).foregroundStyle(.orange).padding(.top,3).accessibilityLabel(L("ピン留め"))}
+                        AgentChatStatusBadge(status:row.session.status)
                     }
-                    Spacer(minLength:8)
-                    Text(Self.relative.localizedString(for:row.session.updatedAt,relativeTo:Date())).monospacedDigit().fixedSize()
-                }.font(.system(size:11)).foregroundStyle(.secondary)
+                    HStack(spacing:4) {
+                        Text(row.account.title).lineLimit(1)
+                        Text("·").foregroundStyle(.tertiary)
+                        Text(row.account.person).lineLimit(1)
+                        if let group=groups.first {
+                            Label(group.name+(groups.count>1 ? " +\(groups.count-1)":""),systemImage:"square.stack").lineLimit(1)
+                                .padding(.horizontal,6).padding(.vertical,1).background(.primary.opacity(0.07),in:Capsule())
+                        }
+                        Spacer(minLength:0)
+                        Text(Self.relative.localizedString(for:row.session.updatedAt,relativeTo:Date())).monospacedDigit().fixedSize()
+                    }.font(.system(size:11)).foregroundStyle(.secondary)
+                }
             }.padding(.horizontal,12).padding(.vertical,10).frame(maxWidth:.infinity,alignment:.leading)
                 .background(selected ? Color.accentColor.opacity(0.16):Color.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:10,style:.continuous))
                 .overlay(RoundedRectangle(cornerRadius:10,style:.continuous).strokeBorder(selected ? Color.accentColor.opacity(0.6):.clear))
@@ -1070,7 +1086,7 @@ private struct AgentChatAccountEditor:View {
                 Section {
                     TextField(L("表示名"),text:text(\.nickname),prompt:Text(draft.notionTitle))
                     TextField(L("絵文字・文字"),text:text(\.emoji))
-                    IconSelectionRow(store:store,file:$draft.iconFile,defaultSymbol:"person.crop.circle")
+                    IconSelectionRow(store:store,file:$draft.iconFile,defaultSymbol:"person.crop.circle",padsImageToSquare:false)
                     Toggle(L("色をつける"),isOn:Binding(get:{draft.color != nil},set:{draft.color=$0 ? (draft.color ?? "blue"):nil}))
                     if let color=draft.color {ColorPickerRow(selection:Binding(get:{color},set:{draft.color=$0}))}
                 } footer:{

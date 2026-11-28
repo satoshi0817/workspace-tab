@@ -212,6 +212,17 @@ import WorkspaceCore
             try expect(catalog.filtered(query:"フォルダー",category:"").contains{$0.id == "folder"} && catalog.filtered(query:"",category:"people").allSatisfy{$0.category == "people"},"Preset search supports Japanese terms and category filtering")
             let template=store.saveIcon(catalog.image("star")!,template:true)!
             try expect(store.iconCache.image(directory:root,name:template)?.isTemplate == true,"Preset icons retain template rendering after local persistence")
+            for size in [NSSize(width:128,height:64),NSSize(width:64,height:128)] {
+                let source = NSImage(size:size,flipped:false) { rect in
+                    NSColor.systemRed.setFill()
+                    rect.fill()
+                    return true
+                }
+                let avatar = store.saveIcon(source,paddingToSquare:false).flatMap {store.iconCache.image(directory:root,name:$0)}
+                let tabIcon = store.saveIcon(source).flatMap {store.iconCache.image(directory:root,name:$0)}
+                try expect(avatar?.size == size && tabIcon?.size == NSSize(width:128,height:128),
+                           "Chat image imports keep their \(Int(size.width)) by \(Int(size.height)) aspect while tab icons keep their square canvas")
+            }
             let groupIcon=BrowserTabGroup(name:"Preset group",iconFile:template)
             try expect(store.saveTabGroup(groupIcon,in:a),"Group editor saves its selected icon")
             let groupSession=try JSONDecoder().decode(BrowserSession.self,from:JSONEncoder().encode(store.session))

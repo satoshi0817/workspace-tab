@@ -62,6 +62,7 @@ struct IconSelectionRow:View {
     @ObservedObject var store:BrowserStore
     @Binding var file:String?
     var defaultSymbol="globe"
+    var padsImageToSquare = true
     @State private var picking=false
     var body:some View {
         HStack(spacing:12) {
@@ -75,10 +76,10 @@ struct IconSelectionRow:View {
             Button(L("プリセット…")) {picking=true}
                 .popover(isPresented:$picking) {
                     PresetIconPicker {id in
-                        if let image=PresetIcons.shared.image(id),let saved=store.saveIcon(image,template:true) {file=saved;picking=false}
+                        if let image=PresetIcons.shared.image(id),let saved=store.saveIcon(image,template:true,paddingToSquare:padsImageToSquare) {file=saved;picking=false}
                     }
                 }
-            Button(L("画像…")) {if let saved=store.chooseIcon() {file=saved}}
+            Button(L("画像…")) {if let saved=store.chooseIcon(paddingToSquare:padsImageToSquare) {file=saved}}
                 .help(L("PNG・JPEG・HEIC画像から選びます"))
             if file != nil {Button(L("解除")) {file=nil}}
         }.foregroundStyle(Color.primary)
@@ -124,12 +125,15 @@ private struct PresetIconPicker:View {
 }
 
 extension BrowserStore {
-    func saveIcon(_ image:NSImage,template:Bool=false)->String? {
+    func saveIcon(_ image:NSImage,template:Bool=false,paddingToSquare:Bool=true)->String? {
         guard image.size.width>0,image.size.height>0 else{return nil}
-        let resized=NSImage(size:NSSize(width:128,height:128));resized.lockFocus()
         let ratio=min(128/image.size.width,128/image.size.height)
         let size=NSSize(width:image.size.width*ratio,height:image.size.height*ratio)
-        image.draw(in:NSRect(x:(128-size.width)/2,y:(128-size.height)/2,width:size.width,height:size.height));resized.unlockFocus()
+        let canvas = paddingToSquare ? NSSize(width:128,height:128) : NSSize(width:max(1,size.width),height:max(1,size.height))
+        let resized = NSImage(size:canvas)
+        resized.lockFocus()
+        image.draw(in:NSRect(x:(canvas.width-size.width)/2,y:(canvas.height-size.height)/2,width:size.width,height:size.height))
+        resized.unlockFocus()
         guard let tiff=resized.tiffRepresentation,let bitmap=NSBitmapImageRep(data:tiff),let png=bitmap.representation(using:.png,properties:[:]) else{return nil}
         let name=UUID().uuidString+(template ? ".template.png":".png"),dir=directory.appendingPathComponent("Icons")
         do {

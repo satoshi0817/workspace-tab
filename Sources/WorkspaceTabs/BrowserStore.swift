@@ -737,9 +737,9 @@ struct PageReference: Codable, Equatable, Identifiable {
         try bytes.write(to:dir.appendingPathComponent(name),options:.atomic)
         return name
     }
-    func chooseIcon() -> String? {
+    func chooseIcon(paddingToSquare: Bool = true) -> String? {
         let panel = NSOpenPanel(); panel.allowedContentTypes = [.png, .jpeg, .heic]
         guard panel.runModal() == .OK, let url = panel.url, let image = NSImage(contentsOf: url) else { return nil }
-        return saveIcon(image)
+        return saveIcon(image,paddingToSquare:paddingToSquare)
     }
 }
